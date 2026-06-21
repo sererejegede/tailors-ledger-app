@@ -37,7 +37,7 @@ A **client** has many **sets** (a set = one garment's worth of measurements, wit
 | field | type | notes |
 |---|---|---|
 | id | uuid v7 | PK, device-generated |
-| name | text | **required** — the only field needed to create a client |
+| name | text | **required** — the only field needed to create a client. **Unique** among non-deleted clients (case-insensitive, trimmed; repo-enforced, since WatermelonDB has no DB-level unique constraints). Blank names are exempt: an unnamed draft is a placeholder client with `name = ''` until it's named on save. |
 | phone | text? | optional |
 | comment | text? | client-level note for general preferences ("prefers slim fit") |
 | photo_local_uri | text? | filesystem path on device |
@@ -71,7 +71,7 @@ A **client** has many **sets** (a set = one garment's worth of measurements, wit
 | field | type | notes |
 |---|---|---|
 | id | uuid v7 | PK |
-| client_id | uuid | FK → clients |
+| client_id | uuid | FK → clients — **required and immutable** (a set always belongs to a client and never relinks). Measure-first drafts satisfy this with a blank-named placeholder client, named in place on save (spec §4). |
 | template_id | uuid? | soft reference — template may later change or be deleted |
 | template_name_snapshot | text? | denormalized so the set still reads correctly if the template is renamed/deleted |
 | label | text? | optional ("Wedding agbada") |
