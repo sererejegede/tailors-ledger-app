@@ -33,7 +33,12 @@ Go will NOT work.**
 
 1. `git clone <remote>` and `cd` in.
 2. `npm install`
-3. Connect an Android phone (USB debugging on) or start an emulator.
+2b. Ensure env vars are set (user scope on Windows): `JAVA_HOME` → the JDK 17 dir,
+   `ANDROID_HOME`/`ANDROID_SDK_ROOT` → `…/AppData/Local/Android/Sdk`, and add
+   `platform-tools` (adb) to PATH. **Open a fresh terminal after setting them** — a
+   shell started earlier won't see new env vars.
+3. Connect an Android phone (USB debugging on — accept the "Allow USB debugging" prompt
+   so `adb devices` shows `device`, not `unauthorized`) or start an emulator.
 4. `npx expo run:android` — this runs `expo prebuild` (regenerating `android/`, which
    is gitignored) and builds+installs the dev client. First build is slow.
 5. The app opens to a **temporary DB smoke screen** (`App.tsx`) that boots the native
@@ -41,35 +46,51 @@ Go will NOT work.**
    row. That confirms the native DB stack works on device. (This screen is replaced by
    real navigation in Phase 3.)
 
-Requirements on that machine: JDK 17, Android Studio + SDK + platform-tools, an
-emulator or a physical device. (Alternatively `eas build --profile development -p
-android` for a cloud-built APK.)
+Requirements on that machine: **JDK 17** (not 21 — SDK 56 / RN 0.85 require 17, and
+higher JDKs cause Gradle/AGP friction), Android Studio + SDK 36 + platform-tools, the
+**NDK `27.1.12297006`** and **CMake 3.x** (RN 0.85.3 pins that exact NDK), an emulator
+or a physical device. (Alternatively `eas build --profile development -p android` for a
+cloud-built APK.)
 
-## ⚠️ Native build caveat — WatermelonDB on SDK 56 New Architecture
-SDK 56 enables the **New Architecture** and the legacy toggle is effectively gone
-(`expo-build-properties.android.newArchEnabled:false` did NOT flip `gradle.properties`).
-WatermelonDB 0.28 is a legacy-arch native module:
-- Its **JSI** path (`jsi: true`) needs the old `getJSIModulePackages()` hook in
-  `MainApplication`, which no longer exists under new arch. The community plugin
-  `@morrowdigital/watermelondb-expo-plugin` (tested only against SDK 49/50) adds the
-  JSI imports but cannot register them on the new-arch template.
-- **Current setting: `jsi: false`** in `src/db/index.ts` (bridge mode), which autolinks
-  and works through the new-arch interop layer. This is the path to validate first.
+> **Install the NDK via Android Studio's SDK Manager, not Gradle's auto-download.**
+> Gradle's first-build NDK fetch (~3.5 GB) is not resumable and, if interrupted, leaves
+> a 1 KB stub folder with no `source.properties` — which then fails every build with
+> *"No version of NDK matched the requested version."* Fix: delete
+> `…/Android/Sdk/ndk/27.1.12297006`, then in Android Studio → SDK Manager → SDK Tools →
+> **Show Package Details** → NDK (Side by side) → check `27.1.12297006` (+ CMake) → Apply.
 
-**If the device build fails**, in rough order of preference:
-1. Confirm bridge mode (`jsi:false`) builds & runs (current default). If it works,
-   we're done for v1 — JSI is a perf optimization, not a requirement.
-2. If WatermelonDB native won't link at all under new arch, evaluate: a newer
-   community plugin/fork with new-arch support, or pin a WatermelonDB version with
-   new-arch JSI, or (last resort, and a LOCKED-decision change requiring sign-off)
-   switch the local store engine.
-3. `expo prebuild -p android` already succeeds at config-generation on Windows — the
-   remaining unknowns are gradle compile + runtime, which only the build machine shows.
+## ✅ Native build — RESOLVED (Windows, bridge mode)
+**The Android device build now succeeds** (`android/app/build/outputs/apk/debug/app-debug.apk`,
+`./gradlew app:assembleDebug` → BUILD SUCCESSFUL). Verified 2026-06-21 on Windows 11 +
+JDK 17 + NDK 27.1.12297006. All ABIs (arm64-v8a, armeabi-v7a, x86, x86_64) compile.
 
-The `@morrowdigital/watermelondb-expo-plugin` is currently in `app.json` plugins. With
-`jsi:false` it isn't strictly needed; if it causes build trouble, removing it and
-keeping only `expo-build-properties` (pickFirst `libc++_shared.so`) is a valid
-simplification — test both.
+Background — WatermelonDB 0.28 on SDK 56 **New Architecture**: its **JSI** path
+(`jsi: true`) needs the old `getJSIModulePackages()` hook in `MainApplication`, which no
+longer exists under new arch. The community plugin
+`@morrowdigital/watermelondb-expo-plugin` injected two imports
+(`WatermelonDBJSIPackage`, `JSIModulePackage`) into `MainApplication.kt`; under RN 0.85
+`JSIModulePackage` is gone, so Kotlin compile failed with *"Unresolved reference
+'JSIModulePackage'."*
+
+**Resolution applied (durable):**
+1. **Removed `@morrowdigital/watermelondb-expo-plugin` from `app.json` plugins** — with
+   `jsi: false` (bridge mode, set in `src/db/index.ts`) WatermelonDB's package autolinks
+   via the normal `PackageList`, so the JSI plugin/imports are dead weight.
+   `expo-build-properties` (pickFirst `libc++_shared.so`, `newArchEnabled:false`) stays.
+2. Removed the two dead JSI imports from the generated `MainApplication.kt` so the
+   existing `android/` compiles immediately. Note `android/` is gitignored and
+   regenerated from `app.json`; a future `expo prebuild --clean` produces a correct
+   `MainApplication.kt` (no JSI imports) now that the plugin is gone, so the two fixes
+   are consistent.
+
+Bridge mode is sufficient for v1 — JSI is a perf optimization, not a requirement. If we
+ever revisit `jsi: true`, that needs proper new-arch JSI registration (a newer
+plugin/fork or a pinned WatermelonDB with new-arch JSI); switching the store engine is a
+LOCKED-decision change requiring sign-off.
+
+> **Build faster after the first time:** `npx expo run:android` re-runs `expo prebuild`
+> but reuses cached native (NDK/CMake) output. To skip prebuild entirely on an existing
+> `android/`, build Gradle directly: `cd android && ./gradlew app:assembleDebug`.
 
 ## Continuing with Claude on the new machine
 A fresh Claude session there will auto-load `CLAUDE.md` → `AGENTS.md` +
