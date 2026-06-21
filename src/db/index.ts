@@ -15,7 +15,12 @@ installIdGenerator();
 const adapter = new SQLiteAdapter({
   schema,
   migrations,
-  jsi: true,
+  // Bridge mode (jsi:false) for now. On Expo SDK 56 the New Architecture is the only
+  // option, and WatermelonDB 0.28's JSI path relies on the old getJSIModulePackages()
+  // hook that no longer exists — so jsi:true is not wired under new arch. The bridge
+  // adapter autolinks and works through the new-arch interop layer. Revisit jsi:true if
+  // we add proper new-arch JSI registration. See docs/PROGRESS.md.
+  jsi: false,
   dbName: 'tailors_ledger',
   onSetUpError: (error) => {
     // Surface fatal DB setup failures (corrupt store / failed migration).
