@@ -1,0 +1,977 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tailor Measurement App — Wireframe v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#DCDAD4;
+    --screen:#FCFBF8;
+    --ink:#1B1A17;
+    --muted:#8C887E;
+    --faint:#B6B1A6;
+    --line:#E2DED5;
+    --line-2:#D2CDC2;
+    --accent:#BD7A16;
+    --accent-tint:#F5EAD3;
+    --accent-ink:#794D08;
+    --font-display:'Space Grotesk',system-ui,sans-serif;
+    --font-ui:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --font-mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    font-family:var(--font-ui);
+    color:var(--ink);
+    background-color:var(--paper);
+    background-image:radial-gradient(var(--line-2) 0.7px, transparent 0.7px);
+    background-size:22px 22px;
+    -webkit-font-smoothing:antialiased;
+    padding:34px 18px 80px;
+  }
+  .wrap{max-width:1080px;margin:0 auto}
+
+  /* ---- masthead ---- */
+  .masthead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+  .eyebrow{
+    font-family:var(--font-mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--accent-ink);background:var(--accent-tint);border:1px solid #E6D2A8;
+    padding:3px 8px;border-radius:3px;
+  }
+  h1{font-family:var(--font-display);font-weight:600;font-size:26px;letter-spacing:-.01em;margin:0}
+  .masthead .sub{color:var(--muted);font-size:13px}
+
+  /* ---- flow strip ---- */
+  .flow{margin:22px 0 26px;background:#fff;border:1px solid var(--line-2);border-radius:12px;padding:16px 14px 12px}
+  .flow-title{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 4px 8px}
+  .flow svg{width:100%;height:auto;display:block;overflow:visible}
+  .fnode{cursor:pointer}
+  .fnode rect{fill:#fff;stroke:var(--line-2);stroke-width:1.4;transition:stroke .15s, fill .15s}
+  .fnode text{font-family:var(--font-ui);font-size:12.5px;fill:var(--ink);font-weight:500}
+  .fnode .fsub{font-family:var(--font-mono);font-size:9px;fill:var(--muted);letter-spacing:.04em}
+  .fnode:hover rect{stroke:var(--accent)}
+  .fnode.on rect{fill:var(--accent-tint);stroke:var(--accent)}
+  .fedge{stroke:var(--line-2);stroke-width:1.4;fill:none}
+  .fedge-lbl{font-family:var(--font-mono);font-size:9px;fill:var(--muted);letter-spacing:.03em}
+
+  /* ---- stage / phone ---- */
+  .stage{display:flex;flex-direction:column;align-items:center;gap:14px}
+  .phone{
+    width:380px;max-width:100%;height:760px;background:var(--screen);
+    border:10px solid #15140F;border-radius:42px;position:relative;overflow:hidden;
+    box-shadow:0 24px 60px -28px rgba(20,18,12,.55);
+  }
+  .statusbar{height:30px;display:flex;align-items:center;justify-content:space-between;
+    padding:0 22px;font-family:var(--font-mono);font-size:11px;color:var(--ink);
+    background:var(--screen);position:relative;z-index:5}
+  .statusbar .dots{letter-spacing:1px}
+
+  .screen{position:absolute;inset:40px 0 0 0;display:none;flex-direction:column}
+  .screen.show{display:flex}
+
+  .topbar{display:flex;align-items:center;gap:10px;padding:10px 16px 12px;border-bottom:1px solid var(--line)}
+  .topbar .back{border:1px solid var(--line-2);background:#fff;border-radius:8px;width:30px;height:30px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;color:var(--ink)}
+  .topbar .ttl{font-family:var(--font-display);font-weight:600;font-size:17px;letter-spacing:-.01em}
+  .topbar .ttl small{display:block;font-family:var(--font-mono);font-weight:400;font-size:10px;color:var(--muted);letter-spacing:.02em;margin-top:1px}
+  .topbar .spacer{flex:1}
+  .topbar .act{font-size:13px;color:var(--accent-ink);font-weight:600;cursor:pointer;padding:6px 8px;border-radius:7px}
+  .topbar .act:hover{background:var(--accent-tint)}
+
+  .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .scroll::-webkit-scrollbar{width:0}
+
+  /* search */
+  .search{margin:12px 16px 4px;display:flex;align-items:center;gap:8px;border:1px solid var(--line-2);
+    border-radius:10px;padding:9px 12px;color:var(--faint);font-size:13.5px;background:#fff}
+
+  /* list rows */
+  .sect-lbl{font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);margin:16px 16px 6px}
+  .row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+  .row:hover{background:#fff}
+  .avatar{width:34px;height:34px;border-radius:50%;border:1px dashed var(--line-2);flex:none;
+    display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--faint);background:#fff}
+  .row .nm{font-weight:500;font-size:15px}
+  .row .meta{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);margin-top:2px;letter-spacing:.02em}
+  .row .chev{color:var(--faint);font-size:16px}
+  .row .grow{flex:1;min-width:0}
+
+  /* client detail header */
+  .client-hd{padding:18px 16px 14px;border-bottom:1px solid var(--line)}
+  .client-hd .big{font-family:var(--font-display);font-weight:600;font-size:21px;letter-spacing:-.01em}
+  .client-hd .phone-no{font-family:var(--font-mono);font-size:12px;color:var(--muted);margin-top:3px}
+  .comment{margin:14px 16px;border:1px solid var(--line-2);border-left:3px solid var(--accent);
+    border-radius:8px;background:#fff;padding:11px 13px}
+  .comment .lbl{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:5px}
+  .comment .txt{font-size:13.5px;line-height:1.45;color:#3b372f}
+
+  /* primary button */
+  .primary{display:flex;align-items:center;justify-content:center;gap:8px;margin:14px 16px;padding:14px;
+    background:var(--accent);color:#fff;font-weight:600;font-size:14.5px;border:none;border-radius:11px;
+    cursor:pointer;font-family:var(--font-ui);width:calc(100% - 32px)}
+  .primary:hover{background:#a96c10}
+  .ghost{background:#fff;color:var(--ink);border:1px solid var(--line-2)}
+  .ghost:hover{background:#faf8f3}
+
+  /* ===== measurement entry ===== */
+  .entry-hd{padding:11px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .entry-hd .who{font-weight:600;font-size:15px}
+  .entry-hd .who small{display:block;font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:1px;letter-spacing:.02em}
+  .entry-hd .who .unnamed{color:var(--accent-ink);cursor:pointer;text-decoration:underline dotted}
+  .progress{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--ink);
+    background:#fff;border:1px solid var(--line-2);border-radius:20px;padding:4px 10px}
+  .progress b{color:var(--accent-ink)}
+
+  .attach-row{display:flex;gap:8px;padding:9px 16px;border-bottom:1px solid var(--line)}
+  .pill{font-size:11.5px;color:var(--muted);border:1px dashed var(--line-2);border-radius:20px;padding:5px 11px;background:#fff;cursor:pointer}
+  .pill:hover{border-color:var(--accent);color:var(--accent-ink)}
+
+  .mlist{padding:4px 0 8px}
+  .mrow{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+  .mrow .k{font-size:14.5px}
+  .mrow .v{font-family:var(--font-mono);font-size:16px;font-variant-numeric:tabular-nums;color:var(--ink)}
+  .mrow .v.empty{color:var(--faint)}
+  .mrow.active{background:var(--accent-tint)}
+  .mrow.active .k{font-weight:600}
+  .mrow.active .v{color:var(--accent-ink);font-weight:600}
+  .mrow.active::before{content:"";position:absolute;left:0;width:3px;height:46px;background:var(--accent)}
+  .mrow{position:relative}
+  .mrow.additem{cursor:pointer;border-bottom:none}
+  .mrow.additem .k{color:var(--muted);font-size:13.5px}
+  .mrow.additem:hover .k{color:var(--accent-ink)}
+
+  /* bottom nav */
+  .bottomnav{position:absolute;left:0;right:0;bottom:0;height:58px;display:none;
+    border-top:1px solid var(--line-2);background:#fff;z-index:6}
+  .bottomnav.show{display:flex}
+  .bottomnav a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    cursor:pointer;color:var(--muted);font-size:10.5px;letter-spacing:.02em}
+  .bottomnav a .ni{font-size:18px;line-height:1}
+  .bottomnav a.on{color:var(--accent-ink)}
+  .has-nav .scroll{padding-bottom:64px}
+
+  /* extended FAB */
+  .fab{position:absolute;right:14px;bottom:72px;z-index:7;display:flex;align-items:center;gap:8px;
+    background:var(--accent);color:#fff;border:none;border-radius:26px;padding:13px 18px;font-weight:600;
+    font-size:14px;font-family:var(--font-ui);cursor:pointer;box-shadow:0 10px 22px -10px rgba(120,77,8,.7)}
+  .fab:hover{background:#a96c10}
+
+  /* settings */
+  .set-group{font-family:var(--font-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);margin:18px 16px 6px}
+  .strow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line)}
+  .strow .sk{font-size:14px}
+  .strow .sk small{display:block;color:var(--muted);font-size:11.5px;margin-top:2px;line-height:1.3}
+  .strow .sv{font-family:var(--font-mono);font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:7px}
+  .strow .sv .chev{font-family:var(--font-ui)}
+  .toggle{width:38px;height:22px;border-radius:20px;background:var(--line-2);position:relative;flex:none}
+  .toggle.on{background:var(--accent)}
+  .toggle::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}
+  .toggle.on::after{left:18px}
+  .tpl-items{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);margin-top:3px;letter-spacing:.02em}
+  .badge{font-family:var(--font-mono);font-size:9px;color:var(--accent-ink);background:var(--accent-tint);
+    border:1px solid #E6D2A8;border-radius:10px;padding:1px 7px;margin-left:7px}
+
+  /* template editor */
+  .te-name{padding:14px 16px 6px;border-bottom:1px solid var(--line)}
+  .te-name-lbl{display:block;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  #tplName{width:100%;padding:10px 12px;border:1px solid var(--line-2);border-radius:9px;font-size:16px;
+    font-family:var(--font-display);font-weight:600;color:var(--ink)}
+  #tplName:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+  .te-default{display:flex;align-items:center;gap:8px;margin:10px 0 4px;font-size:12.5px;color:var(--muted)}
+  .te-default .mark{width:16px;height:16px;border:1px solid var(--line-2);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff}
+  .te-default.on .mark{background:var(--accent);border-color:var(--accent)}
+  .te-default{cursor:pointer}
+  .terow{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);background:#fff}
+  .terow.dragging{opacity:.4}
+  .terow.dragover{box-shadow:inset 0 2px 0 var(--accent)}
+  .terow .handle{cursor:grab;color:var(--faint);font-size:15px;flex:none;touch-action:none}
+  .terow .tk{flex:1;min-width:0}
+  .terow .tk .tname{font-size:14px}
+  .terow .tk .trange{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);margin-top:2px}
+  .terow .tk .trange.none{color:var(--faint)}
+  .terow .tedit{color:var(--faint);font-size:13px;cursor:pointer;padding:4px}
+  .terow .tdel{color:var(--faint);font-size:16px;cursor:pointer;padding:2px 6px;border:1px solid var(--line-2);border-radius:7px;background:#fff}
+  .terow .tdel:hover{border-color:var(--accent);color:var(--accent-ink)}
+  .te-danger{margin:22px 16px;text-align:center;color:#a23b2e;font-size:13px;cursor:pointer;padding:11px;
+    border:1px solid #e6cbc5;border-radius:9px;background:#fff}
+  .te-danger:hover{background:#fbf1ef}
+  .range-row{display:flex;gap:8px;margin-bottom:12px}
+  .range-row input{margin-bottom:0}
+  .range-row .dash{align-self:center;color:var(--muted)}
+  .field-lbl{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+
+  /* docked input */
+  .dock{border-top:1px solid var(--line-2);background:#FBF8F1;padding:10px 14px 14px}
+  .dock-disp{display:flex;align-items:baseline;justify-content:space-between;padding:2px 4px 8px}
+  .dock-disp .dk{font-size:13px;color:var(--muted)}
+  .dock-disp .dv{font-family:var(--font-mono);font-size:30px;font-variant-numeric:tabular-nums;color:var(--accent-ink);line-height:1}
+  .dock-disp .dv.placeholder{color:var(--faint);font-size:20px}
+  .fracs{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:7px}
+  .frac{padding:9px 0;border:1px solid var(--line-2);background:#fff;border-radius:9px;font-family:var(--font-mono);
+    font-size:15px;cursor:pointer;color:var(--ink)}
+  .frac:hover{border-color:var(--accent)}
+  .frac.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .frac.clear{font-size:12px;color:var(--muted)}
+  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+  .key{padding:13px 0;border:1px solid var(--line-2);background:#fff;border-radius:9px;font-family:var(--font-mono);
+    font-size:18px;cursor:pointer;color:var(--ink)}
+  .key:hover{background:#faf6ec}
+  .key:active{background:var(--accent-tint)}
+  .key.next{background:var(--accent);color:#fff;border-color:var(--accent);font-family:var(--font-ui);
+    font-weight:600;font-size:13.5px}
+  .key.next:hover{background:#a96c10}
+
+  /* ===== set detail ===== */
+  .set-hd{padding:16px 16px 13px;border-bottom:1px solid var(--line)}
+  .set-hd .lab{font-family:var(--font-display);font-weight:600;font-size:19px}
+  .set-hd .who2{font-size:13px;color:var(--muted);margin-top:2px}
+  .set-hd .when{font-family:var(--font-mono);font-size:10.5px;color:var(--faint);margin-top:5px;letter-spacing:.03em}
+  .srow{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+  .srow .k{font-size:14px}
+  .srow .right{display:flex;align-items:center;gap:9px}
+  .srow .v{font-family:var(--font-mono);font-size:15px;font-variant-numeric:tabular-nums}
+  .srow .hist-dot{font-family:var(--font-mono);font-size:9px;color:var(--accent-ink);background:var(--accent-tint);
+    border:1px solid #E6D2A8;border-radius:10px;padding:1px 6px}
+  .hist{background:#FBF8F1;border-bottom:1px solid var(--line);padding:4px 16px 10px;display:none}
+  .hist.open{display:block}
+  .hist .h{display:flex;justify-content:space-between;padding:5px 0;font-family:var(--font-mono);font-size:11px}
+  .hist .h .hv{color:var(--ink)}
+  .hist .h.cur .hv{color:var(--accent-ink);font-weight:600}
+  .hist .h .hd{color:var(--muted)}
+  .note-block{margin:14px 16px;border:1px solid var(--line-2);border-radius:8px;background:#fff;padding:11px 13px}
+  .note-block.editable{cursor:pointer}
+  .note-block.editable:hover{border-color:var(--accent)}
+  .note-block .lbl{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;display:flex;justify-content:space-between}
+  .note-block .edit-hint{color:var(--accent-ink);text-transform:none;letter-spacing:.02em}
+  .note-block .txt{font-size:13.5px;line-height:1.45;color:#3b372f;white-space:pre-wrap}
+  .note-empty{margin:14px 16px;border:1px dashed var(--line-2);border-radius:8px;background:#fff;
+    padding:14px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer}
+  .note-empty:hover{border-color:var(--accent);color:var(--accent-ink)}
+  .imgs{display:flex;flex-wrap:wrap;gap:10px;margin:0 16px 6px;padding-bottom:4px}
+  .imgbox{position:relative;width:74px;height:90px;border:1px dashed var(--line-2);border-radius:8px;background:#fff;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--faint);font-size:10px;text-align:center;padding:4px}
+  .imgbox .ic{font-size:18px}
+  .imgbox.filled{border-style:solid;color:var(--muted)}
+  .imgbox.add{cursor:pointer}
+  .imgbox.add:hover{border-color:var(--accent);color:var(--accent-ink)}
+  .imgx{position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:50%;border:1px solid var(--line-2);
+    background:#fff;color:var(--muted);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .imgx:hover{border-color:var(--accent);color:var(--accent-ink)}
+  .modal textarea{width:100%;padding:11px 12px;border:1px solid var(--line-2);border-radius:9px;font-size:14px;
+    font-family:var(--font-ui);margin-bottom:12px;color:var(--ink);resize:vertical;line-height:1.45}
+  .modal textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+  .sheet{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+  .sheet-opt{text-align:left;padding:13px 14px;border:1px solid var(--line-2);border-radius:10px;background:#fff;
+    font-size:14px;font-family:var(--font-ui);color:var(--ink);cursor:pointer}
+  .sheet-opt:hover{border-color:var(--accent);background:#faf6ec}
+
+  /* modal */
+  .modal-bg{position:absolute;inset:0;background:rgba(20,18,12,.34);display:none;align-items:center;justify-content:center;z-index:40;padding:24px}
+  .modal-bg.show{display:flex}
+  .modal{background:#fff;border-radius:14px;width:100%;padding:18px;border:1px solid var(--line-2)}
+  .modal h3{font-family:var(--font-display);margin:0 0 4px;font-size:17px}
+  .modal p{margin:0 0 14px;font-size:13px;color:var(--muted);line-height:1.45}
+  .modal input{width:100%;padding:11px 12px;border:1px solid var(--line-2);border-radius:9px;font-size:14px;
+    font-family:var(--font-ui);margin-bottom:12px;color:var(--ink)}
+  .modal input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+  .modal .btns{display:flex;gap:8px}
+  .modal button{flex:1;padding:11px;border-radius:9px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:var(--font-ui)}
+  .modal .go{background:var(--accent);color:#fff;border:none}
+  .modal .go:hover{background:#a96c10}
+  .modal .cancel{background:#fff;border:1px solid var(--line-2);color:var(--ink)}
+
+  .caption{max-width:380px;text-align:center;color:var(--muted);font-size:12.5px;line-height:1.55}
+  .caption b{color:var(--accent-ink);font-weight:600}
+  .caption .mono{font-family:var(--font-mono);font-size:11px}
+
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="masthead">
+    <span class="eyebrow">Wireframe · v1</span>
+    <h1>Tailor Measurement App</h1>
+    <span class="sub">low-fidelity · clickable · the measurement screen is fully interactive</span>
+  </div>
+
+  <!-- FLOW -->
+  <div class="flow">
+    <p class="flow-title">Screen flow — tap a node to jump</p>
+    <svg viewBox="0 0 1000 130" role="img" aria-label="App flow">
+      <!-- edges -->
+      <path class="fedge" d="M212,42 H258" marker-end="url(#arr)"/>
+      <text class="fedge-lbl" x="235" y="34" text-anchor="middle">tap client</text>
+      <path class="fedge" d="M462,42 H508" marker-end="url(#arr)"/>
+      <text class="fedge-lbl" x="485" y="34" text-anchor="middle">new set</text>
+      <path class="fedge" d="M712,42 H758" marker-end="url(#arr)"/>
+      <text class="fedge-lbl" x="735" y="34" text-anchor="middle">save</text>
+      <!-- re-measure loop: set detail back to entry -->
+      <path class="fedge" d="M820,72 V104 H570 V72" marker-end="url(#arr)"/>
+      <text class="fedge-lbl" x="695" y="120" text-anchor="middle">re-measure (pre-filled)</text>
+      <!-- measure-first loop: clients straight to entry -->
+      <path class="fedge" d="M120,18 V8 H570 V30" marker-end="url(#arr)" stroke-dasharray="4 3"/>
+      <text class="fedge-lbl" x="345" y="6" text-anchor="middle">new measurement (name later)</text>
+      <defs>
+        <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+          <path d="M1,1 L6,4 L1,7" fill="none" stroke="#C4BFB4" stroke-width="1.4"/>
+        </marker>
+      </defs>
+      <!-- nodes -->
+      <g class="fnode" data-go="clients"><rect x="20" y="22" width="192" height="40" rx="9"/><text x="36" y="40">Clients</text><text class="fsub" x="36" y="54">search · new</text></g>
+      <g class="fnode" data-go="clientDetail"><rect x="270" y="22" width="192" height="40" rx="9"/><text x="286" y="40">Client detail</text><text class="fsub" x="286" y="54">comment · sets</text></g>
+      <g class="fnode" data-go="entry"><rect x="520" y="22" width="192" height="40" rx="9"/><text x="536" y="40">Measurement entry</text><text class="fsub" x="536" y="54">the hero screen</text></g>
+      <g class="fnode" data-go="setDetail"><rect x="770" y="22" width="192" height="40" rx="9"/><text x="786" y="40">Set detail</text><text class="fsub" x="786" y="54">values · history</text></g>
+    </svg>
+  </div>
+
+  <!-- STAGE -->
+  <div class="stage">
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="dots">●●● ▮</span></div>
+
+      <!-- ===== CLIENTS ===== -->
+      <section class="screen show" id="clients">
+        <div class="topbar"><div class="ttl">Clients</div><div class="spacer"></div></div>
+        <div class="scroll">
+          <div class="search"><span>⌕</span><span>Search name or phone</span></div>
+          <div id="clientList"></div>
+        </div>
+        <button class="fab" onclick="newMeasurement()">＋ New measurement</button>
+      </section>
+
+      <!-- ===== CLIENT DETAIL ===== -->
+      <section class="screen" id="clientDetail">
+        <div class="topbar"><div class="back" onclick="go('clients')">‹</div><div class="ttl">Client</div></div>
+        <div class="scroll">
+          <div class="client-hd">
+            <div class="big">Tunde Bello</div>
+            <div class="phone-no">+234 803 555 0142</div>
+          </div>
+          <div class="comment">
+            <div class="lbl">Comment</div>
+            <div class="txt">Prefers a relaxed agbada fit. Dislikes tight cuffs. Always wants a little extra room at the tummy.</div>
+          </div>
+          <p class="sect-lbl">Measurement sets</p>
+          <div class="row" onclick="openSet('agbada')">
+            <div class="grow"><div class="nm">Wedding agbada</div><div class="meta">12 items · updated 2 wks ago</div></div>
+            <div class="chev">›</div>
+          </div>
+          <div class="row" onclick="openSet('kaftan')">
+            <div class="grow"><div class="nm">Everyday kaftan</div><div class="meta">12 items · 12 May 2026</div></div>
+            <div class="chev">›</div>
+          </div>
+        </div>
+        <button class="primary" onclick="newSetFor('Tunde Bello')">＋ New measurement set</button>
+      </section>
+
+      <!-- ===== MEASUREMENT ENTRY ===== -->
+      <section class="screen" id="entry">
+        <div class="topbar">
+          <div class="back" onclick="go('clientDetail')">‹</div>
+          <div class="ttl">Measure <small id="entryTemplate">Men's template</small></div>
+          <div class="spacer"></div>
+          <div class="act" onclick="trySave()">Save</div>
+        </div>
+        <div class="entry-hd">
+          <div class="who" id="entryWho"></div>
+          <div class="progress"><b id="filledCount">0</b>/<span id="totalCount">0</span> filled</div>
+        </div>
+        <div class="scroll"><div class="mlist" id="mlist"></div></div>
+        <div class="dock">
+          <div class="dock-disp">
+            <span class="dk" id="dockKey">—</span>
+            <span class="dv" id="dockVal">—</span>
+          </div>
+          <div class="fracs">
+            <div class="frac" data-frac="0.25" onclick="setFrac(0.25)">¼</div>
+            <div class="frac" data-frac="0.5" onclick="setFrac(0.5)">½</div>
+            <div class="frac" data-frac="0.75" onclick="setFrac(0.75)">¾</div>
+            <div class="frac clear" onclick="setFrac(0)">∅</div>
+          </div>
+          <div class="pad">
+            <div class="key" onclick="press('1')">1</div>
+            <div class="key" onclick="press('2')">2</div>
+            <div class="key" onclick="press('3')">3</div>
+            <div class="key" onclick="press('4')">4</div>
+            <div class="key" onclick="press('5')">5</div>
+            <div class="key" onclick="press('6')">6</div>
+            <div class="key" onclick="press('7')">7</div>
+            <div class="key" onclick="press('8')">8</div>
+            <div class="key" onclick="press('9')">9</div>
+            <div class="key" onclick="del()">⌫</div>
+            <div class="key" onclick="press('0')">0</div>
+            <div class="key next" onclick="commitNext()">Next ›</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== SET DETAIL ===== -->
+      <section class="screen" id="setDetail">
+        <div class="topbar"><div class="back" onclick="go('clientDetail')">‹</div><div class="ttl">Set detail</div></div>
+        <div class="scroll">
+          <div class="set-hd">
+            <div class="lab" id="setLabel">Wedding agbada</div>
+            <div class="who2" id="setWho">Tunde Bello</div>
+            <div class="when" id="setWhen">Updated 2 wks ago · Men's template</div>
+          </div>
+          <div id="setItems"></div>
+          <div id="setNoteWrap"></div>
+          <p class="sect-lbl">Images</p>
+          <div class="imgs" id="setImagesWrap"></div>
+        </div>
+        <button class="primary" onclick="reMeasure()">↺ Re-measure</button>
+      </section>
+
+      <!-- ===== TEMPLATES ===== -->
+      <section class="screen" id="templates">
+        <div class="topbar"><div class="ttl">Templates</div><div class="spacer"></div></div>
+        <div class="scroll">
+          <p class="sect-lbl">Your templates</p>
+          <div id="templateList"></div>
+        </div>
+        <button class="fab" onclick="newTemplate()">＋ New template</button>
+      </section>
+
+      <!-- ===== TEMPLATE EDITOR ===== -->
+      <section class="screen" id="templateEditor">
+        <div class="topbar">
+          <div class="back" onclick="go('templates')">‹</div>
+          <div class="ttl">Edit template</div>
+          <div class="spacer"></div>
+          <div class="act" onclick="go('templates')">Done</div>
+        </div>
+        <div class="scroll">
+          <div class="te-name">
+            <label class="te-name-lbl">Template name</label>
+            <input id="tplName" oninput="renameTemplate(this.value)" autocomplete="off">
+            <div class="te-default" id="tplDefaultRow"></div>
+          </div>
+          <p class="sect-lbl">Measurements — drag the handle to reorder</p>
+          <div id="tplItems" class="tpl-edit-list"></div>
+          <div class="mrow additem" onclick="addTemplateItem()"><span class="k">＋ Add measurement</span><span class="v"></span></div>
+          <div class="te-danger" onclick="deleteTemplate()">Delete this template</div>
+        </div>
+      </section>
+
+      <!-- ===== SETTINGS ===== -->
+      <section class="screen" id="settings">
+        <div class="topbar"><div class="ttl">Settings</div><div class="spacer"></div></div>
+        <div class="scroll">
+          <p class="set-group">Measurement</p>
+          <div class="strow"><div class="sk">Units</div><div class="sv">Inches <span class="chev">›</span></div></div>
+          <div class="strow"><div class="sk">Fraction steps<small>quarters now — switch to eighths if you measure finer</small></div><div class="sv">¼ ½ ¾ <span class="chev">›</span></div></div>
+          <div class="strow"><div class="sk">Default template<small>pre-selected when you start a measurement</small></div><div class="sv">Men's <span class="chev">›</span></div></div>
+          <div class="strow"><div class="sk">Out-of-range warnings<small>flag values far outside a typical range</small></div><div class="toggle on"></div></div>
+          <div class="strow"><div class="sk">Voice entry<small>say the number, hands-free · coming soon</small></div><div class="toggle"></div></div>
+
+          <p class="set-group">Shop profile</p>
+          <div class="strow"><div class="sk">Shop &amp; tailor name<small>used on exports and printed cards</small></div><div class="sv"><span class="chev">›</span></div></div>
+          <div class="strow"><div class="sk">Logo</div><div class="sv"><span class="chev">›</span></div></div>
+
+          <p class="set-group">Backup &amp; sync</p>
+          <div class="strow"><div class="sk">Account<small>sign in to back up off this phone</small></div><div class="sv">Signed out <span class="chev">›</span></div></div>
+          <div class="strow"><div class="sk">Last backup</div><div class="sv">2 days ago <span class="chev">›</span></div></div>
+          <div class="strow"><div class="sk">Export data<small>all clients &amp; sets as CSV or PDF</small></div><div class="sv"><span class="chev">›</span></div></div>
+
+          <p class="set-group">Privacy</p>
+          <div class="strow"><div class="sk">App lock<small>PIN or fingerprint to open the app</small></div><div class="toggle"></div></div>
+
+          <p class="set-group">Display</p>
+          <div class="strow"><div class="sk">Text size<small>bigger values are easier to read at a glance</small></div><div class="sv">Large <span class="chev">›</span></div></div>
+          <div class="strow"><div class="sk">High contrast</div><div class="toggle"></div></div>
+
+          <p class="set-group">About</p>
+          <div class="strow"><div class="sk">Help &amp; feedback</div><div class="sv"><span class="chev">›</span></div></div>
+          <div class="strow"><div class="sk">Version</div><div class="sv">1.0.0</div></div>
+        </div>
+      </section>
+
+      <!-- bottom nav -->
+      <nav class="bottomnav" id="bottomnav">
+        <a data-nav="clients" onclick="go('clients')"><span class="ni">☷</span>Clients</a>
+        <a data-nav="templates" onclick="go('templates')"><span class="ni">▤</span>Templates</a>
+        <a data-nav="settings" onclick="go('settings')"><span class="ni">⚙</span>Settings</a>
+      </nav>
+
+      <!-- modal -->
+      <div class="modal-bg" id="modalBg">
+        <div class="modal" id="modalBox"></div>
+      </div>
+    </div>
+
+    <p class="caption">
+      <b>Measurement screen:</b> the note/photo pills are gone, <b>＋ Add item</b> now sits at the end of the list, and <b>Next</b> tucks into the pad's empty cell — all to give the list more room.
+      Tap a row, type a number, tap <span class="mono">¼ ½ ¾</span>, hit <b>Next</b>. The bottom tabs (<b>Clients · Templates · Settings</b>) appear on top-level screens only — never during measuring, so nothing eats into that space.
+      Open <b>Tunde Bello → a set</b> to edit the <b>note</b> and add or remove <b>photos</b> (incl. snapping the old paper card); the <b>kaftan</b> set starts with empty note + photos to show those states.
+    </p>
+  </div>
+</div>
+
+<script>
+  // ---------- data ----------
+  // templates: ordered items, each with optional min/max range (inches); one is the default
+  var TEMPLATES = {
+    mens: { name:"Men's", isDefault:true, items:[
+      {k:"Neck",min:13,max:20},{k:"Shoulder",min:15,max:24},{k:"Chest",min:32,max:56},
+      {k:"Stomach",min:28,max:54},{k:"Top length",min:24,max:34},{k:"Sleeve length",min:8,max:28},
+      {k:"Round sleeve",min:12,max:24},{k:"Wrist",min:6,max:12},{k:"Trouser length",min:34,max:46},
+      {k:"Waist",min:28,max:48},{k:"Thigh",min:18,max:34},{k:"Base",min:11,max:20}
+    ]},
+    womens: { name:"Women's", items:[
+      {k:"Neck",min:11,max:18},{k:"Shoulder",min:13,max:20},{k:"Bust",min:30,max:54},
+      {k:"Under-bust",min:26,max:48},{k:"Waist",min:22,max:46},{k:"Hip",min:32,max:58},
+      {k:"Top length",min:20,max:30},{k:"Sleeve length",min:6,max:26},{k:"Round sleeve",min:9,max:20},
+      {k:"Wrist",min:5,max:9},{k:"Gown length",min:36,max:64},{k:"Half length",min:14,max:22},
+      {k:"Thigh",min:18,max:34},{k:"Knee",min:12,max:24}
+    ]}
+  };
+  function defaultTemplate(){ for(var k in TEMPLATES){ if(TEMPLATES[k].isDefault) return TEMPLATES[k]; } return TEMPLATES[Object.keys(TEMPLATES)[0]]; }
+
+  var SETS = {
+    agbada: {
+      clientName:"Tunde Bello", label:"Wedding agbada", when:"Updated 2 wks ago · Men's template",
+      note:"Wedding — wants the agbada extra flowing. Embroidery on chest. Pickup before the 28th.",
+      items:[
+        {k:"Neck",v:16},{k:"Shoulder",v:19},{k:"Chest",v:42},{k:"Stomach",v:40},
+        {k:"Top length",v:30},{k:"Sleeve length",v:26.5,hist:[{v:26.25,d:"03 May 2026"}]},
+        {k:"Round sleeve",v:17},{k:"Wrist",v:9},{k:"Trouser length",v:40},{k:"Waist",v:36},
+        {k:"Thigh",v:26},{k:"Base",v:15}
+      ],
+      images:[{kind:"card",label:"paper card"},{kind:"photo",label:"fabric"}]
+    },
+    kaftan: {
+      clientName:"Tunde Bello", label:"Everyday kaftan", when:"12 May 2026 · Men's template",
+      note:"Lighter everyday cut. Short sleeve. Less flow than the agbada.",
+      items:[
+        {k:"Neck",v:16},{k:"Shoulder",v:19},{k:"Chest",v:41.5},{k:"Stomach",v:39.5},
+        {k:"Top length",v:44},{k:"Sleeve length",v:9.5},{k:"Round sleeve",v:16.5},{k:"Wrist",v:9},
+        {k:"Trouser length",v:39},{k:"Waist",v:35.5},{k:"Thigh",v:25.5},{k:"Base",v:14.5}
+      ],
+      images:[]
+    }
+  };
+
+  var CLIENTS = [
+    {n:"Tunde Bello", m:"2 sets · 2 wks ago", i:"clientDetail"},
+    {n:"Amara Okafor", m:"3 sets · 5 days ago"},
+    {n:"Chidi Eze", m:"1 set · 18 May"},
+    {n:"Ngozi Worlu", m:"2 sets · 02 May"},
+    {n:"Emeka Obi", m:"1 set · 21 Apr"}
+  ];
+
+  // ---------- helpers ----------
+  function fmt(v){
+    if(v==null) return "—";
+    var w=Math.floor(v+1e-9), f=v-w, fs="";
+    if(Math.abs(f-0.25)<.02)fs="¼"; else if(Math.abs(f-0.5)<.02)fs="½"; else if(Math.abs(f-0.75)<.02)fs="¾";
+    if(w===0&&fs) return fs;
+    return w + (fs?(" "+fs):"");
+  }
+  function go(id){
+    document.querySelectorAll(".screen").forEach(function(s){s.classList.remove("show")});
+    document.getElementById(id).classList.add("show");
+    document.querySelectorAll(".fnode").forEach(function(n){n.classList.toggle("on", n.dataset.go===id)});
+    document.getElementById("modalBg").classList.remove("show");
+    // bottom nav only on the three top-level tabs
+    var tabs=["clients","templates","settings"];
+    var nav=document.getElementById("bottomnav");
+    var phone=document.querySelector(".phone");
+    var isTab=tabs.indexOf(id)>=0;
+    nav.classList.toggle("show", isTab);
+    phone.classList.toggle("has-nav", isTab);
+    nav.querySelectorAll("a").forEach(function(a){a.classList.toggle("on", a.dataset.nav===id)});
+  }
+  document.querySelectorAll(".fnode").forEach(function(n){ n.addEventListener("click",function(){go(n.dataset.go)}) });
+
+  // ---------- clients ----------
+  (function renderClients(){
+    var h="";
+    CLIENTS.forEach(function(c){
+      var init=c.n.split(" ").map(function(x){return x[0]}).join("");
+      h+='<div class="row" onclick="'+(c.i?"go(\'clientDetail\')":"void 0")+'">'+
+         '<div class="avatar">'+init+'</div>'+
+         '<div class="grow"><div class="nm">'+c.n+'</div><div class="meta">'+c.m+'</div></div>'+
+         '<div class="chev">›</div></div>';
+    });
+    document.getElementById("clientList").innerHTML=h;
+  })();
+
+  function openSet(key){ renderSetDetail(SETS[key]); go("setDetail"); }
+
+  function renderSetDetail(set){
+    document.getElementById("setLabel").textContent=set.label;
+    document.getElementById("setWho").textContent=set.clientName;
+    document.getElementById("setWhen").textContent=set.when;
+    var h="";
+    set.items.forEach(function(it,idx){
+      var hasHist=it.hist&&it.hist.length;
+      h+='<div class="srow" onclick="toggleHist('+idx+')">'+
+           '<span class="k">'+it.k+'</span>'+
+           '<span class="right">'+(hasHist?'<span class="hist-dot">history</span>':'')+
+           '<span class="v">'+fmt(it.v)+'″</span></span></div>';
+      h+='<div class="hist" id="hist'+idx+'">';
+      h+='<div class="h cur"><span class="hd">now</span><span class="hv">'+fmt(it.v)+'″</span></div>';
+      if(hasHist){ it.hist.forEach(function(pr){ h+='<div class="h"><span class="hd">'+pr.d+'</span><span class="hv">'+fmt(pr.v)+'″</span></div>'; }); }
+      else { h+='<div class="h"><span class="hd">no earlier values</span><span class="hv"></span></div>'; }
+      h+='</div>';
+    });
+    document.getElementById("setItems").innerHTML=h;
+    renderNote(set);
+    renderImages(set);
+  }
+  function toggleHist(i){ document.getElementById("hist"+i).classList.toggle("open"); }
+
+  function escapeHtml(s){return (s||"").replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+  function renderNote(set){
+    var w=document.getElementById("setNoteWrap");
+    if(set.note && set.note.trim()){
+      w.innerHTML='<div class="note-block editable" onclick="editNote()">'+
+        '<div class="lbl">Set note <span class="edit-hint">edit</span></div>'+
+        '<div class="txt">'+escapeHtml(set.note)+'</div></div>';
+    } else {
+      w.innerHTML='<div class="note-empty" onclick="editNote()">＋ Add a note for this set</div>';
+    }
+  }
+  function renderImages(set){
+    var w=document.getElementById("setImagesWrap");
+    var glyph={card:"▦",camera:"◎",photo:"▥"};
+    var h="";
+    (set.images||[]).forEach(function(im,i){
+      h+='<div class="imgbox filled">'+
+         '<button class="imgx" onclick="event.stopPropagation();removePhoto('+i+')" aria-label="Remove">×</button>'+
+         '<span class="ic">'+(glyph[im.kind]||"▥")+'</span>'+escapeHtml(im.label)+'</div>';
+    });
+    h+='<div class="imgbox add" onclick="addPhoto()"><span class="ic">＋</span>add photo</div>';
+    w.innerHTML=h;
+  }
+
+  function editNote(){
+    var cur=(currentSet.note||"");
+    showModal('<h3>Set note</h3>'+
+      '<p>One note for the whole set — fit preferences, fabric, deadlines.</p>'+
+      '<textarea id="noteInput" rows="4" placeholder="e.g. Wants extra room at the tummy. Pickup before the 28th.">'+escapeHtml(cur)+'</textarea>'+
+      '<div class="btns"><button class="cancel" onclick="closeModal()">Cancel</button>'+
+      '<button class="go" onclick="saveNote()">Save note</button></div>');
+    setTimeout(function(){var el=document.getElementById("noteInput"); if(el){el.focus();}},40);
+  }
+  function saveNote(){
+    var v=(document.getElementById("noteInput")||{}).value||"";
+    currentSet.note=v.trim();
+    closeModal(); renderSetDetail(currentSet);
+  }
+  function addPhoto(){
+    showModal('<h3>Add photo</h3>'+
+      '<p>Attach to this set. Snapping the client\'s old paper card is the easy way to bring them across.</p>'+
+      '<div class="sheet">'+
+        '<button class="sheet-opt" onclick="pushPhoto(\'camera\',\'photo\')">◎  Take a photo</button>'+
+        '<button class="sheet-opt" onclick="pushPhoto(\'photo\',\'from gallery\')">▥  Choose from gallery</button>'+
+        '<button class="sheet-opt" onclick="pushPhoto(\'card\',\'paper card\')">▦  Snap the paper card</button>'+
+      '</div>'+
+      '<div class="btns"><button class="cancel" onclick="closeModal()">Cancel</button></div>');
+  }
+  function pushPhoto(kind,label){
+    if(!currentSet.images) currentSet.images=[];
+    currentSet.images.push({kind:kind,label:label});
+    closeModal(); renderSetDetail(currentSet);
+  }
+  function removePhoto(i){
+    currentSet.images.splice(i,1);
+    renderSetDetail(currentSet);
+  }
+
+  function reMeasure(){
+    var set = currentSet || SETS.agbada;
+    startEntry(set.clientName, set.label, set.items.map(function(it){return {k:it.k, v:it.v}}));
+  }
+  var currentSet=null;
+  // wrap openSet to remember current
+  var _openSet=openSet;
+  openSet=function(key){ currentSet=SETS[key]; renderSetDetail(currentSet); go("setDetail"); };
+
+  // ---------- entry ----------
+  var entry=null, buf={whole:"",frac:0};
+
+  function blankItems(){ return defaultTemplate().items.map(function(it){return {k:it.k, v:null}}); }
+
+  function startEntry(clientName, label, items){
+    entry={ clientName:clientName, label:label||null, items:items||blankItems(), active:0 };
+    // active = first empty, else 0
+    var fe=entry.items.findIndex(function(it){return it.v==null});
+    entry.active = fe>=0?fe:0;
+    buf={whole:"",frac:0};
+    renderEntry();
+    go("entry");
+  }
+  function newMeasurement(){ startEntry(null, null, blankItems()); }      // measure-first, name later
+  function newSetFor(name){ startEntry(name, null, blankItems()); }
+
+  function renderEntry(){
+    // who
+    var who=document.getElementById("entryWho");
+    if(entry.clientName){ who.innerHTML=entry.clientName+'<small>'+(entry.label||"New set")+'</small>'; }
+    else { who.innerHTML='<span class="unnamed" onclick="trySave()">Unnamed draft</span><small>tap to name on save</small>'; }
+    // list
+    var h="";
+    entry.items.forEach(function(it,i){
+      h+='<div class="mrow'+(i===entry.active?' active':'')+'" onclick="tapRow('+i+')">'+
+         '<span class="k">'+it.k+'</span>'+
+         '<span class="v'+(it.v==null?' empty':'')+'">'+(it.v==null?'—':fmt(it.v)+'″')+'</span></div>';
+    });
+    h+='<div class="mrow additem" onclick="addItem()"><span class="k">＋ Add item</span><span class="v"></span></div>';
+    document.getElementById("mlist").innerHTML=h;
+    // counts
+    var filled=entry.items.filter(function(it){return it.v!=null}).length;
+    document.getElementById("filledCount").textContent=filled;
+    document.getElementById("totalCount").textContent=entry.items.length;
+    renderDock();
+  }
+
+  function renderDock(){
+    var it=entry.items[entry.active];
+    document.getElementById("dockKey").textContent=it.k;
+    var dv=document.getElementById("dockVal");
+    var typing = buf.whole!=="" || buf.frac>0;
+    if(typing){
+      var val=(parseInt(buf.whole||"0",10))+buf.frac;
+      dv.textContent=fmt(val)+"″"; dv.classList.remove("placeholder");
+    } else if(it.v!=null){
+      dv.textContent=fmt(it.v)+"″"; dv.classList.add("placeholder");
+    } else {
+      dv.textContent="—"; dv.classList.add("placeholder");
+    }
+    document.querySelectorAll(".frac").forEach(function(f){
+      f.classList.toggle("on", f.dataset.frac && parseFloat(f.dataset.frac)===buf.frac && buf.frac>0);
+    });
+  }
+
+  function press(d){ if(buf.whole.length<2) buf.whole+=d; renderDock(); }
+  function setFrac(f){ buf.frac = (buf.frac===f?0:f); renderDock(); }
+  function del(){ if(buf.whole!=="") buf.whole=buf.whole.slice(0,-1); else buf.frac=0; renderDock(); }
+
+  function commitNext(){
+    var it=entry.items[entry.active];
+    if(buf.whole!=="" || buf.frac>0){ it.v=(parseInt(buf.whole||"0",10))+buf.frac; }
+    buf={whole:"",frac:0};
+    // advance to next empty, else next index
+    var n=-1;
+    for(var step=1; step<=entry.items.length; step++){
+      var idx=(entry.active+step)%entry.items.length;
+      if(entry.items[idx].v==null){ n=idx; break; }
+    }
+    entry.active = n>=0 ? n : Math.min(entry.active+1, entry.items.length-1);
+    renderEntry();
+  }
+  function tapRow(i){ entry.active=i; buf={whole:"",frac:0}; renderEntry(); }
+
+  function addItem(){
+    showModal(
+      '<h3>Add a measurement</h3>'+
+      '<p>Adds an item to this set only. You can also save it back to the template afterwards.</p>'+
+      '<input id="itemInput" placeholder="e.g. Cap circumference" autocomplete="off">'+
+      '<div class="btns"><button class="cancel" onclick="closeModal()">Cancel</button>'+
+      '<button class="go" onclick="confirmAddItem()">Add item</button></div>'
+    );
+    setTimeout(function(){var el=document.getElementById("itemInput"); if(el) el.focus();},40);
+  }
+  function confirmAddItem(){
+    var nm=(document.getElementById("itemInput")||{}).value;
+    nm=(nm&&nm.trim())?nm.trim():"New item";
+    entry.items.push({k:nm, v:null});
+    entry.active=entry.items.length-1;
+    buf={whole:"",frac:0};
+    closeModal(); renderEntry();
+  }
+
+  // ---------- save flow ----------
+  function trySave(){
+    var empty=entry.items.filter(function(it){return it.v==null}).length;
+    if(empty>0){ confirmEmpty(empty); } else { nameThenSave(); }
+  }
+  function confirmEmpty(n){
+    showModal(
+      '<h3>'+n+' item'+(n>1?'s':'')+' still empty</h3>'+
+      '<p>You can save now and fill the rest later — nothing is lost.</p>'+
+      '<div class="btns"><button class="cancel" onclick="closeModal()">Keep editing</button>'+
+      '<button class="go" onclick="nameThenSave()">Save anyway</button></div>'
+    );
+  }
+  function nameThenSave(){
+    if(!entry.clientName){
+      showModal(
+        '<h3>Save measurement</h3>'+
+        '<p>Just a name to file this against — phone, photo and comment can come later.</p>'+
+        '<input id="nameInput" placeholder="Client name" autocomplete="off">'+
+        '<div class="btns"><button class="cancel" onclick="closeModal()">Back</button>'+
+        '<button class="go" onclick="finishSave()">Save</button></div>'
+      );
+      setTimeout(function(){var el=document.getElementById("nameInput"); if(el) el.focus();},40);
+    } else { finishSave(); }
+  }
+  function finishSave(){
+    if(!entry.clientName){
+      var nm=(document.getElementById("nameInput")||{}).value;
+      entry.clientName = (nm&&nm.trim()) ? nm.trim() : "New client";
+    }
+    var saved={
+      clientName:entry.clientName, label:entry.label||"New set", when:"Just now · Men's template",
+      note:"", items:entry.items.map(function(it){return {k:it.k, v:it.v}})
+    };
+    currentSet=saved; renderSetDetail(saved); closeModal(); go("setDetail");
+  }
+
+  // ---------- modal ----------
+  function showModal(html){ document.getElementById("modalBox").innerHTML=html; document.getElementById("modalBg").classList.add("show"); }
+  function closeModal(){ document.getElementById("modalBg").classList.remove("show"); }
+  document.getElementById("modalBg").addEventListener("click",function(e){ if(e.target.id==="modalBg") closeModal(); });
+
+  // ---------- templates ----------
+  var currentTplKey=null, dragFrom=null;
+
+  function rangeText(it){
+    if(it.min==null && it.max==null) return null;
+    if(it.min!=null && it.max!=null) return fmt(it.min)+"–"+fmt(it.max)+"″";
+    if(it.min!=null) return "≥ "+fmt(it.min)+"″";
+    return "≤ "+fmt(it.max)+"″";
+  }
+  function renderTemplatesList(){
+    var w=document.getElementById("templateList"); var h="";
+    Object.keys(TEMPLATES).forEach(function(key){
+      var t=TEMPLATES[key];
+      var preview=t.items.slice(0,5).map(function(i){return i.k}).join(" · ");
+      var extra=t.items.length>5?(" · +"+(t.items.length-5)):"";
+      h+='<div class="row" onclick="openTemplateEditor(\''+key+'\')">'+
+         '<div class="grow"><div class="nm">'+escapeHtml(t.name)+(t.isDefault?' <span class="badge">default</span>':'')+'</div>'+
+         '<div class="tpl-items">'+(t.items.length?escapeHtml(preview)+extra:'no measurements yet')+'</div></div>'+
+         '<div class="chev">›</div></div>';
+    });
+    w.innerHTML=h;
+  }
+
+  function openTemplateEditor(key){ currentTplKey=key; renderTemplateEditor(); go("templateEditor"); }
+  function curTpl(){ return TEMPLATES[currentTplKey]; }
+
+  function renderTemplateEditor(){
+    var t=curTpl();
+    document.getElementById("tplName").value=t.name;
+    var dr=document.getElementById("tplDefaultRow");
+    dr.className="te-default"+(t.isDefault?" on":"");
+    dr.innerHTML='<span class="mark">'+(t.isDefault?"✓":"")+'</span>'+(t.isDefault?"Default for new measurements":"Make this the default template");
+    dr.onclick=function(){ if(!t.isDefault){ Object.keys(TEMPLATES).forEach(function(k){TEMPLATES[k].isDefault=false}); t.isDefault=true; renderTemplateEditor(); } };
+    var list=document.getElementById("tplItems"); var h="";
+    t.items.forEach(function(it,i){
+      var r=rangeText(it);
+      h+='<div class="terow" draggable="true" data-i="'+i+'">'+
+         '<span class="handle" aria-hidden="true">⠿</span>'+
+         '<div class="tk" onclick="editTplItem('+i+')">'+
+           '<div class="tname">'+escapeHtml(it.k)+'</div>'+
+           '<div class="trange'+(r?'':' none')+'">'+(r?("typical "+r):"no range set")+'</div></div>'+
+         '<span class="tedit" onclick="editTplItem('+i+')">edit</span>'+
+         '<button class="tdel" onclick="event.stopPropagation();removeTplItem('+i+')" aria-label="Remove">×</button>'+
+         '</div>';
+    });
+    list.innerHTML=h;
+    wireDrag(list);
+  }
+
+  function wireDrag(list){
+    var rows=list.querySelectorAll(".terow");
+    rows.forEach(function(row){
+      row.addEventListener("dragstart",function(e){ dragFrom=+row.dataset.i; row.classList.add("dragging"); e.dataTransfer.effectAllowed="move"; });
+      row.addEventListener("dragend",function(){ row.classList.remove("dragging"); list.querySelectorAll(".terow").forEach(function(r){r.classList.remove("dragover")}); });
+      row.addEventListener("dragover",function(e){ e.preventDefault(); row.classList.add("dragover"); });
+      row.addEventListener("dragleave",function(){ row.classList.remove("dragover"); });
+      row.addEventListener("drop",function(e){ e.preventDefault(); var to=+row.dataset.i; moveTplItem(dragFrom,to); });
+    });
+  }
+  function moveTplItem(from,to){
+    if(from==null||from===to) return;
+    var arr=curTpl().items; var m=arr.splice(from,1)[0]; arr.splice(to,0,m);
+    dragFrom=null; renderTemplateEditor();
+  }
+
+  function renameTemplate(v){ curTpl().name=v; }
+
+  function editTplItem(i){
+    var it=curTpl().items[i];
+    showModal(
+      '<h3>Edit measurement</h3>'+
+      '<p class="field-lbl" style="margin-top:2px">Name</p>'+
+      '<input id="tiName" autocomplete="off" value="'+escapeHtml(it.k)+'">'+
+      '<p class="field-lbl">Typical range (optional) — flags wildly off values</p>'+
+      '<div class="range-row"><input id="tiMin" inputmode="decimal" placeholder="min" value="'+(it.min!=null?it.min:"")+'">'+
+      '<span class="dash">–</span><input id="tiMax" inputmode="decimal" placeholder="max" value="'+(it.max!=null?it.max:"")+'"></div>'+
+      '<div class="btns"><button class="cancel" onclick="closeModal()">Cancel</button>'+
+      '<button class="go" onclick="saveTplItem('+i+')">Save</button></div>'
+    );
+    setTimeout(function(){var el=document.getElementById("tiName"); if(el) el.focus();},40);
+  }
+  function numOrNull(v){ v=(v||"").trim(); if(v==="") return null; var n=parseFloat(v); return isNaN(n)?null:n; }
+  function saveTplItem(i){
+    var it=curTpl().items[i];
+    var nm=(document.getElementById("tiName")||{}).value;
+    it.k=(nm&&nm.trim())?nm.trim():it.k;
+    it.min=numOrNull((document.getElementById("tiMin")||{}).value);
+    it.max=numOrNull((document.getElementById("tiMax")||{}).value);
+    closeModal(); renderTemplateEditor();
+  }
+  function addTemplateItem(){
+    showModal(
+      '<h3>Add measurement</h3>'+
+      '<p class="field-lbl" style="margin-top:2px">Name</p>'+
+      '<input id="tiName" autocomplete="off" placeholder="e.g. Cap circumference">'+
+      '<p class="field-lbl">Typical range (optional)</p>'+
+      '<div class="range-row"><input id="tiMin" inputmode="decimal" placeholder="min">'+
+      '<span class="dash">–</span><input id="tiMax" inputmode="decimal" placeholder="max"></div>'+
+      '<div class="btns"><button class="cancel" onclick="closeModal()">Cancel</button>'+
+      '<button class="go" onclick="confirmAddTplItem()">Add</button></div>'
+    );
+    setTimeout(function(){var el=document.getElementById("tiName"); if(el) el.focus();},40);
+  }
+  function confirmAddTplItem(){
+    var nm=(document.getElementById("tiName")||{}).value;
+    nm=(nm&&nm.trim())?nm.trim():"New measurement";
+    curTpl().items.push({k:nm, min:numOrNull((document.getElementById("tiMin")||{}).value), max:numOrNull((document.getElementById("tiMax")||{}).value)});
+    closeModal(); renderTemplateEditor();
+  }
+  function removeTplItem(i){
+    var it=curTpl().items[i];
+    showModal(
+      '<h3>Remove “'+escapeHtml(it.k)+'”?</h3>'+
+      '<p>It’s taken off this template only. Saved measurements that already have it are untouched.</p>'+
+      '<div class="btns"><button class="cancel" onclick="closeModal()">Keep it</button>'+
+      '<button class="go" onclick="confirmRemoveTplItem('+i+')">Remove</button></div>'
+    );
+  }
+  function confirmRemoveTplItem(i){ curTpl().items.splice(i,1); closeModal(); renderTemplateEditor(); }
+
+  function newTemplate(){
+    var key="tpl"+Date.now();
+    TEMPLATES[key]={name:"New template", items:[]};
+    openTemplateEditor(key);
+  }
+  function deleteTemplate(){
+    var t=curTpl();
+    showModal(
+      '<h3>Delete “'+escapeHtml(t.name)+'”?</h3>'+
+      '<p>The template is removed. Measurements already taken with it stay as they are.</p>'+
+      '<div class="btns"><button class="cancel" onclick="closeModal()">Cancel</button>'+
+      '<button class="go" onclick="confirmDeleteTemplate()">Delete</button></div>'
+    );
+  }
+  function confirmDeleteTemplate(){
+    var wasDefault=curTpl().isDefault; delete TEMPLATES[currentTplKey];
+    var keys=Object.keys(TEMPLATES);
+    if(wasDefault && keys.length){ TEMPLATES[keys[0]].isDefault=true; }
+    currentTplKey=null; closeModal(); renderTemplatesList(); go("templates");
+  }
+
+  // init
+  renderTemplatesList();
+  go("clients");
+</script>
