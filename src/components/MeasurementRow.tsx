@@ -5,10 +5,14 @@ import { fonts, valueText } from '@/theme/typography';
 import { formatInches } from '@/lib/units';
 
 /**
- * One row of the measurement list: item name + current value. Tapping makes it the
- * active item (left accent bar + tint). A subtle dot marks values edited this session
- * so the tailor can sanity-check before saving (spec §5).
+ * One row of the measurement list: item name + current value. The active highlight
+ * (left accent bar + tint) is drawn by an animated overlay in the entry screen that
+ * slides between rows, so the row itself stays transparent and a fixed height
+ * (ROW_HEIGHT) — that uniform height is what lets the overlay and auto-scroll position
+ * by index. A subtle dot marks values edited this session (spec §5).
  */
+export const ROW_HEIGHT = 56;
+
 type Props = {
   itemKey: string;
   value: number | null;
@@ -21,11 +25,10 @@ function MeasurementRowBase({ itemKey, value, active, changed, onPress }: Props)
   return (
     <Pressable
       onPress={onPress}
-      style={[styles.row, active && styles.rowActive]}
+      style={styles.row}
       accessibilityRole="button"
       accessibilityState={{ selected: active }}
     >
-      {active && <View style={styles.bar} />}
       <Text style={[styles.key, active && styles.keyActive]} numberOfLines={1}>
         {itemKey}
       </Text>
@@ -39,23 +42,14 @@ function MeasurementRowBase({ itemKey, value, active, changed, onPress }: Props)
 
 const styles = StyleSheet.create({
   row: {
+    height: ROW_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: space.md,
     paddingHorizontal: space.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
-    backgroundColor: colors.bg,
-  },
-  rowActive: { backgroundColor: colors.accentTint },
-  bar: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    backgroundColor: colors.accent,
+    backgroundColor: 'transparent',
   },
   key: { fontFamily: fonts.medium, fontSize: 16, color: colors.text, flexShrink: 1 },
   keyActive: { fontFamily: fonts.semibold, color: colors.accentInk },

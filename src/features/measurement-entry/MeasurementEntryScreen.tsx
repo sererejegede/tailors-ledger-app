@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  Easing,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,7 +20,7 @@ import { DuplicateClientNameError } from '@/repositories/clients';
 import { colors, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { Dock } from '@/components/Dock';
-import { MeasurementRow } from '@/components/MeasurementRow';
+import { MeasurementRow, ROW_HEIGHT } from '@/components/MeasurementRow';
 import { PromptModal } from '@/components/PromptModal';
 import type { RootStackParamList } from '@/navigation/types';
 import { useMeasurementEntry, type EntrySeed, type Edit } from './useMeasurementEntry';
@@ -40,6 +42,9 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
   const [meta, setMeta] = useState<Meta>({ clientName: '' });
   const [prompt, setPrompt] = useState<Prompt | null>(null);
 
+  const scrollRef = useRef<ScrollView>(null);
+  const highlightY = useRef(new Animated.Value(0)).current;
+
   const load = useCallback(async () => {
     const set = await database.get<MeasurementSet>(Tables.measurementSets).find(setId);
     const client = await set.client.fetch();
@@ -59,6 +64,20 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
 
   const entry = useMeasurementEntry(seed);
   const isDraft = meta.clientName.trim() === '';
+
+  // Slide the active-row highlight to the current item and keep it scrolled into view.
+  useEffect(() => {
+    Animated.timing(highlightY, {
+      toValue: entry.active * ROW_HEIGHT,
+      duration: 180,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+    scrollRef.current?.scrollTo({
+      y: Math.max(0, entry.active * ROW_HEIGHT - ROW_HEIGHT * 2),
+      animated: true,
+    });
+  }, [entry.active, highlightY]);
 
   const persist = useCallback(
     async (edits: Edit[]) => {
@@ -162,20 +181,29 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
       </View>
 
       {/* item list */}
-      <ScrollView style={styles.list} keyboardShouldPersistTaps="handled">
-        {entry.rows.map((r, i) => (
-          <MeasurementRow
-            key={r.itemId}
-            itemKey={r.key}
-            value={r.value}
-            active={i === entry.active}
-            changed={r.changed}
-            onPress={() => entry.tapRow(i)}
-          />
-        ))}
-        <Pressable style={styles.addRow} onPress={() => setPrompt({ mode: 'addItem' })}>
-          <Text style={styles.addText}>＋ Add item</Text>
-        </Pressable>
+      <ScrollView ref={scrollRef} style={styles.list} keyboardShouldPersistTaps="handled">
+        <View>
+          {/* animated active-row highlight (slides between rows) */}
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.highlight, { transform: [{ translateY: highlightY }] }]}
+          >
+            <View style={styles.highlightBar} />
+          </Animated.View>
+          {entry.rows.map((r, i) => (
+            <MeasurementRow
+              key={r.itemId}
+              itemKey={r.key}
+              value={r.value}
+              active={i === entry.active}
+              changed={r.changed}
+              onPress={() => entry.tapRow(i)}
+            />
+          ))}
+          <Pressable style={styles.addRow} onPress={() => setPrompt({ mode: 'addItem' })}>
+            <Text style={styles.addText}>＋ Add item</Text>
+          </Pressable>
+        </View>
       </ScrollView>
 
       {/* docked input */}
@@ -244,6 +272,22 @@ const styles = StyleSheet.create({
   progress: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
   progressNum: { fontFamily: fonts.bold, color: colors.text },
   list: { flex: 1 },
+  highlight: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: ROW_HEIGHT,
+    backgroundColor: colors.accentTint,
+  },
+  highlightBar: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: colors.accent,
+  },
   addRow: { paddingVertical: space.md, paddingHorizontal: space.lg },
   addText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.accent },
 });

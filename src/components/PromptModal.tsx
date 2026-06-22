@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -40,14 +40,24 @@ export function PromptModal({
   onSubmit,
 }: Props) {
   const [value, setValue] = useState(initialValue);
+  const inputRef = useRef<TextInput>(null);
   useEffect(() => {
     if (visible) setValue(initialValue);
   }, [visible, initialValue]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onCancel}
+      // Focus AFTER the modal is on screen so the keyboard opens reliably and the card
+      // is laid out above it (autoFocus inside a Modal can fire too early on Android).
+      onShow={() => setTimeout(() => inputRef.current?.focus(), 60)}
+    >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.backdrop}
       >
         <Pressable style={styles.backdropFill} onPress={onCancel} />
@@ -55,12 +65,12 @@ export function PromptModal({
           <Text style={styles.title}>{title}</Text>
           {message ? <Text style={styles.message}>{message}</Text> : null}
           <TextInput
+            ref={inputRef}
             style={[styles.input, error ? styles.inputError : null]}
             placeholder={placeholder}
             placeholderTextColor={colors.faint}
             value={value}
             onChangeText={setValue}
-            autoFocus
             autoCorrect={false}
             returnKeyType="done"
             onSubmitEditing={() => onSubmit(value)}
