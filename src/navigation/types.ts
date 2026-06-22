@@ -14,4 +14,8 @@ export type TabsParamList = {
 export type RootStackParamList = {
   Tabs: NavigatorScreenParams<TabsParamList>;
   MeasurementEntry: { setId: string };
+  ClientDetail: { clientId: string };
+  SetDetail: { setId: string };
+  ItemHistory: { itemId: string; itemKey: string };
+  TemplateEditor: { templateId?: string };
 };

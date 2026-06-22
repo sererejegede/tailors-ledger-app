@@ -14,7 +14,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { database } from '@/db';
 import type Client from '@/db/models/Client';
 import { searchClients, createClient, DuplicateClientNameError } from '@/repositories/clients';
-import { createDraftSet, createSetFromTemplate } from '@/repositories/sets';
+import { createDraftSet } from '@/repositories/sets';
 import { getSettings } from '@/repositories/settings';
 import { listTemplates } from '@/repositories/templates';
 import { colors, radius, space } from '@/theme/tokens';
@@ -67,12 +67,6 @@ export default function ClientsScreen() {
   const newMeasurement = async () => {
     const templateId = await defaultTemplateId();
     const set = await createDraftSet(database, { templateId });
-    openEntry(set.id);
-  };
-
-  const measureClient = async (client: Client) => {
-    const templateId = await defaultTemplateId();
-    const set = await createSetFromTemplate(database, { clientId: client.id, templateId });
     openEntry(set.id);
   };
 
@@ -134,7 +128,10 @@ export default function ClientsScreen() {
             </Text>
           }
           renderItem={({ item }) => (
-            <ClientRow client={item} onPress={() => measureClient(item)} />
+            <ClientRow
+              client={item}
+              onPress={() => navigation.navigate('ClientDetail', { clientId: item.id })}
+            />
           )}
         />
       )}

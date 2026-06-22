@@ -2,6 +2,7 @@ import { Database, Q } from '@nozbe/watermelondb';
 import { Tables } from '@/db/schema';
 import Template from '@/db/models/Template';
 import TemplateItem from '@/db/models/TemplateItem';
+import AppSettings from '@/db/models/AppSettings';
 import { notDeleted, softDeleteById } from './softDelete';
 
 /**
@@ -33,6 +34,20 @@ export async function listTemplates(database: Database): Promise<Template[]> {
     .get<Template>(Tables.templates)
     .query(notDeleted, Q.sortBy('name', Q.asc))
     .fetch();
+}
+
+/**
+ * The template new measurements should seed from: the settings' default_template_id if
+ * set, else the `is_default` template, else the first available. Throws if there are none.
+ */
+export async function getDefaultTemplateId(database: Database): Promise<string> {
+  const settings = await database.get<AppSettings>(Tables.appSettings).query().fetch();
+  const fromSettings = settings[0]?.defaultTemplateId;
+  if (fromSettings) return fromSettings;
+  const templates = await listTemplates(database);
+  const fallback = templates.find((t) => t.isDefault) ?? templates[0];
+  if (!fallback) throw new Error('No template available — seed the database first.');
+  return fallback.id;
 }
 
 /** Items of a template in their habitual order, excluding tombstones. */
