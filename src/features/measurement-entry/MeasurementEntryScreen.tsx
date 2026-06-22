@@ -2,8 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Animated,
-  Easing,
+  type LayoutChangeEvent,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -20,7 +19,7 @@ import { DuplicateClientNameError } from '@/repositories/clients';
 import { colors, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { Dock } from '@/components/Dock';
-import { MeasurementRow, ROW_HEIGHT } from '@/components/MeasurementRow';
+import { MeasurementRow } from '@/components/MeasurementRow';
 import { PromptModal } from '@/components/PromptModal';
 import type { RootStackParamList } from '@/navigation/types';
 import { useMeasurementEntry, type EntrySeed, type Edit } from './useMeasurementEntry';
@@ -43,7 +42,17 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
   const [prompt, setPrompt] = useState<Prompt | null>(null);
 
   const scrollRef = useRef<ScrollView>(null);
-  const highlightY = useRef(new Animated.Value(0)).current;
+  const scrollY = useRef(0); // current scroll offset
+  const viewportH = useRef(0); // visible height of the list
+  // Row offsets/heights, kept in a ref (NOT state): the rows animate their padding every
+  // frame, so onLayout fires continuously — writing to a ref avoids a re-render storm, and
+  // the scroll runs only on an active-item change.
+  const rowLayouts = useRef<{ y: number; h: number }[]>([]);
+
+  const onRowLayout = useCallback((index: number, e: LayoutChangeEvent) => {
+    const { y, height } = e.nativeEvent.layout;
+    rowLayouts.current[index] = { y, h: height };
+  }, []);
 
   const load = useCallback(async () => {
     const set = await database.get<MeasurementSet>(Tables.measurementSets).find(setId);
@@ -65,19 +74,22 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
   const entry = useMeasurementEntry(seed);
   const isDraft = meta.clientName.trim() === '';
 
-  // Slide the active-row highlight to the current item and keep it scrolled into view.
+  // Keep the active row scrolled into view, but only when it isn't already (fires once per
+  // active-item change; reads the latest measured layout from the ref).
   useEffect(() => {
-    Animated.timing(highlightY, {
-      toValue: entry.active * ROW_HEIGHT,
-      duration: 180,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-    scrollRef.current?.scrollTo({
-      y: Math.max(0, entry.active * ROW_HEIGHT - ROW_HEIGHT * 2),
-      animated: true,
-    });
-  }, [entry.active, highlightY]);
+    const l = rowLayouts.current[entry.active];
+    if (!l || viewportH.current === 0) return;
+    const margin = 12;
+    const top = l.y;
+    const bottom = l.y + l.h;
+    const visibleTop = scrollY.current;
+    const visibleBottom = scrollY.current + viewportH.current;
+    if (top < visibleTop + margin) {
+      scrollRef.current?.scrollTo({ y: Math.max(0, top - margin), animated: true });
+    } else if (bottom > visibleBottom - margin) {
+      scrollRef.current?.scrollTo({ y: bottom - viewportH.current + margin, animated: true });
+    }
+  }, [entry.active]);
 
   const persist = useCallback(
     async (edits: Edit[]) => {
@@ -181,15 +193,19 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
       </View>
 
       {/* item list */}
-      <ScrollView ref={scrollRef} style={styles.list} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        ref={scrollRef}
+        style={styles.list}
+        keyboardShouldPersistTaps="handled"
+        scrollEventThrottle={16}
+        onScroll={(e) => {
+          scrollY.current = e.nativeEvent.contentOffset.y;
+        }}
+        onLayout={(e) => {
+          viewportH.current = e.nativeEvent.layout.height;
+        }}
+      >
         <View>
-          {/* animated active-row highlight (slides between rows) */}
-          <Animated.View
-            pointerEvents="none"
-            style={[styles.highlight, { transform: [{ translateY: highlightY }] }]}
-          >
-            <View style={styles.highlightBar} />
-          </Animated.View>
           {entry.rows.map((r, i) => (
             <MeasurementRow
               key={r.itemId}
@@ -197,7 +213,10 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
               value={r.value}
               active={i === entry.active}
               changed={r.changed}
+              activeDisplay={entry.dock.display}
+              activePlaceholder={entry.dock.placeholder}
               onPress={() => entry.tapRow(i)}
+              onLayout={(e) => onRowLayout(i, e)}
             />
           ))}
           <Pressable style={styles.addRow} onPress={() => setPrompt({ mode: 'addItem' })}>
@@ -209,9 +228,6 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
       {/* docked input */}
       <View style={{ backgroundColor: colors.dockBg }}>
         <Dock
-          itemKey={entry.dock.itemKey}
-          display={entry.dock.display}
-          placeholder={entry.dock.placeholder}
           frac={entry.dock.frac}
           onFrac={entry.setFrac}
           onDigit={entry.press}
@@ -272,22 +288,6 @@ const styles = StyleSheet.create({
   progress: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
   progressNum: { fontFamily: fonts.bold, color: colors.text },
   list: { flex: 1 },
-  highlight: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: ROW_HEIGHT,
-    backgroundColor: colors.accentTint,
-  },
-  highlightBar: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 3,
-    backgroundColor: colors.accent,
-  },
   addRow: { paddingVertical: space.md, paddingHorizontal: space.lg },
   addText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.accent },
 });

@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   search: {
     borderWidth: 1,
     borderColor: colors.line2,
-    borderRadius: radius.md,
+    borderRadius: radius.default,
     paddingHorizontal: space.md,
     paddingVertical: space.md,
     fontFamily: fonts.body,
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   actions: { flexDirection: 'row', gap: space.sm, marginVertical: space.md },
-  btn: { flex: 1, paddingVertical: space.md, borderRadius: radius.md, alignItems: 'center' },
+  btn: { flex: 1, paddingVertical: space.md, borderRadius: radius.default, alignItems: 'center' },
   primary: { backgroundColor: colors.accent },
   primaryText: { fontFamily: fonts.bold, color: '#fff', fontSize: 15 },
   secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line2 },

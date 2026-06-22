@@ -20,7 +20,7 @@ export default function Tabs() {
         headerShown: false,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.muted,
-        tabBarLabelStyle: { fontFamily: fonts.medium, fontSize: 12 },
+        tabBarLabelStyle: { fontFamily: fonts.medium, fontSize: 14 },
         tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.line2 },
       }}
     >

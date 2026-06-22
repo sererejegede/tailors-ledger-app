@@ -13,6 +13,8 @@ module.exports = function (api) {
       // WatermelonDB models use legacy decorators. (No-op for files without decorators,
       // e.g. all the UI/react-navigation code.)
       ['@babel/plugin-proposal-decorators', { legacy: true }],
+      // Reanimated 4 uses the worklets babel plugin; it MUST be listed last.
+      'react-native-worklets/plugin',
     ],
     // The class-properties tangle (see docs/PROGRESS.md):
     //  - WatermelonDB's decorators need the class-properties transform to RUN so the

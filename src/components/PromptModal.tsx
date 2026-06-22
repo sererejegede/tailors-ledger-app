@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.default,
     padding: space.lg,
     gap: space.sm,
   },
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: colors.line2,
-    borderRadius: radius.md,
+    borderRadius: radius.default,
     paddingHorizontal: space.md,
     paddingVertical: space.md,
     fontFamily: fonts.body,

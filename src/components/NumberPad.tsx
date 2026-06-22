@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     // 3 per row accounting for the row gap
     width: '31.7%',
     height: 56,
-    borderRadius: radius.md,
+    borderRadius: radius.default,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line2,

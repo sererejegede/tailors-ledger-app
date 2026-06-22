@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
   chip: {
     flex: 1,
     height: 44,
-    borderRadius: radius.md,
+    borderRadius: radius.default,
     borderWidth: 1,
     borderColor: colors.line2,
     alignItems: 'center',

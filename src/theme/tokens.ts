@@ -20,4 +20,6 @@ export const colors = {
 } as const;
 
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 } as const;
-export const radius = { sm: 8, md: 12, lg: 16, pill: 999 } as const;
+// 32px is the default corner radius across interactive surfaces (pads, chips, buttons,
+// inputs, cards); `sm`/`md` are for tighter spots, `pill` for fully-rounded.
+export const radius = { sm: 8, md: 16, lg: 24, default: 32, pill: 999 } as const;
