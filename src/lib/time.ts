@@ -5,3 +5,13 @@
 export function nowMs(): number {
   return Date.now();
 }
+
+
+export function getRelativeTime(timestamp: Date): string {
+  const now = nowMs();
+  const diff = now - timestamp.getTime();
+  if (diff < 60000) {
+    return 'just now';
+  }
+  return new Date(timestamp).toLocaleTimeString();
+}

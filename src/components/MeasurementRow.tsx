@@ -26,7 +26,7 @@ import { formatInches } from '@/lib/units';
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedText = Animated.Text;
 const TINT_RGB = '246,231,236'; // colors.accentTint as rgb, faded by alpha
-const DURATION = 220;
+const DURATION = 120;
 
 type Props = {
   itemKey: string;

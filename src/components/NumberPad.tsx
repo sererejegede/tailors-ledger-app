@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
+import ArrowRightIcon from '@/assets/icons/arrow-narrow-right.svg';
 
 /**
  * The whole-number pad: 1–9, ⌫, 0, and a prominent Next in the bottom-right cell
@@ -51,7 +52,8 @@ function NumberPadBase({ onPress, onDelete, onNext }: Props) {
         accessibilityRole="button"
         accessibilityLabel="Next"
       >
-        <Text style={styles.nextText}>Next ›</Text>
+        <Text style={styles.nextText}>Next</Text>
+        <ArrowRightIcon color='#fff' />
       </Pressable>
     </View>
   );
@@ -76,9 +78,16 @@ const styles = StyleSheet.create({
   },
   keyPressed: { backgroundColor: colors.line },
   keyText: { ...valueText, fontSize: 24, color: colors.text },
-  next: { backgroundColor: colors.accent, borderColor: colors.accent },
+  next: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.sm,
+  },
   nextPressed: { backgroundColor: colors.accentInk },
-  nextText: { fontFamily: fonts.bold, fontSize: 18, color: '#fff' },
+  nextText: { fontFamily: fonts.bold, fontSize: 18, color: '#fff', lineHeight: 18 },
 });
 
 export const NumberPad = memo(NumberPadBase);
