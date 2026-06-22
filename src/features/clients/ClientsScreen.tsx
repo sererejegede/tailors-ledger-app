@@ -20,6 +20,7 @@ import { listTemplates } from '@/repositories/templates';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { PromptModal } from '@/components/PromptModal';
+import { ClientRow } from '@/components/ClientRow';
 import type { RootStackParamList } from '@/navigation/types';
 
 /**
@@ -133,10 +134,7 @@ export default function ClientsScreen() {
             </Text>
           }
           renderItem={({ item }) => (
-            <Pressable style={styles.row} onPress={() => measureClient(item)}>
-              <Text style={styles.rowName}>{item.name || 'Unnamed'}</Text>
-              {item.phone ? <Text style={styles.rowPhone}>{item.phone}</Text> : null}
-            </Pressable>
+            <ClientRow client={item} onPress={() => measureClient(item)} />
           )}
         />
       )}
