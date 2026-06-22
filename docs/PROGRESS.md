@@ -23,20 +23,80 @@ _Last updated: 2026-06-22._
   + `lib/validation` (soft ranges). Draft sets use a blank-named placeholder client
   (client_id is a required, immutable FK), named on save via `attachClient`.
 - **Phase 3 — IN PROGRESS.**
-  - **3a — DONE (on `feat/phase-3-measurement-ui`).** Navigation shell (bottom tabs
-    Clients · Templates · Settings + a native-stack presenting the hero OUTSIDE the tabs),
-    `theme/` tokens + fonts (Plus Jakarta Sans / Vollkorn), `App.tsx` shell (replaces the
-    smoke screen), and the **measurement-entry hero** (`features/measurement-entry/` +
-    `components/` Dock · NumberPad · FracChips · MeasurementRow · PromptModal) wired to the
-    Phase-2 repos. Minimal Clients home launches it; Templates/Settings are stubs.
-    Verified on device.
-  - **3b — NOT STARTED.** Clients (full) · Client detail · New client · Set detail · Item
-    history · Templates list/editor · Settings. (Note: tapping a client currently starts a
-    new measurement; the Client-detail screen that lists their saved sets is 3b.)
+  - **3a — DONE & merged (PR #3).** Navigation shell, theme/fonts, `App.tsx` shell, and
+    the **measurement-entry hero** (Dock · NumberPad · FracChips · MeasurementRow ·
+    PromptModal), Reanimated variable-height rows. Verified on device.
+  - **3b — IN PROGRESS on `feat/phase-3b-other-ui-screens`.** See the **Phase 3b handoff**
+    section below for exactly what's built/committed/uncommitted and what remains.
 - **Phase 4 — NOT STARTED.** Sync client (push/pull + image upload queue) vs the
   contract. Open items to resolve first are listed in build-plan.md.
 
-Tests/typecheck (latest): `npm test` → 8 suites / 36 tests pass; `npm run typecheck` clean.
+Tests/typecheck (latest): `npm test` → 9 suites / 43 tests pass; `npm run typecheck` clean.
+
+## ⏩ Phase 3b handoff (resume here) — updated 2026-06-22
+Branch: **`feat/phase-3b-other-ui-screens`** (off merged `main`). The Android **dev build
+is already installed** on the device with all 3b native deps; **JS-only changes just need
+a Metro reload** — no rebuild unless deps/`babel.config.js`/`metro.config.js` change.
+
+**New deps added this phase (all native except the svg transformer → already in the build):**
+`react-native-reanimated@4.3.1` (+ transitive `react-native-worklets`; babel plugin
+`react-native-worklets/plugin` is LAST in `babel.config.js`), `react-native-svg@15`,
+`react-native-svg-transformer` (dev; wired via `metro.config.js`).
+
+**Built & COMMITTED on the branch** (commits: `c30d59f` icons, `05c71b2` ClientRow,
+`1b0c87c` relative time, `dad7f73` "add other screens"):
+- Tab bar redesign — custom `src/navigation/TabBar.tsx` (SVG icons + maroon active pill +
+  activation zoom animation via Reanimated). SVG icons in `src/assets/icons/*.svg` (all use
+  `currentColor` → themeable `color` prop; `metro.config.js` + `src/types/svg.d.ts`).
+- `src/components/ClientRow.tsx`; `lib/time.getRelativeTime` (+ `time.test.ts`).
+- Detail screens: `features/client-detail`, `features/set-detail`, `features/item-history`,
+  `features/templates/TemplatesScreen` + `TemplateEditorScreen`, `features/settings`.
+  Routes wired in `navigation/RootNavigator.tsx` + `types.ts` (ClientDetail · SetDetail ·
+  ItemHistory · TemplateEditor, native headers). Clients list → ClientDetail.
+- `getDefaultTemplateId` added to `repositories/templates.ts`.
+
+**UNCOMMITTED in the working tree (verify on device, then commit):**
+- `src/components/PromptModal.tsx` — **DONE fix:** wrapped content in a `ScrollView` with
+  `keyboardShouldPersistTaps="handled"` so the first Save/Cancel tap isn't eaten by the
+  keyboard dismiss (the "weird first tap" bug). Typecheck clean; needs a device eyeball.
+- `src/theme/typography.ts` — added Plus Jakarta **italic** (`fonts.italic`) for the
+  Client-detail note.
+- `src/features/client-detail/ClientDetailScreen.tsx` — restructured to the mockup (centered
+  name + phone, "GENERAL PREFERENCES" note card, "MEASUREMENT SETS" header + count). User
+  also tweaked it (note-card border, FAB).
+- `src/components/FloatingActionButton.tsx` (untracked) — reusable FAB the user extracted;
+  used on Clients + Client-detail.
+- `src/features/clients/ClientsScreen.tsx`, `src/features/measurement-entry/MeasurementEntryScreen.tsx`
+  — user edits (FAB usage etc.).
+
+**Still DEFERRED in 3b (need a call / native deps):**
+- **Set images** (camera/gallery on Set detail) — needs `expo-image-picker`/`expo-camera`
+  (native → rebuild).
+- **Drag-reorder** of template items — currently ↑/↓ buttons; true drag needs
+  `react-native-gesture-handler` (native).
+- **Quick-edit a single item** from Set detail (currently tap → Item history; Re-measure edits).
+- **Soft range warnings** surfaced in the hero (the `lib/validation` helper exists, unused in UI).
+- **App lock** / **text size** in Settings (native `expo-local-authentication` / app-wide scaling).
+- **`phone.svg`** icon — Client-detail uses a unicode `☏` stand-in; drop a `phone.svg` in
+  `src/assets/icons/` and swap it in.
+- **"Add client" button** was removed from the Clients screen (the FAB does measure-first
+  only), so the add-client `PromptModal` there is currently unreachable — decide whether to
+  re-add a standalone "Add client" affordance.
+
+### Build & inspect quick-reference (current workflow)
+- **Native rebuild WITHOUT starting Metro** (user owns Metro): set env (`JAVA_HOME` JDK17,
+  `ANDROID_HOME`, `ANDROID_SERIAL=<ip>:5555` to target the wireless device) then
+  `npx expo run:android --no-bundler`. It builds + installs + launches; you then prompt the
+  user to start Metro.
+- **When to `expo start -c`** (cache clear): after any `babel.config.js` OR `metro.config.js`
+  change (e.g. the svg transformer). Plain JS edits → just reload (`r`).
+- **`tsconfig.json` gets auto-rewritten by `expo start`** (it drops `.expo/types/**` +
+  `expo-env.d.ts` from `include` and a comment) — **revert it before committing** (`git
+  checkout -- tsconfig.json`).
+- **Inspect the SQLite DB:** Android Studio → App Inspection → **Database Inspector** (live;
+  works because we're bridge mode). File path:
+  `/data/data/com.anonymous.tailorsledger/files/tailors_ledger.db` (+ `-wal`/`-shm`); it's
+  app-private, read via `adb exec-out run-as com.anonymous.tailorsledger cat files/…`.
 
 ## How to run on the Android machine
 This app uses WatermelonDB (native modules) → **a custom dev build is required; Expo
