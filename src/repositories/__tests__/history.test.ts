@@ -4,7 +4,8 @@ import { ensureSeeded } from '@/db/seed';
 import { Tables } from '@/db/schema';
 import type Template from '@/db/models/Template';
 import { createClient } from '../clients';
-import { createSetFromTemplate, setItems } from '../sets';
+import { templateItems } from '../templates';
+import { createSetWithMeasurements, setItems } from '../sets';
 import { saveMeasurements, quickEditItem, getItemHistory, MeasurementEdit } from '../items';
 
 async function defaultTemplate(db: Database): Promise<Template> {
@@ -17,10 +18,12 @@ async function freshlyMeasuredSet(db: Database) {
   await ensureSeeded(db);
   const client = await createClient(db, { name: 'Tunde Bello' });
   const template = await defaultTemplate(db);
-  const set = await createSetFromTemplate(db, {
+  const tItems = await templateItems(db, template.id);
+  const set = await createSetWithMeasurements(db, {
     clientId: client.id,
     templateId: template.id,
     label: 'Wedding agbada',
+    items: tItems.map((t) => ({ key: t.key, position: t.position, unit: t.unit, value: null })),
   });
   const items = await setItems(db, set.id);
   const firstEdits: MeasurementEdit[] = items.map((it, i) => ({

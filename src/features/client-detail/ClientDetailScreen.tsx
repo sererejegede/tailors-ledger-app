@@ -6,7 +6,7 @@ import { database } from '@/db';
 import type Client from '@/db/models/Client';
 import type MeasurementSet from '@/db/models/MeasurementSet';
 import { getClient, updateClient } from '@/repositories/clients';
-import { setsForClient, createSetFromTemplate } from '@/repositories/sets';
+import { setsForClient } from '@/repositories/sets';
 import { getDefaultTemplateId } from '@/repositories/templates';
 import { getRelativeTime } from '@/lib/time';
 import { colors, radius, space } from '@/theme/tokens';
@@ -71,10 +71,11 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
     [edit, clientId, load],
   );
 
+  // Client-first: open the hero with template + client; the set is created only on save
+  // (createSetWithMeasurements), so backing out leaves no empty set behind.
   const newSet = useCallback(async () => {
     const templateId = await getDefaultTemplateId(database);
-    const set = await createSetFromTemplate(database, { clientId, templateId });
-    navigation.navigate('MeasurementEntry', { setId: set.id });
+    navigation.navigate('MeasurementEntry', { templateId, clientId });
   }, [clientId, navigation]);
 
   if (!client) return <View style={styles.screen} />;

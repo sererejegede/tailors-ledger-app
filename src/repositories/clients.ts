@@ -27,10 +27,11 @@ export class DuplicateClientNameError extends Error {
 }
 
 /**
- * Enforce unique client names, case-insensitive and trimmed, among non-deleted clients
- * — EXCEPT blank names, which are exempt so unnamed measure-first drafts can coexist
- * (a draft is a placeholder client with an empty name; spec §3/§4). Pass `excludeId`
- * when renaming so a client doesn't clash with itself. Throws `DuplicateClientNameError`.
+ * Enforce unique client names, case-insensitive and trimmed, among non-deleted clients.
+ * Blank names are exempt from the check — a purely defensive guard now: with lazy create
+ * (data-model §1a) a client is only written once it has a real name, so the app no longer
+ * produces blank-named placeholder drafts. Pass `excludeId` when renaming so a client
+ * doesn't clash with itself. Throws `DuplicateClientNameError`.
  *
  * Uniqueness is repo-enforced (WatermelonDB has no unique constraints) and check-then-
  * write is not atomic — fine for the single-user/occasional-multi-device model. Cross-

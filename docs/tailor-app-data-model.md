@@ -16,6 +16,31 @@ The app must be fully usable with no connection and reconcile later, so the mode
 
 ---
 
+## 1a. Lazy create — no empty rows
+
+A measurement session writes **nothing** until the tailor saves. Opening the
+measurement-entry screen does not create a client, set, or items; the item list is
+seeded from the template **in memory**, and ad-hoc items added mid-session are held in
+memory too. On save, one transaction creates everything that has real content:
+
+- **measure-first** (no client yet): the tailor names the draft on save; that name creates
+  a new `clients` row, then the `measurement_sets` row, its `measurement_items`, and a
+  `measurement_values` row for each measured item.
+- **client-first** (started from a client): the same, reusing the existing `client_id`.
+
+Only items that were actually measured get a `measurement_values` row + cached
+`current_value`; the rest are written empty, exactly like a template-seeded set. This
+keeps the store from filling with abandoned "Unnamed" drafts and empty sets — backing out
+of the screen leaves the database untouched. (Earlier drafts of this model persisted an
+in-progress session immediately as a set under a blank-named placeholder client; that is
+superseded by lazy create.)
+
+> **Continuous autosave** (spec §4) is a later enhancement, not built in v1. When added it
+> must stay empty-safe: defer the first write until there is a value or a name, so it never
+> reintroduces empty drafts.
+
+---
+
 ## 2. Entities at a glance
 
 ```
@@ -37,7 +62,7 @@ A **client** has many **sets** (a set = one garment's worth of measurements, wit
 | field | type | notes |
 |---|---|---|
 | id | uuid v7 | PK, device-generated |
-| name | text | **required** — the only field needed to create a client. **Unique** among non-deleted clients (case-insensitive, trimmed; repo-enforced, since WatermelonDB has no DB-level unique constraints). Blank names are exempt: an unnamed draft is a placeholder client with `name = ''` until it's named on save. |
+| name | text | **required** — the only field needed to create a client, and set at creation time. **Unique** among non-deleted clients (case-insensitive, trimmed; repo-enforced, since WatermelonDB has no DB-level unique constraints). A client row is never written until there's a real name to give it (see §1a, lazy create), so blank-named placeholder clients are not created. (The repo's uniqueness check still exempts blank names defensively, but the app never produces one.) |
 | phone | text? | optional |
 | comment | text? | client-level note for general preferences ("prefers slim fit") |
 | photo_local_uri | text? | filesystem path on device |
@@ -71,7 +96,7 @@ A **client** has many **sets** (a set = one garment's worth of measurements, wit
 | field | type | notes |
 |---|---|---|
 | id | uuid v7 | PK |
-| client_id | uuid | FK → clients — **required and immutable** (a set always belongs to a client and never relinks). Measure-first drafts satisfy this with a blank-named placeholder client, named in place on save (spec §4). |
+| client_id | uuid | FK → clients — **required and immutable** (a set always belongs to a client and never relinks). A measure-first session is not persisted while in progress; on save the set and its (newly created or pre-existing) client are written together, so `client_id` is valid from creation (see §1a). |
 | template_id | uuid? | soft reference — template may later change or be deleted |
 | template_name_snapshot | text? | denormalized so the set still reads correctly if the template is renamed/deleted |
 | label | text? | optional ("Wedding agbada") |

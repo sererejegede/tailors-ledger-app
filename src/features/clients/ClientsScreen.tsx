@@ -13,7 +13,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { database } from '@/db';
 import type Client from '@/db/models/Client';
 import { searchClients, createClient, DuplicateClientNameError } from '@/repositories/clients';
-import { createDraftSet } from '@/repositories/sets';
 import { getSettings } from '@/repositories/settings';
 import { listTemplates } from '@/repositories/templates';
 import { colors, radius, space } from '@/theme/tokens';
@@ -62,12 +61,11 @@ export default function ClientsScreen() {
     reload(q);
   };
 
-  const openEntry = (setId: string) => navigation.navigate('MeasurementEntry', { setId });
-
+  // Measure-first: jump straight into the hero with just the template. No client/set rows
+  // are written until the tailor saves and names the draft (createSetWithMeasurements).
   const newMeasurement = async () => {
     const templateId = await defaultTemplateId();
-    const set = await createDraftSet(database, { templateId });
-    openEntry(set.id);
+    navigation.navigate('MeasurementEntry', { templateId });
   };
 
   const addClient = async (name: string) => {

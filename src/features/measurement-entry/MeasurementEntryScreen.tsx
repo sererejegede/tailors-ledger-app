@@ -13,9 +13,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { database, Tables } from '@/db';
 import type MeasurementSet from '@/db/models/MeasurementSet';
-import { setItems, attachClient } from '@/repositories/sets';
+import type Template from '@/db/models/Template';
+import { setItems, createSetWithMeasurements, type NewMeasurementItem } from '@/repositories/sets';
 import { saveMeasurements, addAdHocItem } from '@/repositories/items';
-import { DuplicateClientNameError } from '@/repositories/clients';
+import { templateItems } from '@/repositories/templates';
+import { getClient, DuplicateClientNameError } from '@/repositories/clients';
 import { colors, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { Dock } from '@/components/Dock';
@@ -28,17 +30,31 @@ import BackIcon from '@/assets/icons/arrow-narrow-left.svg';
 type Props = NativeStackScreenProps<RootStackParamList, 'MeasurementEntry'>;
 type Meta = { templateName?: string; clientName: string; label?: string };
 type Prompt = { mode: 'name' | 'addItem'; error?: string };
+// In a NEW (not-yet-saved) set the rows are in-memory only: `tempId` is a client-side key
+// used by the entry hook and to map entered values back to items at create time.
+type NewItemDesc = { tempId: string; key: string; position: number; unit: string };
+
+let tempIdSeq = 0;
+const makeTempId = () => `tmp-${Date.now().toString(36)}-${tempIdSeq++}`;
 
 /**
  * The hero. Mirrors the paper card: scrollable item list + docked thumb-zone input.
  * No note/photo controls here, no bottom tabs (it's a stack route outside the tabs).
  */
 export default function MeasurementEntryScreen({ route, navigation }: Props) {
-  const { setId } = route.params;
+  const params = route.params;
+  // Re-measure: an existing set. New: a templateId (+ optional clientId for client-first).
+  const existingSetId = 'setId' in params ? params.setId : undefined;
+  const templateId = 'templateId' in params ? params.templateId : undefined;
+  const clientIdParam = 'clientId' in params ? params.clientId : undefined;
+  const labelParam = 'label' in params ? params.label : undefined;
+  const isNew = existingSetId == null;
   const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(true);
   const [seed, setSeed] = useState<EntrySeed[]>([]);
+  // New-mode item descriptors (parallel to `seed`); used to create rows on save.
+  const [descriptors, setDescriptors] = useState<NewItemDesc[]>([]);
   const [meta, setMeta] = useState<Meta>({ clientName: '' });
   const [prompt, setPrompt] = useState<Prompt | null>(null);
 
@@ -56,17 +72,34 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
   }, []);
 
   const load = useCallback(async () => {
-    const set = await database.get<MeasurementSet>(Tables.measurementSets).find(setId);
-    const client = await set.client.fetch();
-    const items = await setItems(database, setId);
-    setSeed(items.map((it) => ({ itemId: it.id, key: it.key, initial: it.currentValue ?? null })));
-    setMeta({
-      templateName: set.templateNameSnapshot ?? undefined,
-      clientName: client.name,
-      label: set.label ?? undefined,
-    });
+    if (existingSetId) {
+      // Re-measure: load the persisted set/items.
+      const set = await database.get<MeasurementSet>(Tables.measurementSets).find(existingSetId);
+      const client = await set.client.fetch();
+      const items = await setItems(database, existingSetId);
+      setSeed(items.map((it) => ({ itemId: it.id, key: it.key, initial: it.currentValue ?? null })));
+      setMeta({
+        templateName: set.templateNameSnapshot ?? undefined,
+        clientName: client.name,
+        label: set.label ?? undefined,
+      });
+    } else if (templateId) {
+      // New: seed the list from the template in memory — nothing is written yet.
+      const template = await database.get<Template>(Tables.templates).find(templateId);
+      const tItems = await templateItems(database, templateId);
+      const desc: NewItemDesc[] = tItems.map((ti) => ({
+        tempId: makeTempId(),
+        key: ti.key,
+        position: ti.position,
+        unit: ti.unit,
+      }));
+      setDescriptors(desc);
+      setSeed(desc.map((d) => ({ itemId: d.tempId, key: d.key, initial: null })));
+      const client = clientIdParam ? await getClient(database, clientIdParam) : null;
+      setMeta({ templateName: template.name, clientName: client?.name ?? '', label: labelParam });
+    }
     setLoading(false);
-  }, [setId]);
+  }, [existingSetId, templateId, clientIdParam, labelParam]);
 
   useEffect(() => {
     load();
@@ -92,13 +125,43 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
     }
   }, [entry.active]);
 
+  // Map the entry hook's edits (keyed by temp id) onto items to create for a new set.
+  const buildNewItems = useCallback(
+    (edits: Edit[]): NewMeasurementItem[] => {
+      const byId = new Map(edits.map((e) => [e.itemId, e.value]));
+      return descriptors.map((d) => ({
+        key: d.key,
+        position: d.position,
+        unit: d.unit,
+        value: byId.get(d.tempId) ?? null,
+      }));
+    },
+    [descriptors],
+  );
+
   const persist = useCallback(
     async (edits: Edit[]) => {
-      await saveMeasurements(database, setId, edits);
-      if (isDraft) setPrompt({ mode: 'name' });
-      else navigation.goBack();
+      if (isNew) {
+        if (clientIdParam) {
+          // client-first: create the set now under the existing client
+          await createSetWithMeasurements(database, {
+            templateId: templateId!,
+            clientId: clientIdParam,
+            label: labelParam,
+            items: buildNewItems(edits),
+          });
+          navigation.goBack();
+        } else {
+          // measure-first draft: name it first — no rows are written until then
+          setPrompt({ mode: 'name' });
+        }
+      } else {
+        // re-measure: write history for changed items, then leave
+        await saveMeasurements(database, existingSetId!, edits);
+        navigation.goBack();
+      }
     },
-    [isDraft, navigation, setId],
+    [isNew, clientIdParam, templateId, labelParam, existingSetId, navigation, buildNewItems],
   );
 
   const onSave = useCallback(() => {
@@ -126,7 +189,14 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
         return;
       }
       try {
-        await attachClient(database, setId, { name: trimmed });
+        // The name prompt only opens for a measure-first draft: create the client + set
+        // + measured values in one shot.
+        await createSetWithMeasurements(database, {
+          templateId: templateId!,
+          clientName: trimmed,
+          label: labelParam,
+          items: buildNewItems(entry.getEdits()),
+        });
         setPrompt(null);
         navigation.goBack();
       } catch (e) {
@@ -138,7 +208,7 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
         }
       }
     },
-    [navigation, setId],
+    [templateId, labelParam, navigation, buildNewItems, entry],
   );
 
   const submitAddItem = useCallback(
@@ -146,10 +216,18 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
       const trimmed = key.trim();
       setPrompt(null);
       if (!trimmed) return;
-      await addAdHocItem(database, setId, { key: trimmed });
-      await load();
+      if (isNew) {
+        // ad-hoc item lives in memory until the set is saved
+        const maxPos = descriptors.reduce((m, d) => Math.max(m, d.position), -1);
+        const d: NewItemDesc = { tempId: makeTempId(), key: trimmed, position: maxPos + 1, unit: 'in' };
+        setDescriptors((prev) => [...prev, d]);
+        setSeed((prev) => [...prev, { itemId: d.tempId, key: trimmed, initial: null }]);
+      } else {
+        await addAdHocItem(database, existingSetId!, { key: trimmed });
+        await load();
+      }
     },
-    [load, setId],
+    [isNew, descriptors, existingSetId, load],
   );
 
   if (loading) {

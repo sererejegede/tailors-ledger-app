@@ -13,7 +13,9 @@ export type TabsParamList = {
  */
 export type RootStackParamList = {
   Tabs: NavigatorScreenParams<TabsParamList>;
-  MeasurementEntry: { setId: string };
+  // Re-measure opens an existing set; a NEW measurement passes a templateId (+ optional
+  // clientId for client-first) and creates rows only on save — see createSetWithMeasurements.
+  MeasurementEntry: { setId: string } | { templateId: string; clientId?: string; label?: string };
   ClientDetail: { clientId: string };
   SetDetail: { setId: string };
   ItemHistory: { itemId: string; itemKey: string };
