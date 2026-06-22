@@ -33,9 +33,7 @@ function ClientRowBase({ client, onPress }: Props) {
         {relativeTime ? (
           <View style={styles.meta}>
             <ClockIcon width={14} height={14} color={colors.muted} />
-            <Text style={styles.metaText} numberOfLines={1}>
-              {relativeTime}
-            </Text>
+            <Text style={styles.metaText} numberOfLines={1}>{relativeTime}</Text>
           </View>
         ) : null}
       </View>
