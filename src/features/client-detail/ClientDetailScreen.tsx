@@ -12,8 +12,13 @@ import { getRelativeTime } from '@/lib/time';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { PromptModal } from '@/components/PromptModal';
+import EditIcon from '@/assets/icons/edit-02.svg';
+import RulerIcon from '@/assets/icons/ruler.svg';
 import ChevronIcon from '@/assets/icons/chevron-right.svg';
 import type { RootStackParamList } from '@/navigation/types';
+import { FloatingActionButton } from '@/components/FloatingActionButton';
+import { formatPhone } from '@/lib/utils';
+import PhoneIcon from '@/assets/icons/phone.svg';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ClientDetail'>;
 type Edit = { field: 'name' | 'phone' | 'comment'; value: string; error?: string } | null;
@@ -21,7 +26,7 @@ type Edit = { field: 'name' | 'phone' | 'comment'; value: string; error?: string
 const FIELD_META = {
   name: { title: 'Client name', placeholder: 'Name' },
   phone: { title: 'Phone', placeholder: 'Phone number' },
-  comment: { title: 'Note', placeholder: 'e.g. prefers a relaxed fit, no tight collars' },
+  comment: { title: 'General preferences', placeholder: 'e.g. prefers a relaxed fit, no tight collars' },
 } as const;
 
 export default function ClientDetailScreen({ route, navigation }: Props) {
@@ -42,9 +47,10 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
     }, [load]),
   );
 
+  // Body shows the big centered name, so keep the native header to just the back arrow.
   useLayoutEffect(() => {
-    navigation.setOptions({ title: client?.name || 'Client' });
-  }, [navigation, client?.name]);
+    navigation.setOptions({ title: '' });
+  }, [navigation]);
 
   const submitEdit = useCallback(
     async (value: string) => {
@@ -75,38 +81,45 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      {/* phone */}
-      <Pressable style={styles.fieldRow} onPress={() => setEdit({ field: 'phone', value: client.phone ?? '' })}>
-        <Text style={styles.fieldLabel}>Phone</Text>
-        <Text style={[styles.fieldValue, !client.phone && styles.placeholder]}>
-          {client.phone || 'Add phone'}
-        </Text>
+      {/* identity */}
+      <Pressable onPress={() => setEdit({ field: 'name', value: client.name })}>
+        <Text style={styles.name}>{client.name || 'Unnamed'}</Text>
       </Pressable>
-
-      {/* comment / note */}
       <Pressable
-        style={styles.noteCard}
-        onPress={() => setEdit({ field: 'comment', value: client.comment ?? '' })}
+        style={styles.phoneRow}
+        onPress={() => setEdit({ field: 'phone', value: client.phone ?? '' })}
       >
-        <Text style={styles.fieldLabel}>Note</Text>
-        <Text style={[styles.noteText, !client.comment && styles.placeholder]}>
-          {client.comment || 'Add a note — general preferences, fit, anything.'}
+        <PhoneIcon width={16} height={16} color={colors.text} />
+        <Text style={[styles.phone, !client.phone && styles.placeholder]}>
+          {formatPhone(client.phone ?? '') || 'Add phone number'}
         </Text>
       </Pressable>
 
-      <Pressable style={styles.rename} onPress={() => setEdit({ field: 'name', value: client.name })}>
-        <Text style={styles.renameText}>Rename client</Text>
-      </Pressable>
-
-      {/* sets */}
-      <View style={styles.setsHeader}>
-        <Text style={styles.sectionTitle}>Measurement sets</Text>
-        <Text style={styles.count}>{sets.length}</Text>
+      {/* general preferences */}
+      <View
+        style={styles.sectionHeader}
+      >
+        <Text style={styles.sectionTitle}>Customer preferences</Text>
+        <Pressable style={styles.edit} onPress={() => setEdit({ field: 'comment', value: client.comment ?? '' })}>
+          <Text style={styles.editText}>Edit</Text>
+          <EditIcon width={17} height={17} color={colors.accent} />
+        </Pressable>
+      </View>
+      <View style={styles.noteCard}>
+        <Text style={[client.comment ? styles.noteText : styles.notePlaceholder]} numberOfLines={3}>
+          {client.comment || 'Add general preferences — fit, fabric, anything.'}
+        </Text>
       </View>
 
-      <Pressable style={styles.newSet} onPress={newSet}>
-        <Text style={styles.newSetText}>＋ New measurement set</Text>
-      </Pressable>
+      {/* Divider */}
+      <View style={styles.divider} />
+
+      {/* measurement sets */}
+      <View style={styles.sectionHeader}>
+        <RulerIcon width={18} height={18} color={colors.text} />
+        <Text style={styles.sectionTitle}>Measurement sets</Text>
+        <Text style={styles.count}>{sets.length} Total</Text>
+      </View>
 
       {sets.length === 0 ? (
         <Text style={styles.empty}>No sets yet — start a new measurement set.</Text>
@@ -128,6 +141,11 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         ))
       )}
 
+      <FloatingActionButton
+        onPress={newSet}
+        accessibilityLabel="New measurement"
+      />
+
       <PromptModal
         visible={edit != null}
         title={edit ? FIELD_META[edit.field].title : ''}
@@ -135,6 +153,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         initialValue={edit?.value ?? ''}
         submitLabel="Save"
         error={edit?.error}
+        multilineInput={edit?.field === 'comment'}
         onCancel={() => setEdit(null)}
         onSubmit={submitEdit}
       />
@@ -144,37 +163,51 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: space.lg, gap: space.md },
-  fieldRow: {
+  content: { padding: space.lg, paddingTop: space.sm, gap: space.md, minHeight: '100%' },
+  name: { fontFamily: fonts.title, fontSize: 30, color: colors.text, textAlign: 'center' },
+  phoneRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: space.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.line,
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: -space.xs,
   },
-  fieldLabel: { fontFamily: fonts.medium, fontSize: 13, color: colors.muted },
-  fieldValue: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
+  phoneGlyph: { fontSize: 14, color: colors.muted },
+  phone: { fontFamily: fonts.body, fontSize: 16 },
   placeholder: { color: colors.faint },
-  noteCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.line,
-    padding: space.md,
-    gap: space.xs,
-  },
-  noteText: { fontFamily: fonts.body, fontSize: 15, color: colors.text, lineHeight: 21 },
-  rename: { alignSelf: 'flex-start', paddingVertical: space.xs },
-  renameText: { fontFamily: fonts.semibold, fontSize: 14, color: colors.accent },
-  setsHeader: {
+  // section headers
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: space.sm,
     marginTop: space.md,
   },
-  sectionTitle: { fontFamily: fonts.titleSemi, fontSize: 18, color: colors.text },
-  count: { fontFamily: fonts.body, fontSize: 14, color: colors.muted },
+  sectionTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 14,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: colors.text,
+  },
+  count: { marginLeft: 'auto', fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+  noteCard: {
+    backgroundColor: colors.accentTint,
+    borderLeftWidth: 2,
+    borderColor: colors.accent,
+    padding: space.lg,
+    paddingInlineStart: space.xxl,
+    borderRadius: radius.default,
+    overflow: 'hidden',
+  },
+  noteText: {
+    fontFamily: fonts.italic,
+    fontStyle: 'italic',
+    fontSize: 16,
+    lineHeight: 24,
+    color: colors.text,
+    paddingRight: space.xl,
+  },
+  notePlaceholder: { fontFamily: fonts.body, fontSize: 15, color: colors.faint, lineHeight: 22 },
   newSet: {
     borderWidth: 1,
     borderColor: colors.accent,
@@ -194,4 +227,12 @@ const styles = StyleSheet.create({
   },
   setLabel: { fontFamily: fonts.semibold, fontSize: 16, color: colors.text },
   setMeta: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
+  divider: { height: 2, backgroundColor: colors.accent, marginVertical: space.lg },
+  edit: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    marginLeft: 'auto',
+  },
+  editText: { fontFamily: fonts.body, fontSize: 13, color: colors.accent },
 });

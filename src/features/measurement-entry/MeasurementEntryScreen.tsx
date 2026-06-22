@@ -23,6 +23,7 @@ import { MeasurementRow } from '@/components/MeasurementRow';
 import { PromptModal } from '@/components/PromptModal';
 import type { RootStackParamList } from '@/navigation/types';
 import { useMeasurementEntry, type EntrySeed, type Edit } from './useMeasurementEntry';
+import BackIcon from '@/assets/icons/arrow-narrow-left.svg';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MeasurementEntry'>;
 type Meta = { templateName?: string; clientName: string; label?: string };
@@ -164,7 +165,7 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
       {/* topbar (custom — this route hides the native header so tabs/header never intrude) */}
       <View style={[styles.topbar, { paddingTop: insets.top + space.sm }]}>
         <Pressable onPress={() => navigation.goBack()} hitSlop={12} accessibilityLabel="Back">
-          <Text style={styles.back}>‹</Text>
+          <BackIcon width={28} height={28} color={colors.accent} />
         </Pressable>
         <Text style={styles.title} numberOfLines={1}>
           Measure{meta.templateName ? ` · ${meta.templateName}` : ''}
@@ -184,7 +185,7 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
         ) : (
           <View>
             <Text style={styles.who}>{meta.clientName}</Text>
-            <Text style={styles.sub}>{meta.label || 'New set'}</Text>
+            {meta.label ? <Text style={styles.sub}>{meta.label}</Text> : null}
           </View>
         )}
         <Text style={styles.progress}>
@@ -240,7 +241,7 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
       <PromptModal
         visible={prompt?.mode === 'name'}
         title="Name this client"
-        message="Save the set against a client. You can add phone and notes later."
+        message="Save the set against a client."
         placeholder="Client name"
         submitLabel="Save set"
         error={prompt?.mode === 'name' ? prompt.error : undefined}
@@ -270,7 +271,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingBottom: space.sm,
   },
-  back: { fontSize: 30, color: colors.accent, lineHeight: 32, width: 28 },
   title: { fontFamily: fonts.titleSemi, fontSize: 18, color: colors.text, flex: 1, textAlign: 'center' },
   save: { fontFamily: fonts.bold, fontSize: 16, color: colors.accent },
   entryHd: {

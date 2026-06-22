@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -21,6 +20,7 @@ import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { PromptModal } from '@/components/PromptModal';
 import { ClientRow } from '@/components/ClientRow';
+import { FloatingActionButton } from '@/components/FloatingActionButton';
 import type { RootStackParamList } from '@/navigation/types';
 
 /**
@@ -100,28 +100,13 @@ export default function ClientsScreen() {
         autoCorrect={false}
       />
 
-      <View style={styles.actions}>
-        <Pressable style={[styles.btn, styles.primary]} onPress={newMeasurement}>
-          <Text style={styles.primaryText}>＋ New measurement</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.btn, styles.secondary]}
-          onPress={() => {
-            setAddError(undefined);
-            setAddOpen(true);
-          }}
-        >
-          <Text style={styles.secondaryText}>Add client</Text>
-        </Pressable>
-      </View>
-
       {clients == null ? (
         <ActivityIndicator color={colors.accent} style={{ marginTop: space.xl }} />
       ) : (
         <FlatList
           data={clients}
           keyExtractor={(c) => c.id}
-          contentContainerStyle={clients.length === 0 && styles.emptyWrap}
+          contentContainerStyle={[styles.listContent, clients.length === 0 && styles.emptyWrap]}
           ListEmptyComponent={
             <Text style={styles.empty}>
               {term ? 'No matching clients.' : 'No clients yet — start a measurement or add one.'}
@@ -146,6 +131,11 @@ export default function ClientsScreen() {
         onCancel={() => setAddOpen(false)}
         onSubmit={addClient}
       />
+
+      <FloatingActionButton
+        onPress={newMeasurement}
+        accessibilityLabel="New measurement"
+      />
     </View>
   );
 }
@@ -164,12 +154,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     backgroundColor: colors.surface,
   },
-  actions: { flexDirection: 'row', gap: space.sm, marginVertical: space.md },
-  btn: { flex: 1, paddingVertical: space.md, borderRadius: radius.default, alignItems: 'center' },
-  primary: { backgroundColor: colors.accent },
-  primaryText: { fontFamily: fonts.bold, color: '#fff', fontSize: 15 },
-  secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line2 },
-  secondaryText: { fontFamily: fonts.semibold, color: colors.text, fontSize: 15 },
+  listContent: { paddingTop: space.sm, paddingBottom: 96 },
   row: {
     paddingVertical: space.md,
     borderBottomWidth: 1,

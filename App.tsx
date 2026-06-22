@@ -9,6 +9,7 @@ import { ensureSeeded } from '@/db/seed';
 import { useAppFonts } from '@/theme/typography';
 import { colors } from '@/theme/tokens';
 import RootNavigator from '@/navigation/RootNavigator';
+import { OverlayHostProvider } from '@/components/OverlayHost';
 
 const navTheme = {
   ...DefaultTheme,
@@ -41,10 +42,12 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <DatabaseProvider database={database}>
-        <NavigationContainer theme={navTheme}>
-          <StatusBar style="dark" />
-          <RootNavigator />
-        </NavigationContainer>
+        <OverlayHostProvider>
+          <NavigationContainer theme={navTheme}>
+            <StatusBar style="dark" />
+            <RootNavigator />
+          </NavigationContainer>
+        </OverlayHostProvider>
       </DatabaseProvider>
     </SafeAreaProvider>
   );

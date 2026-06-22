@@ -2,6 +2,7 @@ import { Platform, TextStyle } from 'react-native';
 import {
   useFonts,
   PlusJakartaSans_400Regular,
+  PlusJakartaSans_400Regular_Italic,
   PlusJakartaSans_500Medium,
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
@@ -15,6 +16,7 @@ import { Vollkorn_600SemiBold, Vollkorn_700Bold } from '@expo-google-fonts/vollk
  */
 export const fonts = {
   body: 'PlusJakartaSans_400Regular',
+  italic: 'PlusJakartaSans_400Regular_Italic',
   medium: 'PlusJakartaSans_500Medium',
   semibold: 'PlusJakartaSans_600SemiBold',
   bold: 'PlusJakartaSans_700Bold',
@@ -33,6 +35,7 @@ export const valueText: TextStyle = {
 export function useAppFonts(): boolean {
   const [loaded] = useFonts({
     PlusJakartaSans_400Regular,
+    PlusJakartaSans_400Regular_Italic,
     PlusJakartaSans_500Medium,
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
