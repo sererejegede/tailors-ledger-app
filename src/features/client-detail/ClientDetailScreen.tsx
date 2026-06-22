@@ -4,21 +4,19 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { database } from '@/db';
 import type Client from '@/db/models/Client';
-import type MeasurementSet from '@/db/models/MeasurementSet';
 import { getClient, updateClient } from '@/repositories/clients';
-import { setsForClient } from '@/repositories/sets';
+import { setsForClient, type MeasurementSetWithItemsCount } from '@/repositories/sets';
 import { getDefaultTemplateId } from '@/repositories/templates';
-import { getRelativeTime } from '@/lib/time';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { PromptModal } from '@/components/PromptModal';
 import EditIcon from '@/assets/icons/edit-02.svg';
 import RulerIcon from '@/assets/icons/ruler.svg';
-import ChevronIcon from '@/assets/icons/chevron-right.svg';
 import type { RootStackParamList } from '@/navigation/types';
 import { FloatingActionButton } from '@/components/FloatingActionButton';
 import { formatPhone } from '@/lib/utils';
 import PhoneIcon from '@/assets/icons/phone.svg';
+import { ClientDetailSetRow } from '@/components/ClientDetailSetRow';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ClientDetail'>;
 type Edit = { field: 'name' | 'phone' | 'comment'; value: string; error?: string } | null;
@@ -32,7 +30,7 @@ const FIELD_META = {
 export default function ClientDetailScreen({ route, navigation }: Props) {
   const { clientId } = route.params;
   const [client, setClient] = useState<Client | null>(null);
-  const [sets, setSets] = useState<MeasurementSet[]>([]);
+  const [sets, setSets] = useState<MeasurementSetWithItemsCount[]>([]);
   const [edit, setEdit] = useState<Edit>(null);
 
   const load = useCallback(async () => {
@@ -125,21 +123,16 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
       {sets.length === 0 ? (
         <Text style={styles.empty}>No sets yet — start a new measurement set.</Text>
       ) : (
-        sets.map((set) => (
-          <Pressable
-            key={set.id}
-            style={styles.setRow}
-            onPress={() => navigation.navigate('SetDetail', { setId: set.id })}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={styles.setLabel} numberOfLines={1}>
-                {set.label || set.templateNameSnapshot || 'Measurement set'}
-              </Text>
-              <Text style={styles.setMeta}>{getRelativeTime(set.updatedAt)}</Text>
-            </View>
-            <ChevronIcon width={20} height={20} color={colors.faint} />
-          </Pressable>
-        ))
+        <View style={styles.setsList}>
+          {sets.map(({ set, itemsCount }) => (
+            <ClientDetailSetRow
+              key={set.id}
+              set={set}
+              itemsCount={itemsCount}
+              onPress={() => navigation.navigate('SetDetail', { setId: set.id })}
+            />
+          ))}
+        </View> 
       )}
 
       <FloatingActionButton
@@ -218,16 +211,6 @@ const styles = StyleSheet.create({
   },
   newSetText: { fontFamily: fonts.bold, fontSize: 15, color: colors.accent },
   empty: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, paddingVertical: space.md },
-  setRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.line,
-  },
-  setLabel: { fontFamily: fonts.semibold, fontSize: 16, color: colors.text },
-  setMeta: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
   divider: { height: 2, backgroundColor: colors.accent, marginVertical: space.lg },
   edit: {
     flexDirection: 'row',
@@ -236,4 +219,5 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
   },
   editText: { fontFamily: fonts.body, fontSize: 13, color: colors.accent },
+  setsList: { paddingBlockEnd: 96 },
 });

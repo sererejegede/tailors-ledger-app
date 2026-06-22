@@ -31,6 +31,7 @@ import { assertNameAvailable } from './clients';
  * template-seeded set.
  */
 export type NewMeasurementItem = { key: string; position: number; unit?: string; value: number | null };
+export type MeasurementSetWithItemsCount = { set: MeasurementSet; itemsCount: number };
 export type CreateSetWithMeasurements = {
   templateId: string;
   label?: string;
@@ -115,11 +116,29 @@ export async function softDeleteSet(database: Database, id: string): Promise<voi
 export async function setsForClient(
   database: Database,
   clientId: string,
-): Promise<MeasurementSet[]> {
-  return database
-    .get<MeasurementSet>(Tables.measurementSets)
-    .query(Q.where('client_id', clientId), notDeleted, Q.sortBy('created_at', Q.desc))
-    .fetch();
+): Promise<MeasurementSetWithItemsCount[]> {
+  const [sets, measuredItems] = await Promise.all([
+    database
+      .get<MeasurementSet>(Tables.measurementSets)
+      .query(Q.where('client_id', clientId), notDeleted, Q.sortBy('created_at', Q.desc))
+      .fetch(),
+    database
+      .get<MeasurementItem>(Tables.measurementItems)
+      .query(
+        Q.on(Tables.measurementSets, [Q.where('client_id', clientId), notDeleted]),
+        notDeleted,
+        Q.where('current_value', Q.notEq(null)),
+      )
+      .fetch(),
+  ]);
+
+  const itemCountsBySetId = new Map<string, number>();
+  for (const item of measuredItems) {
+    const setId = item.set.id;
+    itemCountsBySetId.set(setId, (itemCountsBySetId.get(setId) ?? 0) + 1);
+  }
+
+  return sets.map((set) => ({ set, itemsCount: itemCountsBySetId.get(set.id) ?? 0 }));
 }
 
 /** A set's items in template/position order (the measurement-entry list). */
