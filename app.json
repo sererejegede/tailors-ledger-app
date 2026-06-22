@@ -38,7 +38,8 @@
             "newArchEnabled": false
           }
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }
