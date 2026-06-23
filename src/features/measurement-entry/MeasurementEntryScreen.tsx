@@ -17,7 +17,7 @@ import type Template from '@/db/models/Template';
 import { setItems, createSetWithMeasurements, type NewMeasurementItem } from '@/repositories/sets';
 import { saveMeasurements, addAdHocItem } from '@/repositories/items';
 import { templateItems, listTemplates } from '@/repositories/templates';
-import { getClient, DuplicateClientNameError } from '@/repositories/clients';
+import { getClient, createClient, DuplicateClientNameError } from '@/repositories/clients';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { Dock } from '@/components/Dock';
@@ -31,7 +31,7 @@ import ChevronIcon from '@/assets/icons/chevron-right.svg';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MeasurementEntry'>;
 type Meta = { templateName?: string; clientName: string; label?: string };
-type Prompt = { mode: 'name' | 'addItem'; error?: string };
+type Prompt = { mode: 'name' | 'addItem' | 'createClient'; error?: string };
 // In a NEW (not-yet-saved) set the rows are in-memory only: `tempId` is a client-side key
 // used by the entry hook and to map entered values back to items at create time.
 type NewItemDesc = { tempId: string; key: string; position: number; unit: string };
@@ -54,6 +54,10 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
 
   const [loading, setLoading] = useState(true);
+  // The set's client. Starts from the route (client-first) or undefined (measure-first);
+  // the tailor can create/attach a client mid-session (see submitCreateClient), which sets
+  // this so the eventual save goes client-first instead of prompting for a name.
+  const [clientId, setClientId] = useState(clientIdParam);
   const [seed, setSeed] = useState<EntrySeed[]>([]);
   // New-mode item descriptors (parallel to `seed`); used to create rows on save.
   const [descriptors, setDescriptors] = useState<NewItemDesc[]>([]);
@@ -149,11 +153,11 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
   const persist = useCallback(
     async (edits: Edit[]) => {
       if (isNew) {
-        if (clientIdParam) {
-          // client-first: create the set now under the existing client
+        if (clientId) {
+          // client known (chosen up front or created mid-session): write the set now
           await createSetWithMeasurements(database, {
             templateId: templateId!,
-            clientId: clientIdParam,
+            clientId,
             label: labelParam,
             items: buildNewItems(edits),
           });
@@ -168,7 +172,7 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
         navigation.goBack();
       }
     },
-    [isNew, clientIdParam, templateId, labelParam, existingSetId, navigation, buildNewItems],
+    [isNew, clientId, templateId, labelParam, existingSetId, navigation, buildNewItems],
   );
 
   const onSave = useCallback(() => {
@@ -218,6 +222,30 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
     [templateId, labelParam, navigation, buildNewItems, entry],
   );
 
+  // Create/attach the client up front (measure-first), before the measurements are saved.
+  // This persists a name-only client (like "Add client") and flips the session to
+  // client-first, so the eventual save writes the set straight against it.
+  const submitCreateClient = useCallback(async (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setPrompt({ mode: 'createClient', error: 'Enter a name.' });
+      return;
+    }
+    try {
+      const client = await createClient(database, { name: trimmed });
+      setClientId(client.id);
+      setMeta((m) => ({ ...m, clientName: client.name }));
+      setPrompt(null);
+    } catch (e) {
+      if (e instanceof DuplicateClientNameError) {
+        setPrompt({ mode: 'createClient', error: e.message });
+      } else {
+        setPrompt(null);
+        Alert.alert('Could not create client', e instanceof Error ? e.message : String(e));
+      }
+    }
+  }, []);
+
   const submitAddItem = useCallback(
     async (key: string) => {
       const trimmed = key.trim();
@@ -251,7 +279,7 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
       const go = () =>
         navigation.replace('MeasurementEntry', {
           templateId: id,
-          clientId: clientIdParam,
+          clientId, // carry a client created/chosen this session across the remount
           label: labelParam,
         });
       if (entry.filled > 0) {
@@ -263,7 +291,7 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
         go();
       }
     },
-    [templateId, clientIdParam, labelParam, navigation, entry],
+    [templateId, clientId, labelParam, navigation, entry],
   );
 
   if (loading) {
@@ -302,9 +330,9 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
       {/* who + progress */}
       <View style={styles.entryHd}>
         {isDraft ? (
-          <Pressable onPress={onSave}>
+          <Pressable onPress={() => setPrompt({ mode: 'createClient' })}>
             <Text style={styles.unnamed}>Unnamed draft</Text>
-            <Text style={styles.sub}>tap to name on save</Text>
+            <Text style={styles.sub}>tap to add the client</Text>
           </Pressable>
         ) : (
           <View>
@@ -382,6 +410,16 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
         submitLabel="Add item"
         onCancel={() => setPrompt(null)}
         onSubmit={submitAddItem}
+      />
+      <PromptModal
+        visible={prompt?.mode === 'createClient'}
+        title="Add client"
+        message="Create the client now; keep measuring and save when you're ready."
+        placeholder="Client name"
+        submitLabel="Add client"
+        error={prompt?.mode === 'createClient' ? prompt.error : undefined}
+        onCancel={() => setPrompt(null)}
+        onSubmit={submitCreateClient}
       />
 
       {templatePicker ? (
