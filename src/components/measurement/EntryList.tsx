@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { type LayoutChangeEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
-import { MeasurementRow } from '@/components/MeasurementRow';
+import { MeasurementRow } from '@/components/measurement/MeasurementRow';
 import type { EntryRow } from '@/features/measurement-entry/useMeasurementEntry';
 
 /**

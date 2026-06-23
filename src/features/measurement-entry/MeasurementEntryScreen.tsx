@@ -3,11 +3,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors } from '@/theme/tokens';
 import { Dock } from '@/components/Dock';
-import { EntryTopBar } from '@/components/EntryTopBar';
-import { EntryHeader } from '@/components/EntryHeader';
-import { EntryList } from '@/components/EntryList';
-import { EntryPrompts } from '@/components/EntryPrompts';
-import { TemplatePickerSheet } from '@/components/TemplatePickerSheet';
+import { EntryTopBar, EntryHeader, EntryList, EntryPrompts } from '@/components/measurement';
+import { TemplatePickerSheet } from '@/components/templates';
 import type { RootStackParamList } from '@/navigation/types';
 import { useEntrySession } from './useEntrySession';
 
