@@ -5,11 +5,12 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { database } from '@/db';
 import type Template from '@/db/models/Template';
-import { listTemplates, templateItems, createTemplate } from '@/repositories/templates';
+import { listTemplates, templateItems } from '@/repositories/templates';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import ChevronIcon from '@/assets/icons/chevron-right.svg';
 import type { RootStackParamList } from '@/navigation/types';
+import { FloatingActionButton } from '@/components/FloatingActionButton';
 
 type Row = { template: Template; count: number };
 
@@ -30,18 +31,15 @@ export default function TemplatesScreen() {
     }, [load]),
   );
 
-  const newTemplate = useCallback(async () => {
-    const t = await createTemplate(database, { name: 'New template' });
-    navigation.navigate('TemplateEditor', { templateId: t.id });
+  // Open the editor in "new" mode — nothing is written until it has a name + ≥1 item.
+  const newTemplate = useCallback(() => {
+    navigation.navigate('TemplateEditor', {});
   }, [navigation]);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md }]}>
       <Text style={styles.h1}>Templates</Text>
-
-      <Pressable style={styles.new} onPress={newTemplate}>
-        <Text style={styles.newText}>＋ New template</Text>
-      </Pressable>
+      <Text style={styles.intro}>Templates are used to create measurement sets. You can create a new template by tapping the plus button below.</Text>
 
       <View style={styles.card}>
         {rows.map(({ template, count }, i) => (
@@ -61,22 +59,18 @@ export default function TemplatesScreen() {
           </Pressable>
         ))}
       </View>
+      <FloatingActionButton
+        onPress={newTemplate}
+        accessibilityLabel="New template"
+      />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingHorizontal: space.lg, paddingBottom: space.xl, gap: space.md },
+  content: { paddingHorizontal: space.lg, paddingBottom: space.xl, gap: space.md, minHeight: '100%' },
   h1: { fontFamily: fonts.title, fontSize: 28, color: colors.text },
-  new: {
-    borderWidth: 1,
-    borderColor: colors.accent,
-    borderRadius: radius.default,
-    paddingVertical: space.md,
-    alignItems: 'center',
-  },
-  newText: { fontFamily: fonts.bold, fontSize: 15, color: colors.accent },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,
@@ -108,4 +102,5 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   meta: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
+  intro: { fontFamily: fonts.body, fontSize: 16, color: colors.muted, marginBlock: space.md },
 });
