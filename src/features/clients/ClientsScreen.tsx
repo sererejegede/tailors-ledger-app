@@ -133,6 +133,7 @@ export default function ClientsScreen() {
       <FloatingActionButton
         onPress={newMeasurement}
         accessibilityLabel="New measurement"
+        label="New Measurement"
       />
     </View>
   );
