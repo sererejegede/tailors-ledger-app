@@ -16,16 +16,18 @@ import type MeasurementSet from '@/db/models/MeasurementSet';
 import type Template from '@/db/models/Template';
 import { setItems, createSetWithMeasurements, type NewMeasurementItem } from '@/repositories/sets';
 import { saveMeasurements, addAdHocItem } from '@/repositories/items';
-import { templateItems } from '@/repositories/templates';
+import { templateItems, listTemplates } from '@/repositories/templates';
 import { getClient, DuplicateClientNameError } from '@/repositories/clients';
-import { colors, space } from '@/theme/tokens';
+import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { Dock } from '@/components/Dock';
 import { MeasurementRow } from '@/components/MeasurementRow';
 import { PromptModal } from '@/components/PromptModal';
+import { Portal } from '@/components/OverlayHost';
 import type { RootStackParamList } from '@/navigation/types';
 import { useMeasurementEntry, type EntrySeed, type Edit } from './useMeasurementEntry';
 import BackIcon from '@/assets/icons/arrow-narrow-left.svg';
+import ChevronIcon from '@/assets/icons/chevron-right.svg';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MeasurementEntry'>;
 type Meta = { templateName?: string; clientName: string; label?: string };
@@ -57,6 +59,8 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
   const [descriptors, setDescriptors] = useState<NewItemDesc[]>([]);
   const [meta, setMeta] = useState<Meta>({ clientName: '' });
   const [prompt, setPrompt] = useState<Prompt | null>(null);
+  const [templatePicker, setTemplatePicker] = useState(false);
+  const [templates, setTemplates] = useState<Template[]>([]);
 
   const scrollRef = useRef<ScrollView>(null);
   const scrollY = useRef(0); // current scroll offset
@@ -107,6 +111,9 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
 
   const entry = useMeasurementEntry(seed);
   const isDraft = meta.clientName.trim() === '';
+  // Every item filled and nothing mid-entry (dock.placeholder = not typing) → the dock's
+  // Next becomes Save. While typing, stay Next so the buffer commits first.
+  const saveMode = entry.total > 0 && entry.filled === entry.total && entry.dock.placeholder;
 
   // Keep the active row scrolled into view, but only when it isn't already (fires once per
   // active-item change; reads the latest measured layout from the ref).
@@ -230,6 +237,35 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
     [isNew, descriptors, existingSetId, load],
   );
 
+  // Swap the template mid-creation (new sets only). Replacing the route remounts the hero
+  // on a clean slate from the new template — simpler and safer than re-seeding in place.
+  const openTemplatePicker = useCallback(async () => {
+    setTemplates(await listTemplates(database));
+    setTemplatePicker(true);
+  }, []);
+
+  const switchTemplate = useCallback(
+    (id: string) => {
+      setTemplatePicker(false);
+      if (id === templateId) return;
+      const go = () =>
+        navigation.replace('MeasurementEntry', {
+          templateId: id,
+          clientId: clientIdParam,
+          label: labelParam,
+        });
+      if (entry.filled > 0) {
+        Alert.alert('Switch template?', "This clears the measurements you've entered so far.", [
+          { text: 'Keep editing', style: 'cancel' },
+          { text: 'Switch', style: 'destructive', onPress: go },
+        ]);
+      } else {
+        go();
+      }
+    },
+    [templateId, clientIdParam, labelParam, navigation, entry],
+  );
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -245,9 +281,19 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
         <Pressable onPress={() => navigation.goBack()} hitSlop={12} accessibilityLabel="Back">
           <BackIcon width={28} height={28} color={colors.accent} />
         </Pressable>
-        <Text style={styles.title} numberOfLines={1}>
-          Measure{meta.templateName ? ` · ${meta.templateName}` : ''}
-        </Text>
+        {isNew ? (
+          // New set: the template is swappable — tap the title to pick another.
+          <Pressable style={styles.titleBtn} onPress={openTemplatePicker} hitSlop={8}>
+            <Text style={styles.titleText} numberOfLines={1}>
+              {meta.templateName ?? 'Measure'}
+            </Text>
+            <ChevronIcon style={styles.caret} width={20} height={20} color={colors.faint} />
+          </Pressable>
+        ) : (
+          <Text style={styles.title} numberOfLines={1}>
+            Measure{meta.templateName ? ` · ${meta.templateName}` : ''}
+          </Text>
+        )}
         <Pressable onPress={onSave} hitSlop={12} accessibilityRole="button">
           <Text style={styles.save}>Save</Text>
         </Pressable>
@@ -304,14 +350,16 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
         </View>
       </ScrollView>
 
-      {/* docked input */}
+      {/* docked input — the bottom-right action becomes Save once every item is filled
+          and nothing is mid-entry (typing a value keeps it Next so the buffer commits). */}
       <View style={{ backgroundColor: colors.dockBg }}>
         <Dock
           frac={entry.dock.frac}
           onFrac={entry.setFrac}
           onDigit={entry.press}
           onDelete={entry.del}
-          onNext={entry.commitNext}
+          onNext={saveMode ? onSave : entry.commitNext}
+          saveMode={saveMode}
         />
         <View style={{ height: insets.bottom }} />
       </View>
@@ -335,6 +383,32 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
         onCancel={() => setPrompt(null)}
         onSubmit={submitAddItem}
       />
+
+      {templatePicker ? (
+        <Portal>
+          <View style={styles.pickerOverlay}>
+            <Pressable style={styles.pickerScrim} onPress={() => setTemplatePicker(false)} />
+            <View style={[styles.sheet, { paddingBottom: insets.bottom + space.lg }]}>
+              <Text style={styles.sheetTitle}>Choose template</Text>
+              {templates.map((t) => {
+                const current = t.id === templateId;
+                return (
+                  <Pressable
+                    key={t.id}
+                    style={styles.option}
+                    onPress={() => switchTemplate(t.id)}
+                  >
+                    <Text style={[styles.optionText, current && styles.optionCurrent]}>
+                      {t.name}
+                    </Text>
+                    {current ? <Text style={styles.optionCheck}>✓</Text> : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </Portal>
+      ) : null}
     </View>
   );
 }
@@ -350,6 +424,14 @@ const styles = StyleSheet.create({
     paddingBottom: space.sm,
   },
   title: { fontFamily: fonts.titleSemi, fontSize: 18, color: colors.text, flex: 1, textAlign: 'center' },
+  titleBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleText: { fontFamily: fonts.titleSemi, fontSize: 18, color: colors.text, flexShrink: 1, textAlign: 'center' },
+  caret: { color: colors.accent, transform: [{ rotate: '90deg' }] },
   save: { fontFamily: fonts.bold, fontSize: 16, color: colors.accent },
   entryHd: {
     flexDirection: 'row',
@@ -368,4 +450,40 @@ const styles = StyleSheet.create({
   list: { flex: 1 },
   addRow: { paddingVertical: space.md, paddingHorizontal: space.lg },
   addText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.accent },
+  // template picker
+  pickerOverlay: { flex: 1, justifyContent: 'flex-end' },
+  pickerScrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(27,26,23,0.45)',
+  },
+  sheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    paddingHorizontal: space.lg,
+    paddingTop: space.lg,
+    paddingBottom: space.xxl,
+    gap: space.xs,
+  },
+  sheetTitle: {
+    fontFamily: fonts.titleSemi,
+    fontSize: 16,
+    color: colors.text,
+    marginBottom: space.sm,
+  },
+  option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: space.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
+  },
+  optionText: { fontFamily: fonts.medium, fontSize: 16, color: colors.text },
+  optionCurrent: { color: colors.accent, fontFamily: fonts.semibold },
+  optionCheck: { fontFamily: fonts.bold, fontSize: 16, color: colors.accent },
 });

@@ -56,11 +56,12 @@ describe('createSetWithMeasurements (lazy create — no empty drafts)', () => {
     expect(created[0].currentValue).toBe(16.5);
     expect(created.slice(1).every((i) => i.currentValue == null)).toBe(true);
 
-    // Append-only history: exactly one value row total (the single measured item).
+    // Append-only history: exactly one value row total (the single measured item), and
+    // no EARLIER values yet (getItemHistory excludes the current value).
     const allValues = await db.get<MeasurementValue>(Tables.measurementValues).query().fetch();
     expect(allValues.length).toBe(1);
     const history = await getItemHistory(db, created[0].id);
-    expect(history.map((v) => v.value)).toEqual([16.5]);
+    expect(history).toEqual([]);
   });
 
   it('client-first: reuses the existing client and creates no new client', async () => {

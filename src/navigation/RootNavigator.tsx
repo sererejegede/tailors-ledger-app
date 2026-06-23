@@ -5,7 +5,6 @@ import Tabs from './Tabs';
 import MeasurementEntryScreen from '@/features/measurement-entry/MeasurementEntryScreen';
 import ClientDetailScreen from '@/features/client-detail/ClientDetailScreen';
 import SetDetailScreen from '@/features/set-detail/SetDetailScreen';
-import ItemHistoryScreen from '@/features/item-history/ItemHistoryScreen';
 import TemplateEditorScreen from '@/features/templates/TemplateEditorScreen';
 import type { RootStackParamList } from './types';
 
@@ -37,7 +36,6 @@ export default function RootNavigator() {
       />
       <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={detailHeader} />
       <Stack.Screen name="SetDetail" component={SetDetailScreen} options={detailHeader} />
-      <Stack.Screen name="ItemHistory" component={ItemHistoryScreen} options={detailHeader} />
       <Stack.Screen name="TemplateEditor" component={TemplateEditorScreen} options={detailHeader} />
     </Stack.Navigator>
   );

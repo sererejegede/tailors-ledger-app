@@ -1,4 +1,4 @@
-import { Database } from '@nozbe/watermelondb';
+import { Database, Q } from '@nozbe/watermelondb';
 import { makeTestDatabase } from '@/db/testDatabase';
 import { ensureSeeded } from '@/db/seed';
 import { Tables } from '@/db/schema';
@@ -7,6 +7,11 @@ import { createClient } from '../clients';
 import { templateItems } from '../templates';
 import { createSetWithMeasurements, setItems } from '../sets';
 import { saveMeasurements, quickEditItem, getItemHistory, MeasurementEdit } from '../items';
+
+/** Raw count of value rows for an item (getItemHistory excludes the current value). */
+async function valueCount(db: Database, itemId: string): Promise<number> {
+  return db.get(Tables.measurementValues).query(Q.where('item_id', itemId)).fetchCount();
+}
 
 async function defaultTemplate(db: Database): Promise<Template> {
   const templates = await db.get<Template>(Tables.templates).query().fetch();
@@ -46,7 +51,9 @@ describe('saveMeasurements — append-only history rule', () => {
     for (let i = 0; i < reloaded.length; i++) {
       expect(reloaded[i].currentValue).toBeCloseTo(firstEdits[i].value, 6);
       expect(reloaded[i].currentValueAt).toBeGreaterThan(0);
-      expect(await getItemHistory(db, reloaded[i].id)).toHaveLength(1);
+      // One value row written; no EARLIER values yet (getItemHistory excludes the current).
+      expect(await valueCount(db, reloaded[i].id)).toBe(1);
+      expect(await getItemHistory(db, reloaded[i].id)).toHaveLength(0);
     }
   });
 
@@ -73,20 +80,21 @@ describe('saveMeasurements — append-only history rule', () => {
     const totalValues = await db.get(Tables.measurementValues).query().fetchCount();
     expect(totalValues).toBe(items.length + 1);
 
-    // Sleeve has two history rows, newest first; old value preserved.
+    // Sleeve now has two value rows; its single EARLIER value is the preserved old one.
+    expect(await valueCount(db, sleeveId)).toBe(2);
     const sleeveHistory = await getItemHistory(db, sleeveId);
-    expect(sleeveHistory).toHaveLength(2);
-    expect(sleeveHistory[0].value).toBeCloseTo(newSleeve, 6);
-    expect(sleeveHistory[1].value).toBeCloseTo(oldSleeve, 6);
+    expect(sleeveHistory).toHaveLength(1);
+    expect(sleeveHistory[0].value).toBeCloseTo(oldSleeve, 6);
 
-    // Every other item is untouched: still one row, original current value.
+    // Every other item is untouched: still one row, no earlier values, original current.
     const reloaded = await setItems(db, set.id);
     for (let i = 0; i < reloaded.length; i++) {
       if (reloaded[i].id === sleeveId) {
         expect(reloaded[i].currentValue).toBeCloseTo(newSleeve, 6);
       } else {
         expect(reloaded[i].currentValue).toBeCloseTo(firstEdits[i].value, 6);
-        expect(await getItemHistory(db, reloaded[i].id)).toHaveLength(1);
+        expect(await valueCount(db, reloaded[i].id)).toBe(1);
+        expect(await getItemHistory(db, reloaded[i].id)).toHaveLength(0);
       }
     }
   });
@@ -111,10 +119,13 @@ describe('quickEditItem', () => {
 
     const changed = await quickEditItem(db, target.id, firstEdits[0].value + 0.5);
     expect(changed).toBe(true);
-    expect(await getItemHistory(db, target.id)).toHaveLength(2);
+    // Two value rows total; one earlier value (the pre-edit measurement).
+    expect(await valueCount(db, target.id)).toBe(2);
+    expect(await getItemHistory(db, target.id)).toHaveLength(1);
 
     const again = await quickEditItem(db, target.id, firstEdits[0].value + 0.5);
     expect(again).toBe(false);
-    expect(await getItemHistory(db, target.id)).toHaveLength(2);
+    expect(await valueCount(db, target.id)).toBe(2);
+    expect(await getItemHistory(db, target.id)).toHaveLength(1);
   });
 });

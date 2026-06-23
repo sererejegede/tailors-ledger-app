@@ -112,8 +112,9 @@ export async function addAdHocItem(
 }
 
 /**
- * An item's value history, newest first (newest = current). This is the timeline shown
- * on the item-history screen (data-model §4/§7).
+ * An item's value history, newest first (newest = current). Powers the inline history
+ * accordion on the set-detail screen, loaded lazily when a row is expanded (data-model
+ * §4/§7).
  */
 export async function getItemHistory(
   database: Database,
@@ -121,6 +122,38 @@ export async function getItemHistory(
 ): Promise<MeasurementValue[]> {
   return database
     .get<MeasurementValue>(Tables.measurementValues)
-    .query(Q.where('item_id', itemId), Q.sortBy('recorded_at', Q.desc))
+    .query(Q.where('item_id', itemId), Q.sortBy('recorded_at', Q.desc), Q.skip(1), Q.take(10))
     .fetch();
+}
+
+/**
+ * Earlier values (excluding each item's current/newest) for many items in ONE query,
+ * newest-first and capped per item. This drives the set-detail history badges + inline
+ * panels in a single round-trip instead of one query per row — local data per set is
+ * small, so eager-loading with the items is simpler and flicker-free.
+ */
+export async function earlierValuesByItem(
+  database: Database,
+  itemIds: string[],
+  limitPerItem = 10,
+): Promise<Record<string, MeasurementValue[]>> {
+  const result: Record<string, MeasurementValue[]> = {};
+  if (itemIds.length === 0) return result;
+
+  const rows = await database
+    .get<MeasurementValue>(Tables.measurementValues)
+    .query(Q.where('item_id', Q.oneOf(itemIds)), Q.sortBy('recorded_at', Q.desc))
+    .fetch();
+
+  const grouped: Record<string, MeasurementValue[]> = {};
+  for (const row of rows) {
+    const id = row.item.id;
+    (grouped[id] || (grouped[id] = [])).push(row);
+  }
+  // SQLite can't limit-per-group without window functions, so drop the current value and
+  // cap the earlier ones in memory (per set the row count is tiny).
+  for (const id of itemIds) {
+    result[id] = (grouped[id] || []).slice(1, 1 + limitPerItem);
+  }
+  return result;
 }

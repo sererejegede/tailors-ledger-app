@@ -18,6 +18,5 @@ export type RootStackParamList = {
   MeasurementEntry: { setId: string } | { templateId: string; clientId?: string; label?: string };
   ClientDetail: { clientId: string };
   SetDetail: { setId: string };
-  ItemHistory: { itemId: string; itemKey: string };
   TemplateEditor: { templateId?: string };
 };
