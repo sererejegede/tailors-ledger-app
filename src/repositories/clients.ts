@@ -99,14 +99,14 @@ export async function searchClients(database: Database, term: string): Promise<C
   const t = term.trim();
   const collection = database.get<Client>(Tables.clients);
   if (!t) {
-    return collection.query(notDeleted, Q.sortBy('name', Q.asc)).fetch();
+    return collection.query(notDeleted, Q.sortBy('created_at', Q.desc)).fetch();
   }
   const like = `%${Q.sanitizeLikeString(t)}%`;
   return collection
     .query(
       notDeleted,
       Q.or(Q.where('name', Q.like(like)), Q.where('phone', Q.like(like))),
-      Q.sortBy('name', Q.asc),
+      Q.sortBy('created_at', Q.desc),
     )
     .fetch();
 }
