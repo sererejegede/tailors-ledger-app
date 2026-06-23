@@ -82,6 +82,13 @@ export function PromptModal({
 
   if (!visible) return null;
 
+  // Closing always dismisses the keyboard too (an input behind the overlay can otherwise
+  // re-grab focus and keep it up). Tapping the backdrop closes, same as Cancel.
+  const close = () => {
+    Keyboard.dismiss();
+    onCancel();
+  };
+
   return (
     <Portal>
       <View style={styles.overlay}>
@@ -94,7 +101,7 @@ export function PromptModal({
         contentContainerStyle={[styles.scroll, { paddingBottom: kbHeight }]}
         keyboardShouldPersistTaps="always"
       >
-        <Pressable style={styles.backdropFill} />
+        <Pressable style={styles.backdropFill} onPress={close} />
         <View style={styles.card}>
           <Text style={styles.title}>{title}</Text>
           {message ? <Text style={styles.message}>{message}</Text> : null}
@@ -112,7 +119,7 @@ export function PromptModal({
           />
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <View style={styles.btns}>
-            <Pressable style={[styles.btn, styles.cancel]} onPress={onCancel}>
+            <Pressable style={[styles.btn, styles.cancel]} onPress={close}>
               <Text style={styles.cancelText}>Cancel</Text>
             </Pressable>
             <Pressable style={[styles.btn, styles.go]} onPress={() => onSubmit(value)}>

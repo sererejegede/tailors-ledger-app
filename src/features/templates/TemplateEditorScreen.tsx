@@ -6,6 +6,7 @@ import { fonts } from '@/theme/typography';
 import { TemplateItemRow, TemplateItemEditor } from '@/components/templates';
 import type { RootStackParamList } from '@/navigation/types';
 import { useTemplateEditor } from './useTemplateEditor';
+import { FloatingActionButton } from '@/components/FloatingActionButton';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'TemplateEditor'>;
 
@@ -51,9 +52,6 @@ export default function TemplateEditorScreen({ route, navigation }: Props) {
 
       <View style={styles.itemsHeader}>
         <Text style={styles.section}>Items</Text>
-        <Pressable onPress={s.openAddItem}>
-          <Text style={styles.add}>＋ Add item</Text>
-        </Pressable>
       </View>
 
       {s.items.length === 0 ? (
@@ -81,6 +79,11 @@ export default function TemplateEditorScreen({ route, navigation }: Props) {
         </Pressable>
       )}
 
+      <FloatingActionButton
+        onPress={s.openAddItem}
+        accessibilityLabel="Add item"
+      />
+
       <TemplateItemEditor
         draft={s.draft}
         onChange={s.updateDraft}
@@ -93,7 +96,7 @@ export default function TemplateEditorScreen({ route, navigation }: Props) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: space.lg, gap: space.sm },
+  content: { padding: space.lg, gap: space.sm, minHeight: '100%' },
   fieldLabel: { fontFamily: fonts.medium, fontSize: 13, color: colors.muted },
   nameInput: {
     borderWidth: 1,

@@ -50,6 +50,13 @@ export function TemplateItemEditor({ draft, onChange, onCancel, onSave }: Props)
 
   if (!draft) return null;
 
+  // Closing always dismisses the keyboard too (the Name field behind the overlay can
+  // otherwise re-grab focus and keep it up). Tapping the backdrop closes, same as Cancel.
+  const close = () => {
+    Keyboard.dismiss();
+    onCancel();
+  };
+
   return (
     <Portal>
       <View style={styles.overlay}>
@@ -58,7 +65,7 @@ export function TemplateItemEditor({ draft, onChange, onCancel, onSave }: Props)
           contentContainerStyle={[styles.scroll, { paddingBottom: kbHeight }]}
           keyboardShouldPersistTaps="always"
         >
-          <Pressable style={styles.backdropFill} onPress={onCancel} />
+          <Pressable style={styles.backdropFill} onPress={close} />
           <View style={styles.card}>
             <Text style={styles.title}>{draft.id ? 'Edit item' : 'Add item'}</Text>
             <TextInput
@@ -90,7 +97,7 @@ export function TemplateItemEditor({ draft, onChange, onCancel, onSave }: Props)
               />
             </View>
             <View style={styles.btns}>
-              <Pressable style={[styles.btn, styles.cancel]} onPress={onCancel}>
+              <Pressable style={[styles.btn, styles.cancel]} onPress={close}>
                 <Text style={styles.cancelText}>Cancel</Text>
               </Pressable>
               <Pressable style={[styles.btn, styles.go]} onPress={onSave}>
