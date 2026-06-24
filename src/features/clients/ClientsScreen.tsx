@@ -12,20 +12,19 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { database } from '@/db';
 import type Client from '@/db/models/Client';
-import { searchClients, createClient, DuplicateClientNameError } from '@/repositories/clients';
+import { searchClients } from '@/repositories/clients';
 import { getSettings } from '@/repositories/settings';
 import { listTemplates } from '@/repositories/templates';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
-import { PromptModal } from '@/components/PromptModal';
 import { ClientRow } from '@/components/ClientRow';
 import { FloatingActionButton } from '@/components/FloatingActionButton';
 import type { RootStackParamList } from '@/navigation/types';
 
 /**
- * Clients home (search-first). Minimal for 3a: it exists to reach the hero —
- * New measurement starts a measure-first draft, tapping a client starts a set for them,
- * Add client creates a name-only client. Full Client detail / polish lands in 3b.
+ * Clients home (search-first). New measurement (FAB) starts a measure-first session;
+ * tapping a client opens their detail. Clients are created by measuring (measure-first
+ * save, or the in-hero "add client"), so there's no separate add-client form here.
  */
 async function defaultTemplateId(): Promise<string> {
   const settings = await getSettings(database);
@@ -42,8 +41,6 @@ export default function ClientsScreen() {
 
   const [term, setTerm] = useState('');
   const [clients, setClients] = useState<Client[] | null>(null);
-  const [addOpen, setAddOpen] = useState(false);
-  const [addError, setAddError] = useState<string | undefined>();
 
   const reload = useCallback(async (q: string) => {
     setClients(await searchClients(database, q));
@@ -68,23 +65,6 @@ export default function ClientsScreen() {
     navigation.navigate('MeasurementEntry', { templateId });
   };
 
-  const addClient = async (name: string) => {
-    const trimmed = name.trim();
-    if (!trimmed) {
-      setAddOpen(false);
-      return;
-    }
-    try {
-      await createClient(database, { name: trimmed });
-      setAddOpen(false);
-      setAddError(undefined);
-      reload(term);
-    } catch (e) {
-      if (e instanceof DuplicateClientNameError) setAddError(e.message);
-      else throw e;
-    }
-  };
-
   return (
     <View style={[styles.screen, { paddingTop: insets.top + space.md }]}>
       <Text style={styles.h1}>Clients</Text>
@@ -107,7 +87,7 @@ export default function ClientsScreen() {
           contentContainerStyle={[styles.listContent, clients.length === 0 && styles.emptyWrap]}
           ListEmptyComponent={
             <Text style={styles.empty}>
-              {term ? 'No matching clients.' : 'No clients yet — start a measurement or add one.'}
+              {term ? 'No matching clients.' : 'No clients yet — start a measurement.'}
             </Text>
           }
           renderItem={({ item }) => (
@@ -118,17 +98,6 @@ export default function ClientsScreen() {
           )}
         />
       )}
-
-      <PromptModal
-        visible={addOpen}
-        title="Add client"
-        message="A name is all you need — phone and notes can come later."
-        placeholder="Client name"
-        submitLabel="Add"
-        error={addError}
-        onCancel={() => setAddOpen(false)}
-        onSubmit={addClient}
-      />
 
       <FloatingActionButton
         onPress={newMeasurement}

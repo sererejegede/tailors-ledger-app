@@ -4,10 +4,12 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { database, Tables } from '@/db';
 import type MeasurementSet from '@/db/models/MeasurementSet';
 import type Template from '@/db/models/Template';
+import type TemplateItem from '@/db/models/TemplateItem';
 import { setItems, createSetWithMeasurements, type NewMeasurementItem } from '@/repositories/sets';
 import { saveMeasurements, addAdHocItem } from '@/repositories/items';
 import { templateItems, listTemplates } from '@/repositories/templates';
 import { getClient, createClient, DuplicateClientNameError } from '@/repositories/clients';
+import { getSettings } from '@/repositories/settings';
 import type { RootStackParamList } from '@/navigation/types';
 import { useMeasurementEntry, type EntrySeed, type Edit } from './useMeasurementEntry';
 
@@ -48,14 +50,35 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
   const [prompt, setPrompt] = useState<Prompt | null>(null);
   const [templatePicker, setTemplatePicker] = useState(false);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [rangeWarnings, setRangeWarnings] = useState(true);
 
   const load = useCallback(async () => {
+    const settings = await getSettings(database);
+    setRangeWarnings(settings?.rangeWarningsEnabled ?? true);
     if (existingSetId) {
-      // Re-measure: load the persisted set/items.
+      // Re-measure: load the persisted set/items. Ranges live on the template, not on
+      // measurement_items, so look them up by key (best-effort — the template may have
+      // changed or been deleted, in which case there's simply no warning).
       const set = await database.get<MeasurementSet>(Tables.measurementSets).find(existingSetId);
       const client = await set.client.fetch();
       const items = await setItems(database, existingSetId);
-      setSeed(items.map((it) => ({ itemId: it.id, key: it.key, initial: it.currentValue ?? null })));
+      const ranges = new Map<string, TemplateItem>(
+        set.templateId
+          ? (await templateItems(database, set.templateId)).map((ti) => [ti.key, ti])
+          : [],
+      );
+      setSeed(
+        items.map((it) => {
+          const ti = ranges.get(it.key);
+          return {
+            itemId: it.id,
+            key: it.key,
+            initial: it.currentValue ?? null,
+            min: ti?.minRange,
+            max: ti?.maxRange,
+          };
+        }),
+      );
       setMeta({
         templateName: set.templateNameSnapshot ?? undefined,
         clientName: client.name,
@@ -72,7 +95,15 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
         unit: ti.unit,
       }));
       setDescriptors(desc);
-      setSeed(desc.map((d) => ({ itemId: d.tempId, key: d.key, initial: null })));
+      setSeed(
+        tItems.map((ti, i) => ({
+          itemId: desc[i].tempId,
+          key: ti.key,
+          initial: null,
+          min: ti.minRange,
+          max: ti.maxRange,
+        })),
+      );
       const client = clientIdParam ? await getClient(database, clientIdParam) : null;
       setMeta({ templateName: template.name, clientName: client?.name ?? '', label: labelParam });
     }
@@ -83,7 +114,7 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
     load();
   }, [load]);
 
-  const entry = useMeasurementEntry(seed);
+  const entry = useMeasurementEntry(seed, rangeWarnings);
   const isDraft = meta.clientName.trim() === '';
   // Every item filled and nothing mid-entry (dock.placeholder = not typing) → the dock's
   // Next becomes Save. While typing, stay Next so the buffer commits first.

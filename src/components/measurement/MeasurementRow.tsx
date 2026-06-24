@@ -1,5 +1,5 @@
 import { memo, useEffect } from 'react';
-import { LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
+import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   interpolate,
   interpolateColor,
@@ -37,6 +37,8 @@ type Props = {
   activeDisplay?: string;
   /** True when the active row is showing the existing/empty value (not actively typing). */
   activePlaceholder?: boolean;
+  /** The committed value is outside the template item's expected range (soft warning). */
+  warning?: boolean;
   onPress: () => void;
   onLayout?: (e: LayoutChangeEvent) => void;
 };
@@ -48,6 +50,7 @@ function MeasurementRowBase({
   changed,
   activeDisplay,
   activePlaceholder,
+  warning,
   onPress,
   onLayout,
 }: Props) {
@@ -96,6 +99,11 @@ function MeasurementRowBase({
         {itemKey}
       </AnimatedText>
       <View style={styles.right}>
+        {warning && !active && (
+          <View style={styles.warn}>
+            <Text style={styles.warnText}>!</Text>
+          </View>
+        )}
         {changed && !active && <View style={styles.dot} />}
         <AnimatedText style={[styles.val, { color: valColor }, valStyle]}>
           {active ? activeDisplay : formatInches(value)}
@@ -120,6 +128,15 @@ const styles = StyleSheet.create({
   keyActive: { fontFamily: fonts.semibold, color: colors.accentInk },
   right: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.accent },
+  warn: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  warnText: { fontFamily: fonts.bold, fontSize: 11, color: '#fff', lineHeight: 14 },
   val: { ...valueText },
 });
 
