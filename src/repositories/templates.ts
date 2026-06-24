@@ -2,6 +2,7 @@ import { Database, Q } from '@nozbe/watermelondb';
 import { Tables } from '@/db/schema';
 import Template from '@/db/models/Template';
 import TemplateItem from '@/db/models/TemplateItem';
+import AppSettings from '@/db/models/AppSettings';
 import { notDeleted, softDeleteById } from './softDelete';
 
 /**
@@ -28,11 +29,53 @@ export type TemplateItemPatch = Partial<{
 
 const DEFAULT_UNIT = 'in';
 
+/** Thrown when a non-blank template name collides with an existing (non-deleted) template. */
+export class DuplicateTemplateNameError extends Error {
+  constructor(public readonly templateName: string) {
+    super(`A template named "${templateName}" already exists.`);
+    this.name = 'DuplicateTemplateNameError';
+  }
+}
+
+/**
+ * Enforce unique template names, case-insensitive and trimmed, among non-deleted templates
+ * (repo-enforced — WatermelonDB has no unique constraints). Pass `excludeId` when renaming
+ * so a template doesn't clash with itself. Throws `DuplicateTemplateNameError`.
+ */
+export async function assertTemplateNameAvailable(
+  database: Database,
+  name: string,
+  excludeId?: string,
+): Promise<void> {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  const target = trimmed.toLowerCase();
+  const existing = await database.get<Template>(Tables.templates).query(notDeleted).fetch();
+  const clash = existing.some(
+    (t) => t.id !== excludeId && t.name.trim().toLowerCase() === target,
+  );
+  if (clash) throw new DuplicateTemplateNameError(trimmed);
+}
+
 export async function listTemplates(database: Database): Promise<Template[]> {
   return database
     .get<Template>(Tables.templates)
     .query(notDeleted, Q.sortBy('name', Q.asc))
     .fetch();
+}
+
+/**
+ * The template new measurements should seed from: the settings' default_template_id if
+ * set, else the `is_default` template, else the first available. Throws if there are none.
+ */
+export async function getDefaultTemplateId(database: Database): Promise<string> {
+  const settings = await database.get<AppSettings>(Tables.appSettings).query().fetch();
+  const fromSettings = settings[0]?.defaultTemplateId;
+  if (fromSettings) return fromSettings;
+  const templates = await listTemplates(database);
+  const fallback = templates.find((t) => t.isDefault) ?? templates[0];
+  if (!fallback) throw new Error('No template available — seed the database first.');
+  return fallback.id;
 }
 
 /** Items of a template in their habitual order, excluding tombstones. */
@@ -50,12 +93,54 @@ export async function createTemplate(
   database: Database,
   input: NewTemplate,
 ): Promise<Template> {
+  const name = input.name.trim();
+  await assertTemplateNameAvailable(database, name);
   return database.write(() =>
     database.get<Template>(Tables.templates).create((t) => {
-      t.name = input.name.trim();
+      t.name = name;
       t.isDefault = input.isDefault ?? false;
     }),
   );
+}
+
+/**
+ * Lazy create for a brand-new template: write the template and its items together, only
+ * once it has a real name and at least one item (the editor holds both in memory until
+ * then). Mirrors the measurement-set lazy create — backing out of the editor leaves no
+ * empty "New template" rows behind. Throws `DuplicateTemplateNameError` on a name clash.
+ */
+export type NewTemplateWithItems = {
+  name: string;
+  isDefault?: boolean;
+  items: Array<{ key: string; unit?: string; minRange?: number; maxRange?: number }>;
+};
+
+export async function createTemplateWithItems(
+  database: Database,
+  input: NewTemplateWithItems,
+): Promise<Template> {
+  const name = input.name.trim();
+  await assertTemplateNameAvailable(database, name);
+  return database.write(async () => {
+    const template = await database.get<Template>(Tables.templates).create((t) => {
+      t.name = name;
+      t.isDefault = input.isDefault ?? false;
+    });
+    const col = database.get<TemplateItem>(Tables.templateItems);
+    await Promise.all(
+      input.items.map((it, position) =>
+        col.create((ti) => {
+          ti.template!.id = template.id;
+          ti.key = it.key.trim();
+          ti.position = position;
+          ti.unit = it.unit ?? DEFAULT_UNIT;
+          ti.minRange = it.minRange;
+          ti.maxRange = it.maxRange;
+        }),
+      ),
+    );
+    return template;
+  });
 }
 
 export async function updateTemplate(
@@ -64,6 +149,7 @@ export async function updateTemplate(
   patch: { name?: string },
 ): Promise<Template> {
   const template = await database.get<Template>(Tables.templates).find(id);
+  if (patch.name !== undefined) await assertTemplateNameAvailable(database, patch.name, id);
   await database.write(async () => {
     await template.update((t) => {
       if (patch.name !== undefined) t.name = patch.name.trim();

@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -14,12 +13,13 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { database } from '@/db';
 import type Client from '@/db/models/Client';
 import { searchClients, createClient, DuplicateClientNameError } from '@/repositories/clients';
-import { createDraftSet, createSetFromTemplate } from '@/repositories/sets';
 import { getSettings } from '@/repositories/settings';
 import { listTemplates } from '@/repositories/templates';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { PromptModal } from '@/components/PromptModal';
+import { ClientRow } from '@/components/ClientRow';
+import { FloatingActionButton } from '@/components/FloatingActionButton';
 import type { RootStackParamList } from '@/navigation/types';
 
 /**
@@ -61,18 +61,11 @@ export default function ClientsScreen() {
     reload(q);
   };
 
-  const openEntry = (setId: string) => navigation.navigate('MeasurementEntry', { setId });
-
+  // Measure-first: jump straight into the hero with just the template. No client/set rows
+  // are written until the tailor saves and names the draft (createSetWithMeasurements).
   const newMeasurement = async () => {
     const templateId = await defaultTemplateId();
-    const set = await createDraftSet(database, { templateId });
-    openEntry(set.id);
-  };
-
-  const measureClient = async (client: Client) => {
-    const templateId = await defaultTemplateId();
-    const set = await createSetFromTemplate(database, { clientId: client.id, templateId });
-    openEntry(set.id);
+    navigation.navigate('MeasurementEntry', { templateId });
   };
 
   const addClient = async (name: string) => {
@@ -105,38 +98,23 @@ export default function ClientsScreen() {
         autoCorrect={false}
       />
 
-      <View style={styles.actions}>
-        <Pressable style={[styles.btn, styles.primary]} onPress={newMeasurement}>
-          <Text style={styles.primaryText}>＋ New measurement</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.btn, styles.secondary]}
-          onPress={() => {
-            setAddError(undefined);
-            setAddOpen(true);
-          }}
-        >
-          <Text style={styles.secondaryText}>Add client</Text>
-        </Pressable>
-      </View>
-
       {clients == null ? (
         <ActivityIndicator color={colors.accent} style={{ marginTop: space.xl }} />
       ) : (
         <FlatList
           data={clients}
           keyExtractor={(c) => c.id}
-          contentContainerStyle={clients.length === 0 && styles.emptyWrap}
+          contentContainerStyle={[styles.listContent, clients.length === 0 && styles.emptyWrap]}
           ListEmptyComponent={
             <Text style={styles.empty}>
               {term ? 'No matching clients.' : 'No clients yet — start a measurement or add one.'}
             </Text>
           }
           renderItem={({ item }) => (
-            <Pressable style={styles.row} onPress={() => measureClient(item)}>
-              <Text style={styles.rowName}>{item.name || 'Unnamed'}</Text>
-              {item.phone ? <Text style={styles.rowPhone}>{item.phone}</Text> : null}
-            </Pressable>
+            <ClientRow
+              client={item}
+              onPress={() => navigation.navigate('ClientDetail', { clientId: item.id })}
+            />
           )}
         />
       )}
@@ -150,6 +128,12 @@ export default function ClientsScreen() {
         error={addError}
         onCancel={() => setAddOpen(false)}
         onSubmit={addClient}
+      />
+
+      <FloatingActionButton
+        onPress={newMeasurement}
+        accessibilityLabel="New measurement"
+        label="New Measurement"
       />
     </View>
   );
@@ -169,12 +153,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     backgroundColor: colors.surface,
   },
-  actions: { flexDirection: 'row', gap: space.sm, marginVertical: space.md },
-  btn: { flex: 1, paddingVertical: space.md, borderRadius: radius.default, alignItems: 'center' },
-  primary: { backgroundColor: colors.accent },
-  primaryText: { fontFamily: fonts.bold, color: '#fff', fontSize: 15 },
-  secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line2 },
-  secondaryText: { fontFamily: fonts.semibold, color: colors.text, fontSize: 15 },
+  listContent: { paddingTop: space.sm, paddingBottom: 96 },
   row: {
     paddingVertical: space.md,
     borderBottomWidth: 1,

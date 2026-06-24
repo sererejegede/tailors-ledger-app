@@ -5,14 +5,19 @@
     "baseUrl": ".",
     "ignoreDeprecations": "6.0",
     "experimentalDecorators": true,
-    "types": ["jest"],
+    "types": [
+      "jest"
+    ],
     "useDefineForClassFields": false,
-    // WatermelonDB decorators provide the field accessors, so models declare fields
-    // without initializers; this stops strict-mode "no initializer" errors on them.
     "strictPropertyInitialization": false,
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": [
+        "src/*"
+      ]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ]
 }

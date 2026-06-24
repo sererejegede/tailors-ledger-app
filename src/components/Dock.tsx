@@ -15,13 +15,14 @@ type Props = {
   onDigit: (d: string) => void;
   onDelete: () => void;
   onNext: () => void;
+  saveMode?: boolean;
 };
 
-function DockBase({ frac, onFrac, onDigit, onDelete, onNext }: Props) {
+function DockBase({ frac, onFrac, onDigit, onDelete, onNext, saveMode }: Props) {
   return (
     <View style={styles.dock}>
       <FracChips value={frac} onChange={onFrac} />
-      <NumberPad onPress={onDigit} onDelete={onDelete} onNext={onNext} />
+      <NumberPad onPress={onDigit} onDelete={onDelete} onNext={onNext} saveMode={saveMode} />
     </View>
   );
 }

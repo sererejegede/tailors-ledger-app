@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  label: { fontFamily: fonts.semibold, fontSize: 20, color: colors.text },
+  label: { fontFamily: fonts.semibold, fontSize: 24, color: colors.text },
   labelActive: { color: '#fff' },
 });
 
