@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     gap: space.sm,
     justifyContent: 'center',
   },
-  label: { fontFamily: fonts.title, fontSize: 18, color: '#fff', fontWeight: '700' },
+  label: { fontFamily: fonts.semibold, fontSize: 18, color: '#fff' },
 });
 
 export const FloatingActionButton = memo(FloatingActionButtonBase);

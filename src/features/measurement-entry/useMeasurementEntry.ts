@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Frac } from '@/components/FracChips';
 import { composeInches, formatInches } from '@/lib/units';
+import { rangeWarning, type RangeWarning } from '@/lib/validation';
 
 /**
  * Entry-screen state machine, ported from the wireframe (`renderEntry`/`commitNext`).
@@ -8,8 +9,21 @@ import { composeInches, formatInches } from '@/lib/units';
  * persistence is the screen's job (saveMeasurements on save). `commitNext` writes the
  * buffer to the active item and auto-advances to the next EMPTY item, wrapping.
  */
-export type EntrySeed = { itemId: string; key: string; initial: number | null };
-export type EntryRow = { itemId: string; key: string; value: number | null; changed: boolean };
+export type EntrySeed = {
+  itemId: string;
+  key: string;
+  initial: number | null;
+  // Soft-validation bounds from the template item (inches); omitted = no range configured.
+  min?: number | null;
+  max?: number | null;
+};
+export type EntryRow = {
+  itemId: string;
+  key: string;
+  value: number | null;
+  changed: boolean;
+  warning: RangeWarning | null;
+};
 export type Edit = { itemId: string; value: number };
 
 export type MeasurementEntry = {
@@ -28,7 +42,7 @@ export type MeasurementEntry = {
 
 const MAX_WHOLE_DIGITS = 2; // inches 0–99
 
-export function useMeasurementEntry(seed: EntrySeed[]): MeasurementEntry {
+export function useMeasurementEntry(seed: EntrySeed[], rangeWarnings = true): MeasurementEntry {
   const initialMap = useMemo(
     () => Object.fromEntries(seed.map((s) => [s.itemId, s.initial])),
     [seed],
@@ -107,7 +121,13 @@ export function useMeasurementEntry(seed: EntrySeed[]): MeasurementEntry {
 
   const rows: EntryRow[] = seed.map((s) => {
     const v = values[s.itemId] ?? null;
-    return { itemId: s.itemId, key: s.key, value: v, changed: v != null && v !== initialMap[s.itemId] };
+    return {
+      itemId: s.itemId,
+      key: s.key,
+      value: v,
+      changed: v != null && v !== initialMap[s.itemId],
+      warning: rangeWarnings ? rangeWarning(v, s.min, s.max) : null,
+    };
   });
 
   const getEdits = useCallback(

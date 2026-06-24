@@ -70,6 +70,7 @@ export function EntryList({ rows, active, dockDisplay, dockPlaceholder, onTapRow
             value={r.value}
             active={i === active}
             changed={r.changed}
+            warning={r.warning != null}
             activeDisplay={dockDisplay}
             activePlaceholder={dockPlaceholder}
             onPress={() => onTapRow(i)}
