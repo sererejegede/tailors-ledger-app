@@ -116,18 +116,18 @@ export function useTemplateEditor(route: Props['route'], navigation: Props['navi
     load();
   }, [isNew, templateId, load]);
 
-  const move = useCallback(
-    async (index: number, dir: -1 | 1) => {
-      const target = index + dir;
-      if (target < 0 || target >= items.length) return;
-      const swapped = [...items];
-      [swapped[index], swapped[target]] = [swapped[target], swapped[index]];
-      if (isNew) {
-        setItems(swapped);
-        return;
+  // Move item from one index to another (drag-reorder). Adjacent moves are just a swap.
+  const reorder = useCallback(
+    async (from: number, to: number) => {
+      if (from === to || from < 0 || to < 0 || from >= items.length || to >= items.length) return;
+      const next = [...items];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      setItems(next); // optimistic, so the drop lands instantly
+      if (!isNew) {
+        await reorderTemplateItems(database, next.map((it) => it.id));
+        load();
       }
-      await reorderTemplateItems(database, swapped.map((it) => it.id));
-      load();
     },
     [isNew, items, load],
   );
@@ -155,22 +155,13 @@ export function useTemplateEditor(route: Props['route'], navigation: Props['navi
   }, [draft, isNew, templateId, load]);
 
   const removeItem = useCallback(
-    (item: EditItem) => {
-      Alert.alert('Remove item', `Remove “${item.key}” from this template?`, [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            if (isNew) {
-              setItems((prev) => prev.filter((it) => it.id !== item.id));
-              return;
-            }
-            await softDeleteTemplateItem(database, item.id);
-            load();
-          },
-        },
-      ]);
+    async (item: EditItem) => {
+      if (isNew) {
+        setItems((prev) => prev.filter((it) => it.id !== item.id));
+        return;
+      }
+      await softDeleteTemplateItem(database, item.id);
+      load();
     },
     [isNew, load],
   );
@@ -211,7 +202,7 @@ export function useTemplateEditor(route: Props['route'], navigation: Props['navi
     draft,
     saveName,
     makeDefault,
-    move,
+    reorder,
     saveDraft,
     removeItem,
     removeTemplate,

@@ -13,6 +13,7 @@ import { getRelativeTime } from '@/lib/time';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
 import { PromptModal } from '@/components/PromptModal';
+import { SetImages } from '@/components/SetImages';
 import ChevronIcon from '@/assets/icons/chevron-right.svg';
 import type { RootStackParamList } from '@/navigation/types';
 
@@ -136,6 +137,8 @@ export default function SetDetailScreen({ route, navigation }: Props) {
         </Text>
       </Pressable>
 
+      <SetImages setId={setId} />
+
       <PromptModal
         visible={editingNote}
         title="Set note"
@@ -151,7 +154,7 @@ export default function SetDetailScreen({ route, navigation }: Props) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: space.lg, gap: space.md },
+  content: { padding: space.lg, paddingBlockEnd: space.xxl, gap: space.md },
   summary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   summaryText: { fontFamily: fonts.medium, fontSize: 14, color: colors.muted },
   remeasure: {

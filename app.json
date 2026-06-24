@@ -39,7 +39,20 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Tailor's Ledger to attach photos to a measurement set.",
+          "cameraPermission": "Allow Tailor's Ledger to take photos of a measurement card or garment."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Unlock Tailor's Ledger with Face ID."
+        }
+      ]
     ]
   }
 }
