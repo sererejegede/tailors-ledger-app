@@ -141,6 +141,15 @@ export async function setsForClient(
   return sets.map((set) => ({ set, itemsCount: itemCountsBySetId.get(set.id) ?? 0 }));
 }
 
+export type SetWithClient = { set: MeasurementSet; client: string };
+
+/** A set together with its (eagerly loaded) client, for the set-detail header. */
+export async function getSet(database: Database, id: string): Promise<SetWithClient> {
+  const set = await database.get<MeasurementSet>(Tables.measurementSets).find(id);
+  const client = await set.client;
+  return { set, client: client.name };
+}
+
 /** A set's items in template/position order (the measurement-entry list). */
 export async function setItems(
   database: Database,

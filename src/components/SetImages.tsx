@@ -7,6 +7,7 @@ import { imagesForSet, createImage, softDeleteImage, type ImageKind } from '@/re
 import { captureFromCamera, pickFromGallery } from '@/lib/images';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
+import PlusIcon from '@/assets/icons/plus.svg';
 
 /**
  * Photos for a set (spec §8): camera/gallery capture, local thumbnails, remove. The file
@@ -74,12 +75,12 @@ export function SetImages({ setId }: { setId: string }) {
           <View key={img.id} style={styles.thumbWrap}>
             <Image source={{ uri: img.localUri }} style={styles.thumb} />
             <Pressable style={styles.removeBtn} hitSlop={8} onPress={() => remove(img)}>
-              <Text style={styles.removeText}>×</Text>
+              <PlusIcon color="#fff" width={12} height={12} style={{ transform: [{ rotate: '45deg' }] }} />
             </Pressable>
           </View>
         ))}
         <Pressable style={styles.addTile} onPress={onAdd}>
-          <Text style={styles.addPlus}>＋</Text>
+          <PlusIcon width={20} height={20} color={colors.accent} />
           <Text style={styles.addLabel}>Add photo</Text>
         </Pressable>
       </View>
@@ -90,9 +91,9 @@ export function SetImages({ setId }: { setId: string }) {
 const THUMB = 84;
 
 const styles = StyleSheet.create({
-  wrap: { gap: space.xs },
-  label: { fontFamily: fonts.medium, fontSize: 13, color: colors.muted },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  wrap: { gap: space.md },
+  label: { fontFamily: fonts.medium, fontSize: 16, color: colors.muted },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, paddingInline: space.md },
   thumbWrap: { width: THUMB, height: THUMB },
   thumb: { width: THUMB, height: THUMB, borderRadius: radius.md, backgroundColor: colors.line },
   removeBtn: {

@@ -6,7 +6,7 @@ import { database, Tables } from '@/db';
 import type MeasurementSet from '@/db/models/MeasurementSet';
 import type MeasurementItem from '@/db/models/MeasurementItem';
 import type MeasurementValue from '@/db/models/MeasurementValue';
-import { setItems, updateSet } from '@/repositories/sets';
+import { getSet, setItems, updateSet } from '@/repositories/sets';
 import { earlierValuesByItem } from '@/repositories/items';
 import { formatInches } from '@/lib/units';
 import { getRelativeTime } from '@/lib/time';
@@ -16,6 +16,7 @@ import { PromptModal } from '@/components/PromptModal';
 import { SetImages } from '@/components/SetImages';
 import ChevronIcon from '@/assets/icons/chevron-right.svg';
 import type { RootStackParamList } from '@/navigation/types';
+import { Divider } from '@/components/Divider';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SetDetail'>;
 
@@ -24,14 +25,16 @@ export default function SetDetailScreen({ route, navigation }: Props) {
   const [set, setSet] = useState<MeasurementSet | null>(null);
   const [items, setItems_] = useState<MeasurementItem[]>([]);
   const [editingNote, setEditingNote] = useState(false);
+  const [clientName, setClientName] = useState<string | null>(null);
   // Earlier values per item (current excluded), preloaded with the items in one query so
   // we know up front which rows carry history (badge) and can show the panel instantly.
   const [history, setHistory] = useState<Record<string, MeasurementValue[]>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const load = useCallback(async () => {
-    const s = await database.get<MeasurementSet>(Tables.measurementSets).find(setId);
-    setSet(s);
+    const { set, client } = await getSet(database, setId);
+    setSet(set);
+    setClientName(client);
     const rows = await setItems(database, setId);
     setItems_(rows);
     setHistory(await earlierValuesByItem(database, rows.map((r) => r.id)));
@@ -44,8 +47,12 @@ export default function SetDetailScreen({ route, navigation }: Props) {
   );
 
   useLayoutEffect(() => {
-    navigation.setOptions({ title: set?.label || set?.templateNameSnapshot || 'Set' });
-  }, [navigation, set?.label, set?.templateNameSnapshot]);
+    let title = 'Set';
+    if (set?.label) title = set.label;
+    else if (set?.templateNameSnapshot) title = set.templateNameSnapshot;
+    if (clientName) title = `${clientName} • ${title}`;
+    navigation.setOptions({ title });
+  }, [navigation, set?.label, set?.templateNameSnapshot, clientName]);
 
   const toggleItem = useCallback((itemId: string) => {
     setExpanded((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
@@ -130,13 +137,17 @@ export default function SetDetailScreen({ route, navigation }: Props) {
         })}
       </View>
 
+      <Divider height={1} />
+
+      <Text style={styles.noteLabel}>Note</Text>
       <Pressable style={styles.noteCard} onPress={() => setEditingNote(true)}>
-        <Text style={styles.noteLabel}>Note</Text>
-        <Text style={[styles.noteText, !set.note && styles.placeholder]}>
-          {set.note || 'Add a note for this set.'}
+        <Text style={[styles.noteText, !set.note && styles.placeholder]} numberOfLines={10}>
+          {set.note || 'Tap to add a note for this set.'}
         </Text>
       </Pressable>
 
+      <Divider height={1} />
+      
       <SetImages setId={setId} />
 
       <PromptModal
@@ -144,6 +155,7 @@ export default function SetDetailScreen({ route, navigation }: Props) {
         title="Set note"
         placeholder="e.g. wants extra room at the tummy"
         initialValue={set.note ?? ''}
+        multilineInput={true}
         submitLabel="Save"
         onCancel={() => setEditingNote(false)}
         onSubmit={saveNote}
@@ -154,7 +166,7 @@ export default function SetDetailScreen({ route, navigation }: Props) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: space.lg, paddingBlockEnd: space.xxl, gap: space.md },
+  content: { padding: space.lg, paddingBlockEnd: 96, gap: space.md },
   summary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   summaryText: { fontFamily: fonts.medium, fontSize: 14, color: colors.muted },
   remeasure: {
@@ -206,14 +218,13 @@ const styles = StyleSheet.create({
   histWhen: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
   histValue: { ...valueText, fontSize: 15, color: colors.muted },
   noteCard: {
-    backgroundColor: colors.surface,
+    // backgroundColor: colors.surface,
     borderRadius: radius.md,
-    borderWidth: 1,
+    // borderWidth: 1,
     borderColor: colors.line,
     padding: space.md,
-    gap: space.xs,
   },
-  noteLabel: { fontFamily: fonts.medium, fontSize: 13, color: colors.muted },
+  noteLabel: { fontFamily: fonts.medium, fontSize: 16, color: colors.muted },
   noteText: { fontFamily: fonts.body, fontSize: 15, color: colors.text, lineHeight: 21 },
   placeholder: { color: colors.faint },
 });
