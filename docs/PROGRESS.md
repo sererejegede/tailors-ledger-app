@@ -4,7 +4,7 @@
 > in [build-plan.md](build-plan.md). Source-of-truth docs: the spec, data-model, and
 > sync-contract in this folder; `CLAUDE-app.md` at the repo root.
 
-_Last updated: 2026-06-22._
+_Last updated: 2026-06-25._
 
 ## Confirmed decisions
 - **Framework:** React Native (Expo, SDK 56 / RN 0.85 / React 19 / TypeScript).
@@ -19,69 +19,76 @@ _Last updated: 2026-06-22._
 - **Phase 2 — DONE & merged (PR #2).** Repository layer (`src/repositories/`: clients,
   templates, sets, items, images, settings + shared softDelete), the append-only
   re-measure/history rule (`items.saveMeasurements` — only changed items write), client
-  name uniqueness (case-insensitive, blank drafts exempt), `lib/units` (decimal↔fraction)
-  + `lib/validation` (soft ranges). Draft sets use a blank-named placeholder client
-  (client_id is a required, immutable FK), named on save via `attachClient`.
-- **Phase 3 — IN PROGRESS.**
-  - **3a — DONE & merged (PR #3).** Navigation shell, theme/fonts, `App.tsx` shell, and
-    the **measurement-entry hero** (Dock · NumberPad · FracChips · MeasurementRow ·
-    PromptModal), Reanimated variable-height rows. Verified on device.
-  - **3b — IN PROGRESS on `feat/phase-3b-other-ui-screens`.** See the **Phase 3b handoff**
-    section below for exactly what's built/committed/uncommitted and what remains.
-- **Phase 4 — NOT STARTED.** Sync client (push/pull + image upload queue) vs the
-  contract. Open items to resolve first are listed in build-plan.md.
+  name uniqueness (case-insensitive), `lib/units` (decimal↔fraction) + `lib/validation`
+  (soft ranges). *(The original blank-named placeholder-draft + `attachClient` flow was
+  superseded in Phase 3 by lazy create — see below; those functions were removed.)*
+- **Phase 3 — DONE on `feat/phase-3-final`.** All UI screens + the cross-cutting behaviors
+  (lazy create, overlay portal, hero polish, inline history, soft range warnings) and the
+  four native features (set images, app lock, drag-reorder, text size). See the **Phase 3
+  summary** section below. Device-verified.
+- **Phase 4 — NOT STARTED (next).** Sync client (push/pull + image upload queue) vs the
+  contract. Open items to resolve first are listed in build-plan.md §"Open items".
 
-Tests/typecheck (latest): `npm test` → 9 suites / 43 tests pass; `npm run typecheck` clean.
+Tests/typecheck (latest): `npm test` → 10 suites / 46 tests pass; `npm run typecheck` clean;
+`npx expo export --platform android` bundles clean.
 
-## ⏩ Phase 3b handoff (resume here) — updated 2026-06-22
-Branch: **`feat/phase-3b-other-ui-screens`** (off merged `main`). The Android **dev build
-is already installed** on the device with all 3b native deps; **JS-only changes just need
-a Metro reload** — no rebuild unless deps/`babel.config.js`/`metro.config.js` change.
+## ✅ Phase 3 summary — DONE (branch `feat/phase-3-final`, off `main`)
+All Phase-3 UI is built, refactored, and device-verified; working tree clean. JS-only edits
+need just a Metro reload — **but the latest native deps require a fresh `expo run:android`**
+(see "Native features" below). Earlier 3b deps still apply: `react-native-reanimated@4.3.1`
+(+ `react-native-worklets`; its babel plugin is LAST in `babel.config.js`), `react-native-svg`
+(+ `react-native-svg-transformer`, dev, via `metro.config.js`).
 
-**New deps added this phase (all native except the svg transformer → already in the build):**
-`react-native-reanimated@4.3.1` (+ transitive `react-native-worklets`; babel plugin
-`react-native-worklets/plugin` is LAST in `babel.config.js`), `react-native-svg@15`,
-`react-native-svg-transformer` (dev; wired via `metro.config.js`).
+**Screens:** Clients (search + measure-first FAB), Client detail, the **measurement-entry
+hero**, Set detail (inline per-item history + photos), Templates list, Template editor,
+Settings. The standalone **Item-history screen was retired** — history is now an inline
+accordion on Set detail.
 
-**Built & COMMITTED on the branch** (commits: `c30d59f` icons, `05c71b2` ClientRow,
-`1b0c87c` relative time, `dad7f73` "add other screens"):
-- Tab bar redesign — custom `src/navigation/TabBar.tsx` (SVG icons + maroon active pill +
-  activation zoom animation via Reanimated). SVG icons in `src/assets/icons/*.svg` (all use
-  `currentColor` → themeable `color` prop; `metro.config.js` + `src/types/svg.d.ts`).
-- `src/components/ClientRow.tsx`; `lib/time.getRelativeTime` (+ `time.test.ts`).
-- Detail screens: `features/client-detail`, `features/set-detail`, `features/item-history`,
-  `features/templates/TemplatesScreen` + `TemplateEditorScreen`, `features/settings`.
-  Routes wired in `navigation/RootNavigator.tsx` + `types.ts` (ClientDetail · SetDetail ·
-  ItemHistory · TemplateEditor, native headers). Clients list → ClientDetail.
-- `getDefaultTemplateId` added to `repositories/templates.ts`.
+### Cross-cutting behaviors landed
+- **Lazy create — no empty rows.** Nothing is written until save. Measure-first / client-first
+  sessions live in memory; on save `sets.createSetWithMeasurements` writes a (named) client +
+  set + items + values in one transaction. Templates the same: `templates.createTemplateWithItems`
+  writes only once there's a name + ≥1 item. This **replaced** the blank-placeholder-draft +
+  `attachClient` flow (removed). Docs updated: data-model **§1a**, spec **§4/§12**.
+- **Name uniqueness** for clients AND templates (case-insensitive, trimmed; `DuplicateClientNameError`,
+  `DuplicateTemplateNameError`).
+- **Hero polish:** dock action flips **Next → Save** when all items filled; tap the title to
+  **swap template** (remounts via `navigation.replace`); **"Unnamed draft" → add client up
+  front** (creates a name-only client mid-session); **soft range warnings** (`lib/validation`
+  wired → a "!" badge on out-of-range rows, gated by the Settings toggle).
+- **Inline item history** on Set detail — earlier values preloaded in one batched query
+  (`items.earlierValuesByItem`), a count **badge**, only history-bearing rows expand.
+- **Overlay portal** (`components/OverlayHost`): every prompt/sheet renders above the navigator
+  via an in-tree `Portal`, NOT a RN `Modal` — fixes the Android first-tap-eaten + keyboard bugs.
+  Backdrop tap and Cancel both close AND dismiss the keyboard, consistently.
+- **Component split:** the hero and template editor were broken into logic hooks
+  (`useEntrySession`, `useTemplateEditor`) + presentational components under
+  `components/measurement/` and `components/templates/` (each screen now ~100–150 lines).
 
-**UNCOMMITTED in the working tree (verify on device, then commit):**
-- `src/components/PromptModal.tsx` — **DONE fix:** wrapped content in a `ScrollView` with
-  `keyboardShouldPersistTaps="handled"` so the first Save/Cancel tap isn't eaten by the
-  keyboard dismiss (the "weird first tap" bug). Typecheck clean; needs a device eyeball.
-- `src/theme/typography.ts` — added Plus Jakarta **italic** (`fonts.italic`) for the
-  Client-detail note.
-- `src/features/client-detail/ClientDetailScreen.tsx` — restructured to the mockup (centered
-  name + phone, "GENERAL PREFERENCES" note card, "MEASUREMENT SETS" header + count). User
-  also tweaked it (note-card border, FAB).
-- `src/components/FloatingActionButton.tsx` (untracked) — reusable FAB the user extracted;
-  used on Clients + Client-detail.
-- `src/features/clients/ClientsScreen.tsx`, `src/features/measurement-entry/MeasurementEntryScreen.tsx`
-  — user edits (FAB usage etc.).
+### Native features (required the rebuild)
+New deps — **`app.json` plugins changed, so a fresh `expo run:android` was needed**; the
+device build now includes them:
+- `expo-image-picker` + `expo-file-system` → **Set images** (camera/gallery; `lib/images`
+  copies the pick into the doc dir with the v56 `File`/`Directory`/`Paths` API; rows via the
+  existing images repo; thumbnails local; **upload is Phase 4**). `SetImages` on Set detail.
+- `expo-local-authentication` → **App lock** (`lib/appLock` + `components/AppLockGate` at the
+  app root; Settings toggle; gates on app open; declines if no device lock enrolled).
+- `react-native-gesture-handler` → **drag-reorder** template items + **swipe-to-delete**
+  (`components/templates/DraggableTemplateItems`). Position is driven by an `order` shared
+  value (NOT the React array index) so the data reorder can't race the animation — this is
+  what finally killed the post-drop flicker; live gap-open + accent-tinted **drop-zone** marker.
+  `GestureHandlerRootView` wraps the app in `App.tsx`.
+- **Text size** (no native dep) → `theme/textScale` patches `Text`/`TextInput` render to scale
+  explicit font sizes; `FontScaleProvider` at root + Settings Normal/Large.
 
-**Still DEFERRED in 3b (need a call / native deps):**
-- **Set images** (camera/gallery on Set detail) — needs `expo-image-picker`/`expo-camera`
-  (native → rebuild).
-- **Drag-reorder** of template items — currently ↑/↓ buttons; true drag needs
-  `react-native-gesture-handler` (native).
-- **Quick-edit a single item** from Set detail (currently tap → Item history; Re-measure edits).
-- **Soft range warnings** surfaced in the hero (the `lib/validation` helper exists, unused in UI).
-- **App lock** / **text size** in Settings (native `expo-local-authentication` / app-wide scaling).
-- **`phone.svg`** icon — Client-detail uses a unicode `☏` stand-in; drop a `phone.svg` in
-  `src/assets/icons/` and swap it in.
-- **"Add client" button** was removed from the Clients screen (the FAB does measure-first
-  only), so the add-client `PromptModal` there is currently unreachable — decide whether to
-  re-add a standalone "Add client" affordance.
+`app.json` plugins added: `expo-image-picker` (photo/camera permission strings),
+`expo-local-authentication` (Face ID string).
+
+### Intentional cuts (not gaps)
+- Standalone "Add client" form **removed** — clients are created by measuring (measure-first
+  save, or the in-hero add-client). Item-history screen retired (inline now). Voice + Account
+  appear as inert **"Coming soon"** rows in Settings. Continuous **autosave** is deferred to a
+  later enhancement (spec §4 / data-model §1a, kept empty-safe).
 
 ### Build & inspect quick-reference (current workflow)
 - **Native rebuild WITHOUT starting Metro** (user owns Metro): set env (`JAVA_HOME` JDK17,
@@ -205,10 +212,14 @@ If `:5555` refuses, the phone rebooted out of tcpip mode — re-enable once over
 
 ## Continuing with Claude on the new machine
 A fresh Claude session there will auto-load `CLAUDE.md` → `AGENTS.md` +
-`CLAUDE-app.md`. Point it at this file and `docs/build-plan.md` to resume. The next
-task is **Phase 3b** (the remaining screens — Clients full, Client detail, New client,
-Set detail, Item history, Templates editor, Settings) — build against the local store,
-keep the per-phase pause gate, and don't touch the sync contract without a doc change.
+`CLAUDE-app.md`. Point it at this file and `docs/build-plan.md` to resume. **Phase 3 is
+done; the next task is Phase 4 — the sync client** (`src/sync/`: push/pull against
+`/v1/sync` per `tailor-sync-api-contract.md`, opaque cursor, push-before-pull, apply
+`applied`/handle `rejected`, mapper strips local-only fields; plus the image upload queue
+sign→PUT→sync). **Resolve the three "Open items needing your decision" in build-plan.md
+first** (delete-tombstone LWW, cursor vs WatermelonDB `lastPulledAt`, `sync_status` column)
+— they may need a small sync-contract doc edit, so raise them before coding. Keep the
+per-phase pause gate; don't touch the sync contract without a doc change.
 
 ## Verification commands
 - `npm test` — jest (jsdom + WatermelonDB LokiJS in-memory adapter).
