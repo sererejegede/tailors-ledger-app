@@ -4,6 +4,7 @@
     "slug": "tailors-ledger",
     "version": "1.0.0",
     "orientation": "portrait",
+    "scheme": "tailorsledger",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
@@ -52,7 +53,13 @@
         {
           "faceIDPermission": "Unlock Tailor's Ledger with Face ID."
         }
-      ]
-    ]
+      ],
+      "expo-web-browser"
+    ],
+    "extra": {
+      "backendBaseUrl": "https://tailors-ledger-be.onrender.com/v1",
+      "supabaseUrl": "https://enywrjcebqbhendeaswx.supabase.co",
+      "supabaseAnonKey": "sb_publishable_ZBj8m_kF-c_h3x7mUEOjuw_b38pGagx"
+    }
   }
 }

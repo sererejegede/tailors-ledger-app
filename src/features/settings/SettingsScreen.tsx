@@ -11,6 +11,7 @@ import { canUseAppLock } from '@/lib/appLock';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { useFontScale } from '@/theme/textScale';
+import { AccountSection } from './AccountSection';
 
 /**
  * Local-only settings (data-model §9): default template, soft range warnings, fraction
@@ -76,6 +77,8 @@ export default function SettingsScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md }]}>
       <Text style={styles.h1}>Settings</Text>
+
+      <AccountSection />
 
       {/* Default template */}
       <Text style={styles.section}>Default template</Text>
@@ -167,12 +170,8 @@ export default function SettingsScreen() {
       {/* Later (inert in v1) */}
       <Text style={styles.section}>Later</Text>
       <View style={styles.card}>
-        <View style={[styles.optionRow]}>
-          <Text style={styles.soonText}>Voice entry</Text>
-          <Text style={styles.soonTag}>Coming soon</Text>
-        </View>
         <View style={[styles.optionRow, styles.optionRowLast]}>
-          <Text style={styles.soonText}>Account &amp; sync</Text>
+          <Text style={styles.soonText}>Voice entry</Text>
           <Text style={styles.soonTag}>Coming soon</Text>
         </View>
       </View>
