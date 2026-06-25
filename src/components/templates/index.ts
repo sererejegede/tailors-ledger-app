@@ -1,5 +1,5 @@
-import { TemplateItemRow } from './TemplateItemRow';
 import { TemplateItemEditor } from './TemplateItemEditor';
 import { TemplatePickerSheet } from './TemplatePickerSheet';
+import { DraggableTemplateItems } from './DraggableTemplateItems';
 
-export { TemplateItemRow, TemplateItemEditor, TemplatePickerSheet };
+export { TemplateItemEditor, TemplatePickerSheet, DraggableTemplateItems };

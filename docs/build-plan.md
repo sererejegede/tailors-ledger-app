@@ -159,20 +159,23 @@ Implements `tailor-sync-api-contract.md` against the local store.
 
 ---
 
-## Open items needing your decision before Phase 4 (don't invent — change docs first)
+## Open items before Phase 4 — RESOLVED (2026-06-25)
 
-1. **Delete tombstones vs LWW.** WatermelonDB emits deletes as **bare ids**
-   (matches contract §3), but contract §9 resolves deletes by `updated_at` LWW —
-   a bare id carries no timestamp. Decide: server stamps delete time, or the wire
-   delete carries a timestamp. Likely a small clarification to the contract.
-2. **Cursor vs WatermelonDB `lastPulledAt`.** `synchronize()` expects a numeric
-   `lastPulledAt`; our cursor is an opaque string. Plan: persist our opaque cursor
-   in a side-channel and use WatermelonDB only for first-vs-delta + dirty-tracking.
-   No wire change — confirm this is acceptable.
-3. **`sync_status` column.** Plan to fold it into WatermelonDB's `_status` (it never
-   crosses the wire). Confirm we're not keeping a redundant column.
+1. **Delete tombstones → LWW with a server-stamped delete time.** Deletes stay **bare ids**
+   on the wire (contract §3 unchanged); since a bare id has no `updated_at`, the server stamps
+   the tombstone at receive-time and LWW resolves delete-vs-edit by that. Doc'd in
+   **sync-contract §9** + **data-model §6**. (Rejected: sending `deleted_at` on the wire —
+   true edit-time delete LWW — as unnecessary for the single-user model.)
+2. **Cursor → our opaque `server_seq` cursor in a side-channel.** Persist it in
+   `app_settings.sync_cursor` (+ `last_synced_at`); drive `synchronize()` with custom
+   `pullChanges`/`pushChanges`; WatermelonDB is used only for dirty-row tracking + first-vs-delta.
+   WatermelonDB's numeric `lastPulledAt` is **not** the checkpoint (wall-clock vs our seq).
+   Doc'd in **sync-contract §4** + **data-model §6**.
+3. **No `sync_status` column.** Already the case in `db/schema.ts` — dirty-tracking is
+   WatermelonDB's built-in `_status`/`_changed` (never crosses the wire). Doc reconciled in
+   **data-model §1/§6** + **sync-contract §11**.
 
-These don't block Phases 1–3; I'll raise concrete doc edits when we reach Phase 4.
+All three are now reflected in the source-of-truth docs; Phase 4 can implement against them.
 
 ## Verification
 

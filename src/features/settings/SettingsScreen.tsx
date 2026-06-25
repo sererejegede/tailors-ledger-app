@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { database } from '@/db';
@@ -7,8 +7,10 @@ import type AppSettings from '@/db/models/AppSettings';
 import type Template from '@/db/models/Template';
 import { getSettings, updateSettings } from '@/repositories/settings';
 import { listTemplates, setDefaultTemplate } from '@/repositories/templates';
+import { canUseAppLock } from '@/lib/appLock';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
+import { useFontScale } from '@/theme/textScale';
 
 /**
  * Local-only settings (data-model §9): default template, soft range warnings, fraction
@@ -16,6 +18,7 @@ import { fonts } from '@/theme/typography';
  */
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const { setLarge } = useFontScale();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
 
@@ -42,6 +45,28 @@ export default function SettingsScreen() {
     async (templateId: string) => {
       await setDefaultTemplate(database, templateId);
       await patch({ defaultTemplateId: templateId });
+    },
+    [patch],
+  );
+
+  const chooseTextSize = useCallback(
+    async (size: 'normal' | 'large') => {
+      setLarge(size === 'large'); // apply immediately app-wide
+      await patch({ textSize: size });
+    },
+    [patch, setLarge],
+  );
+
+  const toggleAppLock = useCallback(
+    async (enabled: boolean) => {
+      if (enabled && !(await canUseAppLock())) {
+        Alert.alert(
+          'App lock unavailable',
+          'Set up a screen lock (PIN, pattern, or biometrics) on your device first.',
+        );
+        return;
+      }
+      await patch({ appLockEnabled: enabled });
     },
     [patch],
   );
@@ -92,6 +117,25 @@ export default function SettingsScreen() {
         })}
       </View>
 
+      {/* Text size */}
+      <Text style={styles.section}>Text size</Text>
+      <View style={styles.segment}>
+        {(['normal', 'large'] as const).map((sz) => {
+          const on = (settings.textSize ?? 'normal') === sz;
+          return (
+            <Pressable
+              key={sz}
+              style={[styles.segItem, on && styles.segItemOn]}
+              onPress={() => chooseTextSize(sz)}
+            >
+              <Text style={[styles.segText, on && styles.segTextOn]}>
+                {sz === 'normal' ? 'Normal' : 'Large'}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
       {/* Range warnings */}
       <View style={styles.toggleRow}>
         <View style={{ flex: 1 }}>
@@ -106,7 +150,34 @@ export default function SettingsScreen() {
         />
       </View>
 
-      <Text style={styles.footer}>Units: inches. Voice, app lock, and accounts arrive later.</Text>
+      {/* App lock */}
+      <View style={styles.toggleRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.toggleTitle}>App lock</Text>
+          <Text style={styles.hint}>Require your device passcode or biometrics to open the app.</Text>
+        </View>
+        <Switch
+          value={settings.appLockEnabled}
+          onValueChange={toggleAppLock}
+          trackColor={{ true: colors.accent, false: colors.line2 }}
+          thumbColor="#fff"
+        />
+      </View>
+
+      {/* Later (inert in v1) */}
+      <Text style={styles.section}>Later</Text>
+      <View style={styles.card}>
+        <View style={[styles.optionRow]}>
+          <Text style={styles.soonText}>Voice entry</Text>
+          <Text style={styles.soonTag}>Coming soon</Text>
+        </View>
+        <View style={[styles.optionRow, styles.optionRowLast]}>
+          <Text style={styles.soonText}>Account &amp; sync</Text>
+          <Text style={styles.soonTag}>Coming soon</Text>
+        </View>
+      </View>
+
+      <Text style={styles.footer}>Units: inches.</Text>
     </ScrollView>
   );
 }
@@ -171,5 +242,7 @@ const styles = StyleSheet.create({
     marginTop: space.lg,
   },
   toggleTitle: { fontFamily: fonts.semibold, fontSize: 16, color: colors.text },
+  soonText: { fontFamily: fonts.medium, fontSize: 16, color: colors.muted },
+  soonTag: { fontFamily: fonts.semibold, fontSize: 12, color: colors.faint },
   footer: { fontFamily: fonts.body, fontSize: 13, color: colors.faint, marginTop: space.xl },
 });

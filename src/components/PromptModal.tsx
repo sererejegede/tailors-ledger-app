@@ -107,7 +107,8 @@ export function PromptModal({
           {message ? <Text style={styles.message}>{message}</Text> : null}
           <TextInput
             ref={inputRef}
-            style={[styles.input, error ? styles.inputError : null]}
+            style={[styles.input, error ? styles.inputError : null, { height: multilineInput ? 200 : 'auto' }]}
+            textAlignVertical="top"
             placeholder={placeholder}
             placeholderTextColor={colors.faint}
             value={value}
@@ -162,17 +163,18 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.title, fontSize: 20, color: colors.text },
   message: { fontFamily: fonts.body, fontSize: 14, color: colors.muted },
   input: {
-    borderWidth: 1,
+    // borderWidth: 1,
     borderColor: colors.line2,
-    borderRadius: radius.default,
+    borderRadius: radius.md,
     paddingHorizontal: space.md,
     paddingVertical: space.md,
     fontFamily: fonts.body,
     fontSize: 16,
     color: colors.text,
     marginTop: space.xs,
+    height: null,
   },
-  inputError: { borderColor: colors.danger },
+  inputError: { borderColor: colors.danger, height: null },
   error: { fontFamily: fonts.medium, fontSize: 13, color: colors.danger },
   btns: { flexDirection: 'row', justifyContent: 'flex-end', gap: space.sm, marginTop: space.sm },
   btn: { paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.md },
