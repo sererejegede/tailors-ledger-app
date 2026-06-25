@@ -55,6 +55,13 @@ The cursor is an **opaque string** the client stores after each successful pull 
 
 Reference implementation: the server keeps a per-user monotonic `server_seq` (bigint) that increments on every applied write. The cursor encodes the highest `server_seq` the client has received. Pull returns rows with `server_seq > cursor` ordered by `server_seq`. This sequence — not wall-clock time — is what makes pull ordering immune to device clock skew (the "server-authoritative checkpoint" from the data-model doc). `updated_at` is kept as the device edit time and used **only** for last-write-wins comparison.
 
+> **Client storage (resolved decision, 2026-06-25).** The app persists this opaque cursor in
+> its own side-channel — `app_settings.sync_cursor` (+ `last_synced_at`) — and drives
+> WatermelonDB's `synchronize()` with custom `pullChanges`/`pushChanges` that read/write that
+> cursor and call `/v1/sync/pull|push`. WatermelonDB's numeric `lastPulledAt` is **not** used
+> as the checkpoint (it's wall-clock; our cursor is `server_seq`-based); WatermelonDB is used
+> only for its dirty-row tracking and the first-vs-delta signal. See build-plan.md "Open items".
+
 ---
 
 ## 5. `POST /v1/sync/pull`
@@ -205,7 +212,15 @@ For each row in a push (`created` or `updated`):
 - If a stored row exists → apply the incoming row **iff `incoming.updated_at >= stored.updated_at`** (later edit wins). On an exact tie, the incoming write wins (deterministic). The applied row's `updated_at` is preserved as the device value; the server bumps `server_seq`.
 - If the incoming row loses (stored is newer) → the server keeps its version and returns *that* canonical row in `applied`, so the client overwrites its stale local copy.
 
-Deletes (`deleted` ids) follow the same rule: a tombstone is a write at the client's deletion time; whichever of delete vs. concurrent update has the later `updated_at` wins. (Soft-deleted rows then sync as tombstones to other devices.)
+Deletes (`deleted` ids) are last-write-wins too, but a bare id carries no `updated_at`, so
+the comparison uses a **server-stamped tombstone time**: on push the server records the
+tombstone at its receive time and resolves delete-vs-concurrent-update by that — a delete
+applied after a row's current `updated_at` removes it; an update whose `updated_at` is newer
+than the tombstone resurrects the row and wins. (Soft-deleted rows then propagate as
+tombstones to other devices.) This keeps the wire format as **bare ids** (§3); we do *not*
+send `deleted_at` on the wire. Acceptable because concurrent delete-vs-edit on one row is
+rare under the single-user / occasional-multi-device model. *(Resolved decision, 2026-06-25:
+LWW with server-stamped delete time — see build-plan.md "Open items".)*
 
 `measurement_values` is exempt — union by id, never a conflict (§7).
 
@@ -237,8 +252,8 @@ The client should never block a measurement session on any sync call — sync ru
 | `clients.photo_remote_url`, `images.remote_url` | yes | shareable URL |
 | `clients.photo_local_uri`, `images.local_uri` | **no** | device-specific path |
 | `images.upload_status` | **no** | local bookkeeping; presence of `remote_url` tells other devices it's available |
-| `sync_status` | **no** | purely local push/pull state |
-| `app_settings` (units, text size, app lock) | **no** (mostly) | local; only sync shop profile / `default_template_id` if you add multi-device |
+| `sync_status` | **no** | purely local push/pull state. On device this is **not a column** — dirty-tracking is WatermelonDB's built-in `_status`/`_changed` (resolved decision, 2026-06-25; see data-model §1). |
+| `app_settings` (units, text size, app lock) | **no** (mostly) | local; only sync shop profile / `default_template_id` if you add multi-device. The client also persists the opaque pull **cursor** here (`sync_cursor`) + `last_synced_at` — see §4. |
 
 ---
 

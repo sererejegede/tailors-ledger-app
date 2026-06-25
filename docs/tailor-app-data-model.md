@@ -9,7 +9,7 @@
 The app must be fully usable with no connection and reconcile later, so the model follows five rules everywhere:
 
 1. **IDs are generated on the device**, not by the server. Use **UUID v7** (time-ordered, so rows also sort naturally by creation). Auto-increment integer keys are unusable offline because two devices would mint the same id.
-2. **Every syncable row carries bookkeeping**: `created_at`, `updated_at`, `deleted_at` (soft delete / tombstone), and `sync_status`. Nothing is ever hard-deleted on the device — deletes are tombstones that propagate, then get purged after they've synced.
+2. **Every syncable row carries bookkeeping**: `created_at`, `updated_at`, `deleted_at` (soft delete / tombstone), and a push/pull status. (On the actual WatermelonDB store this status is the engine's built-in `_status`/`_changed`, **not** a `sync_status` column — see §6.) Nothing is ever hard-deleted on the device — deletes are tombstones that propagate, then get purged after they've synced.
 3. **History is append-only.** Measurement values are never updated in place; a change writes a new immutable row. Append-only data effectively cannot conflict, which is exactly what you want over a flaky connection — and it's also the table that satisfies the "keep the previous sleeve length" requirement for free.
 4. **Binaries never live in a row.** Photos sit on the device filesystem; the database stores a local URI, an (eventual) remote URL, and an upload status. The image bytes sync through their own background queue, not through the row.
 5. **Conflict resolution is last-write-wins per row**, keyed on `updated_at`, with the server stamping the authoritative time at sync to absorb device-clock skew. Because the high-churn data (values) is append-only, true conflicts are rare and land only on small edits like renaming a client.
@@ -181,8 +181,13 @@ This is why values are append-only and separate from the item: the requirement (
 - **Direction:** two-way. Pull server changes since `last_synced_at`, push local rows where `sync_status = pending` (and tombstones where `deleted_at` is set).
 - **Keying:** device-generated UUIDs mean a row created offline keeps its identity forever — no id remapping on first sync.
 - **Conflicts:** last-write-wins by `updated_at`, server-authoritative timestamp. Acceptable here because (a) it's typically one tailor per account, and (b) the only mutable rows are small metadata (client name/comment, set label/note, template edits). The high-volume data — values — is append-only and merges by union of ids, so it never conflicts.
-- **Deletes:** soft via `deleted_at`; the server keeps the tombstone until all the user's devices have seen it, then both sides can purge.
+- **Deletes:** soft via `deleted_at`; the server keeps the tombstone until all the user's devices have seen it, then both sides can purge. Deletes sync as **bare ids** (no timestamp on the wire), so delete-vs-edit LWW compares against a **server-stamped tombstone time** (resolved 2026-06-25 — see sync-contract §9).
 - **Clock skew:** stamp `updated_at` on the device for ordering locally, but let the server overwrite with its receive-time on push so cross-device comparisons use one clock.
+- **Dirty-tracking & cursor (resolved 2026-06-25):** on the WatermelonDB device store the
+  `sync_status` concept is the engine's built-in **`_status`/`_changed`** — there is **no
+  separate `sync_status` column** (it never crosses the wire anyway). The pull **cursor** is
+  the contract's opaque `server_seq` string, persisted in `app_settings.sync_cursor`
+  (+ `last_synced_at`); WatermelonDB's numeric `lastPulledAt` is not used as the checkpoint.
 - **Schema versioning:** keep a migrations table; bump a `schema_version` so old installs migrate cleanly.
 
 ---

@@ -216,10 +216,11 @@ A fresh Claude session there will auto-load `CLAUDE.md` → `AGENTS.md` +
 done; the next task is Phase 4 — the sync client** (`src/sync/`: push/pull against
 `/v1/sync` per `tailor-sync-api-contract.md`, opaque cursor, push-before-pull, apply
 `applied`/handle `rejected`, mapper strips local-only fields; plus the image upload queue
-sign→PUT→sync). **Resolve the three "Open items needing your decision" in build-plan.md
-first** (delete-tombstone LWW, cursor vs WatermelonDB `lastPulledAt`, `sync_status` column)
-— they may need a small sync-contract doc edit, so raise them before coding. Keep the
-per-phase pause gate; don't touch the sync contract without a doc change.
+sign→PUT→sync). The three pre-Phase-4 **open items are now RESOLVED** and reflected in the
+docs (build-plan.md "Open items" + sync-contract §4/§9/§11 + data-model §6): deletes are
+LWW with a server-stamped tombstone time (bare ids kept); the opaque `server_seq` cursor
+lives in `app_settings.sync_cursor`; no `sync_status` column (use WatermelonDB `_status`).
+Keep the per-phase pause gate; don't touch the sync contract without a doc change.
 
 ## Verification commands
 - `npm test` — jest (jsdom + WatermelonDB LokiJS in-memory adapter).
