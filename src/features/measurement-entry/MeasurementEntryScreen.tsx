@@ -4,7 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors } from '@/theme/tokens';
 import { Dock } from '@/components/Dock';
 import { EntryTopBar, EntryHeader, EntryList, EntryPrompts } from '@/components/measurement';
-import { TemplatePickerSheet } from '@/components/templates';
+import { ItemPickerSheet } from '@/components/templates';
 import type { RootStackParamList } from '@/navigation/types';
 import { useEntrySession } from './useEntrySession';
 
@@ -78,9 +78,9 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
         onSubmitCreateClient={s.submitCreateClient}
       />
 
-      <TemplatePickerSheet
+      <ItemPickerSheet
         visible={s.templatePicker}
-        templates={s.templates}
+        options={s.templates.map((t) => ({ id: t.id, name: t.name }))}
         currentId={s.templateId}
         onSelect={s.switchTemplate}
         onClose={s.closeTemplatePicker}

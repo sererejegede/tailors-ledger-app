@@ -35,7 +35,7 @@ export function AccountSection() {
   };
 
   return (
-    <>
+    <View style={styles.sectionContainer}>
       <Text style={styles.section}>Account &amp; sync</Text>
 
       {!configured ? (
@@ -94,12 +94,13 @@ export function AccountSection() {
           </Pressable>
         </View>
       )}
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   section: { fontFamily: fonts.semibold, fontSize: 15, color: colors.text, marginTop: space.md },
+  sectionContainer: { paddingHorizontal: space.lg },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,

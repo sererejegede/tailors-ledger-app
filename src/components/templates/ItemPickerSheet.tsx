@@ -1,35 +1,35 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import type Template from '@/db/models/Template';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { Portal } from '@/components/OverlayHost';
 
-/**
- * Bottom-sheet template chooser for the hero (new sets only). Rendered above the navigator
- * via the Portal so the scrim dims everything; the current template is checked.
- */
+type Option = {
+  id: string;
+  name: string;
+};
+
 type Props = {
   visible: boolean;
-  templates: Template[];
+  options: Option[];
   currentId?: string;
   onSelect: (id: string) => void;
   onClose: () => void;
   bottomInset: number;
 };
 
-export function TemplatePickerSheet({ visible, templates, currentId, onSelect, onClose, bottomInset }: Props) {
+export function ItemPickerSheet({ visible, options, currentId, onSelect, onClose, bottomInset }: Props) {
   if (!visible) return null;
   return (
     <Portal>
       <View style={styles.pickerOverlay}>
         <Pressable style={styles.pickerScrim} onPress={onClose} />
         <View style={[styles.sheet, { paddingBottom: bottomInset + space.lg }]}>
-          <Text style={styles.sheetTitle}>Choose template</Text>
-          {templates.map((t) => {
-            const current = t.id === currentId;
+          <Text style={styles.sheetTitle}>Choose</Text>
+          {options.map((o) => {
+            const current = o.id === currentId;
             return (
-              <Pressable key={t.id} style={styles.option} onPress={() => onSelect(t.id)}>
-                <Text style={[styles.optionText, current && styles.optionCurrent]}>{t.name}</Text>
+              <Pressable key={o.id} style={styles.option} onPress={() => onSelect(o.id)}>
+                <Text style={[styles.optionText, current && styles.optionCurrent]}>{o.name}</Text>
                 {current ? <Text style={styles.optionCheck}>✓</Text> : null}
               </Pressable>
             );
