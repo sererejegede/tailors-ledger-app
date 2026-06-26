@@ -149,7 +149,7 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: {  paddingBottom: space.xl, gap: space.sm },
+  content: {  paddingBottom: space.xl },
   h1: { paddingHorizontal: space.lg, fontFamily: fonts.title, fontSize: 28, color: colors.text, marginBottom: space.sm },
   section: { paddingHorizontal: space.lg,fontFamily: fonts.semibold, fontSize: 15, color: colors.text, marginTop: space.md },
   hint: { paddingHorizontal: space.lg,fontFamily: fonts.body, fontSize: 13, color: colors.muted },

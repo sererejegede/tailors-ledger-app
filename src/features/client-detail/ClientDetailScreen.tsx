@@ -148,6 +148,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
         submitLabel="Save"
         error={edit?.error}
         multilineInput={edit?.field === 'comment'}
+        inputMode={edit?.field === 'phone' ? 'tel' : 'text'}
+        keyboardType={edit?.field === 'phone' ? 'phone-pad' : 'default'}
         onCancel={() => setEdit(null)}
         onSubmit={submitEdit}
       />

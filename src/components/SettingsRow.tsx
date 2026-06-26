@@ -33,13 +33,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBlock: space.md,
+    paddingBlock: space.lg,
     paddingInline: space.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
   },
   pressed: {
-    backgroundColor: colors.line,
+    backgroundColor: colors.accentTint,
   },
   title: {
     fontFamily: fonts.semibold,

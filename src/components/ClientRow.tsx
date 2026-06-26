@@ -49,6 +49,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: space.md,
     paddingVertical: 14,
+    paddingHorizontal: space.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
     backgroundColor: colors.bg,
