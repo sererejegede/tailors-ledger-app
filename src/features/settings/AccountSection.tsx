@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '@/auth/AuthProvider';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
+import GoogleIcon from '@/assets/icons/google.svg';
 
 /**
  * Account & sync settings. Sync is opt-in: signed out, the app is fully usable offline.
@@ -36,7 +37,7 @@ export function AccountSection() {
 
   return (
     <View style={styles.sectionContainer}>
-      <Text style={styles.section}>Account &amp; sync</Text>
+      <Text style={styles.section}>Sign in to backup your data.</Text>
 
       {!configured ? (
         <View style={styles.card}>
@@ -65,10 +66,9 @@ export function AccountSection() {
         </View>
       ) : (
         <View style={styles.card}>
-          <Text style={styles.hint}>Sign in to sync across devices.</Text>
-
           <Pressable style={[styles.primaryBtn, busy && styles.btnDisabled]} disabled={busy} onPress={google}>
             <Text style={styles.primaryText}>Continue with Google</Text>
+            <GoogleIcon />
           </Pressable>
 
           <View style={styles.divider}>
@@ -89,9 +89,11 @@ export function AccountSection() {
             inputMode="email"
           />
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <Pressable style={[styles.secondaryBtn, busy && styles.btnDisabled]} disabled={busy} onPress={send}>
-            <Text style={styles.secondaryText}>{busy ? 'Working…' : 'Send magic link'}</Text>
-          </Pressable>
+          <View style={styles.row}>
+            <Pressable style={[styles.secondaryBtn, busy && styles.btnDisabled]} disabled={busy} onPress={send}>
+              <Text style={styles.secondaryText}>{busy ? 'Working…' : 'Send'}</Text>
+            </Pressable>
+          </View>
         </View>
       )}
     </View>
@@ -110,6 +112,7 @@ const styles = StyleSheet.create({
     gap: space.sm,
     marginTop: space.xs,
   },
+  row: { flexDirection: 'row', justifyContent: 'flex-end', gap: space.sm },
   hint: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
   muted: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, lineHeight: 20 },
   email: { fontFamily: fonts.semibold, fontSize: 15, color: colors.text },
@@ -128,20 +131,26 @@ const styles = StyleSheet.create({
   line: { flex: 1, height: 1, backgroundColor: colors.line },
   or: { fontFamily: fonts.body, fontSize: 12, color: colors.faint },
   primaryBtn: {
-    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+    borderWidth: 1,
     borderRadius: radius.default,
     paddingVertical: space.md,
+    paddingInline: space.xl,
     alignItems: 'center',
+    flexDirection: 'row',
+    gap: space.sm,
+    justifyContent: 'center',
   },
   btnDisabled: { opacity: 0.6 },
-  primaryText: { fontFamily: fonts.bold, fontSize: 15, color: '#fff' },
+  primaryText: { fontFamily: fonts.bold, fontSize: 15, color: colors.accent },
   secondaryBtn: {
     borderWidth: 1,
-    borderColor: colors.line2,
+    borderColor: colors.accent,
     borderRadius: radius.default,
     paddingVertical: space.md,
+    paddingInline: space.xl,
     alignItems: 'center',
   },
-  secondaryText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.text },
+  secondaryText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.accent },
   link: { fontFamily: fonts.semibold, fontSize: 14, color: colors.accent },
 });
