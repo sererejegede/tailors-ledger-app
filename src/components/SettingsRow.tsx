@@ -6,13 +6,18 @@ import { Text, StyleSheet, Pressable, Switch } from "react-native";
 type Props = {
   title: string;
   value: string | boolean;
+  disabled?: boolean;
   onPress: () => void;
 };
 
-const SettingsRowBase = ({ title, value, onPress }: Props) => {
+const SettingsRowBase = ({ title, value, disabled, onPress }: Props) => {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [styles.container, pressed && styles.pressed]}>
-      <Text style={styles.title}>{title}</Text>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.container, pressed && styles.pressed]}
+      disabled={disabled}
+    >
+      <Text style={[styles.title, disabled && { color: colors.faint }]}>{title}</Text>
       {typeof value === 'boolean' 
         ? <Switch
             value={value}

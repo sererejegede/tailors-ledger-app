@@ -124,6 +124,7 @@ export default function SettingsScreen() {
               key={s.key}
               title={s.title}
               value={valueDisplay}
+              disabled={s.key === "text_size"}
               onPress={handlePress}
             />
           )
