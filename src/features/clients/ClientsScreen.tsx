@@ -109,8 +109,8 @@ export default function ClientsScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: space.lg },
-  h1: { fontFamily: fonts.title, fontSize: 28, color: colors.text, marginBottom: space.md },
+  screen: { flex: 1, backgroundColor: colors.bg },
+  h1: { fontFamily: fonts.title, fontSize: 28, color: colors.text, marginBottom: space.md, paddingHorizontal: space.lg },
   search: {
     borderWidth: 1,
     borderColor: colors.line2,
@@ -121,6 +121,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     backgroundColor: colors.surface,
+    marginHorizontal: space.lg,
   },
   listContent: { paddingTop: space.sm, paddingBottom: 96 },
   row: {

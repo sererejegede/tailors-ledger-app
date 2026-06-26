@@ -33,6 +33,8 @@ type Props = {
   submitLabel?: string;
   error?: string;
   multilineInput?: boolean;
+  inputMode?: 'email' | 'text' | 'numeric' | 'tel' | 'url' | 'search';
+  keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad' | 'url' | 'visible-password';
   onCancel: () => void;
   onSubmit: (value: string) => void;
 };
@@ -46,6 +48,8 @@ export function PromptModal({
   submitLabel = 'Save',
   error,
   multilineInput = false,
+  inputMode = 'text',
+  keyboardType = 'default',
   onCancel,
   onSubmit,
 }: Props) {
@@ -117,6 +121,8 @@ export function PromptModal({
             returnKeyType="done"
             onSubmitEditing={() => onSubmit(value)}
             multiline={multilineInput}
+            inputMode={inputMode}
+            keyboardType={keyboardType}
           />
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <View style={styles.btns}>

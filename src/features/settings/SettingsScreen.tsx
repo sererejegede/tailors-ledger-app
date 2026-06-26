@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { database } from '@/db';
@@ -11,16 +11,18 @@ import { canUseAppLock } from '@/lib/appLock';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { useFontScale } from '@/theme/textScale';
+import { AccountSection } from './AccountSection';
+import { SettingsRow } from '@/components/SettingsRow';
+import { ItemPickerSheet } from '@/components/templates';
+import { Divider } from '@/components/Divider';
 
-/**
- * Local-only settings (data-model §9): default template, soft range warnings, fraction
- * granularity. App lock / voice / account are deferred (inert) for v1.
- */
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { setLarge } = useFontScale();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [activeSetting, setActiveSetting] = useState<(typeof allSettings)[number] | null>(null);
+
 
   const load = useCallback(async () => {
     setSettings(await getSettings(database));
@@ -71,141 +73,87 @@ export default function SettingsScreen() {
     [patch],
   );
 
+  const fractionSteps = [
+    { id: 'quarters', name: '¼ steps' },
+    { id: 'eighths', name: '⅛ steps' },
+  ];
+  const textSizes = [
+    { id: 'normal', name: 'Normal' },
+    { id: 'large', name: 'Large' },
+  ];
+
+  const allSettings = useMemo(() => {
+    return [
+      { key: 'default_template', title: 'Default template', options: templates, onSave: chooseDefault, value: settings?.defaultTemplateId },
+      { key: 'fraction_granularity', title: 'Fraction steps', options: fractionSteps, onSave: (id: string) => patch({ fractionGranularity: id }), value: settings?.fractionGranularity },
+      { key: 'text_size', title: 'Text size', options: textSizes, onSave: (id: string) => chooseTextSize(id as 'normal' | 'large'), value: settings?.textSize },
+      { key: 'range_warnings', title: 'Range warnings', options: [], onSave: null, value: settings?.rangeWarningsEnabled },
+      { key: 'app_lock', title: 'App lock', options: [], onSave: null, value: settings?.appLockEnabled },
+    ]
+  }, [templates, patch]);
+
+  const itemPickerVisible = useMemo(() => {
+    return activeSetting ? ['default_template', 'fraction_granularity', 'text_size'].includes(activeSetting?.key) : false;
+  }, [activeSetting]);
+
   if (!settings) return <View style={styles.screen} />;
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md }]}>
       <Text style={styles.h1}>Settings</Text>
 
-      {/* Default template */}
-      <Text style={styles.section}>Default template</Text>
-      <Text style={styles.hint}>New measurements seed from this.</Text>
-      <View style={styles.card}>
-        {templates.map((t, i) => {
-          const selected = settings.defaultTemplateId === t.id;
+      <AccountSection />
+
+      <Divider color={colors.bg} />
+
+      {
+        allSettings.map((s) => {
+          const value = s.value;
+          const valueDisplay = (s?.options?.find((o) => o.id === value)?.name || value) ?? "";
+          const handlePress = () => {
+            if (s.key === "app_lock") {
+              toggleAppLock(!value);
+            } else if (s.key === "range_warnings") {
+              patch({ rangeWarningsEnabled: !value });
+            } else {
+              setActiveSetting(s);
+            }
+          }
           return (
-            <Pressable
-              key={t.id}
-              style={[styles.optionRow, i === templates.length - 1 && styles.optionRowLast]}
-              onPress={() => chooseDefault(t.id)}
-            >
-              <Text style={styles.optionText}>{t.name}</Text>
-              <View style={[styles.radio, selected && styles.radioOn]}>
-                {selected ? <View style={styles.radioDot} /> : null}
-              </View>
-            </Pressable>
-          );
-        })}
-      </View>
+            <SettingsRow
+              key={s.key}
+              title={s.title}
+              value={valueDisplay}
+              disabled={s.key === "text_size"}
+              onPress={handlePress}
+            />
+          )
+        })
+      }
 
-      {/* Fraction steps */}
-      <Text style={styles.section}>Fraction steps</Text>
-      <View style={styles.segment}>
-        {(['quarters', 'eighths'] as const).map((g) => {
-          const on = settings.fractionGranularity === g;
-          return (
-            <Pressable
-              key={g}
-              style={[styles.segItem, on && styles.segItemOn]}
-              onPress={() => patch({ fractionGranularity: g })}
-            >
-              <Text style={[styles.segText, on && styles.segTextOn]}>
-                {g === 'quarters' ? '¼ ½ ¾' : '⅛ steps'}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {/* Text size */}
-      <Text style={styles.section}>Text size</Text>
-      <View style={styles.segment}>
-        {(['normal', 'large'] as const).map((sz) => {
-          const on = (settings.textSize ?? 'normal') === sz;
-          return (
-            <Pressable
-              key={sz}
-              style={[styles.segItem, on && styles.segItemOn]}
-              onPress={() => chooseTextSize(sz)}
-            >
-              <Text style={[styles.segText, on && styles.segTextOn]}>
-                {sz === 'normal' ? 'Normal' : 'Large'}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {/* Range warnings */}
-      <View style={styles.toggleRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.toggleTitle}>Range warnings</Text>
-          <Text style={styles.hint}>Flag values wildly outside a template’s expected range.</Text>
-        </View>
-        <Switch
-          value={settings.rangeWarningsEnabled}
-          onValueChange={(v) => patch({ rangeWarningsEnabled: v })}
-          trackColor={{ true: colors.accent, false: colors.line2 }}
-          thumbColor="#fff"
-        />
-      </View>
-
-      {/* App lock */}
-      <View style={styles.toggleRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.toggleTitle}>App lock</Text>
-          <Text style={styles.hint}>Require your device passcode or biometrics to open the app.</Text>
-        </View>
-        <Switch
-          value={settings.appLockEnabled}
-          onValueChange={toggleAppLock}
-          trackColor={{ true: colors.accent, false: colors.line2 }}
-          thumbColor="#fff"
-        />
-      </View>
-
-      {/* Later (inert in v1) */}
-      <Text style={styles.section}>Later</Text>
-      <View style={styles.card}>
-        <View style={[styles.optionRow]}>
-          <Text style={styles.soonText}>Voice entry</Text>
-          <Text style={styles.soonTag}>Coming soon</Text>
-        </View>
-        <View style={[styles.optionRow, styles.optionRowLast]}>
-          <Text style={styles.soonText}>Account &amp; sync</Text>
-          <Text style={styles.soonTag}>Coming soon</Text>
-        </View>
-      </View>
-
-      <Text style={styles.footer}>Units: inches.</Text>
+      <ItemPickerSheet
+        visible={itemPickerVisible}
+        options={activeSetting?.options ?? []}
+        currentId={activeSetting?.value as string}
+        onSelect={(id) => {
+          activeSetting?.onSave?.(id);
+          setActiveSetting(null);
+        }}
+        onClose={() => setActiveSetting(null)}
+        bottomInset={insets.bottom}
+      />
     </ScrollView>
+
+    
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { paddingHorizontal: space.lg, paddingBottom: space.xl, gap: space.sm },
-  h1: { fontFamily: fonts.title, fontSize: 28, color: colors.text, marginBottom: space.sm },
-  section: { fontFamily: fonts.semibold, fontSize: 15, color: colors.text, marginTop: space.md },
-  hint: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.line,
-    overflow: 'hidden',
-    marginTop: space.xs,
-  },
-  optionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: space.md,
-    paddingHorizontal: space.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.line,
-  },
-  optionRowLast: { borderBottomWidth: 0 },
+  content: {  paddingBottom: space.xl },
+  h1: { paddingHorizontal: space.lg, fontFamily: fonts.title, fontSize: 28, color: colors.text, marginBottom: space.sm },
+  section: { paddingHorizontal: space.lg,fontFamily: fonts.semibold, fontSize: 15, color: colors.text, marginTop: space.md },
+  hint: { paddingHorizontal: space.lg,fontFamily: fonts.body, fontSize: 13, color: colors.muted },
   optionText: { fontFamily: fonts.medium, fontSize: 16, color: colors.text },
   radio: {
     width: 22,
@@ -242,7 +190,4 @@ const styles = StyleSheet.create({
     marginTop: space.lg,
   },
   toggleTitle: { fontFamily: fonts.semibold, fontSize: 16, color: colors.text },
-  soonText: { fontFamily: fonts.medium, fontSize: 16, color: colors.muted },
-  soonTag: { fontFamily: fonts.semibold, fontSize: 12, color: colors.faint },
-  footer: { fontFamily: fonts.body, fontSize: 13, color: colors.faint, marginTop: space.xl },
 });

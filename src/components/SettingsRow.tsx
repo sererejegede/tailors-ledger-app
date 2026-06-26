@@ -1,0 +1,59 @@
+import { colors, space } from "@/theme/tokens";
+import { fonts } from "@/theme/typography";
+import { memo } from "react";
+import { Text, StyleSheet, Pressable, Switch } from "react-native";
+
+type Props = {
+  title: string;
+  value: string | boolean;
+  disabled?: boolean;
+  onPress: () => void;
+};
+
+const SettingsRowBase = ({ title, value, disabled, onPress }: Props) => {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.container, pressed && styles.pressed]}
+      disabled={disabled}
+    >
+      <Text style={[styles.title, disabled && { color: colors.faint }]}>{title}</Text>
+      {typeof value === 'boolean' 
+        ? <Switch
+            value={value}
+            onValueChange={onPress}
+            trackColor={{ true: colors.accent, false: colors.line2 }}
+            thumbColor="#fff"
+          /> 
+        : <Text style={styles.value}>{value}</Text>
+      }
+    </Pressable>
+  );
+};
+
+export const SettingsRow = memo(SettingsRowBase);
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBlock: space.lg,
+    paddingInline: space.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
+  },
+  pressed: {
+    backgroundColor: colors.accentTint,
+  },
+  title: {
+    fontFamily: fonts.semibold,
+    fontSize: 16,
+    color: colors.text,
+  },
+  value: {
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.muted,
+  },
+});
