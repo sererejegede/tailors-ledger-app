@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useAuth } from '@/auth/AuthProvider';
+import { useSync } from '@/sync';
+import { getRelativeTime } from '@/lib/time';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import GoogleIcon from '@/assets/icons/google.svg';
@@ -8,10 +10,12 @@ import GoogleIcon from '@/assets/icons/google.svg';
 /**
  * Account & sync settings. Sync is opt-in: signed out, the app is fully usable offline.
  * Sign-in is passwordless (magic link) — enter an email, tap the link in it, and the
- * session persists + auto-refreshes thereafter. (Sync status / "Sync now" land in Stage D.)
+ * session persists + auto-refreshes thereafter. Signed in, it shows the last-synced time
+ * and a manual "Sync now" (sync also runs automatically in the background — Stage D).
  */
 export function AccountSection() {
   const { session, configured, signInWithGoogle, signInWithMagicLink, signOut } = useAuth();
+  const { syncing, lastSyncedAt, lastError, rejected, syncNow } = useSync();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | undefined>();
@@ -50,9 +54,33 @@ export function AccountSection() {
         <View style={styles.card}>
           <Text style={styles.hint}>Signed in</Text>
           <Text style={styles.email}>{session.user.email}</Text>
-          <Pressable style={styles.secondaryBtn} onPress={signOut}>
-            <Text style={styles.secondaryText}>Sign out</Text>
-          </Pressable>
+
+          <Text style={styles.syncStatus}>
+            {syncing
+              ? 'Syncing…'
+              : lastSyncedAt
+                ? `Last synced ${getRelativeTime(lastSyncedAt)}`
+                : 'Not synced yet'}
+          </Text>
+          {rejected.length > 0 ? (
+            <Text style={styles.warn}>
+              {rejected.length} change{rejected.length === 1 ? '' : 's'} couldn’t sync.
+            </Text>
+          ) : null}
+          {lastError ? <Text style={styles.error}>Sync failed: {lastError}</Text> : null}
+
+          <View style={styles.row}>
+            <Pressable
+              style={[styles.secondaryBtn, syncing && styles.btnDisabled]}
+              disabled={syncing}
+              onPress={syncNow}
+            >
+              <Text style={styles.secondaryText}>{syncing ? 'Syncing…' : 'Sync now'}</Text>
+            </Pressable>
+            <Pressable style={styles.secondaryBtn} onPress={signOut}>
+              <Text style={styles.secondaryText}>Sign out</Text>
+            </Pressable>
+          </View>
         </View>
       ) : sent ? (
         <View style={styles.card}>
@@ -114,6 +142,8 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', justifyContent: 'flex-end', gap: space.sm },
   hint: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+  syncStatus: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: space.xs },
+  warn: { fontFamily: fonts.medium, fontSize: 13, color: colors.accent },
   muted: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, lineHeight: 20 },
   email: { fontFamily: fonts.semibold, fontSize: 15, color: colors.text },
   input: {

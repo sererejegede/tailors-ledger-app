@@ -15,6 +15,7 @@ import RootNavigator from '@/navigation/RootNavigator';
 import { OverlayHostProvider } from '@/components/OverlayHost';
 import { AppLockGate } from '@/components/AppLockGate';
 import { AuthProvider } from '@/auth/AuthProvider';
+import { SyncProvider } from '@/sync';
 
 const navTheme = {
   ...DefaultTheme,
@@ -61,14 +62,16 @@ export default function App() {
         <FontScaleProvider initialLarge={largeText}>
           <DatabaseProvider database={database}>
             <AuthProvider>
-              <OverlayHostProvider>
-                <AppLockGate enabled={appLockEnabled}>
-                  <NavigationContainer theme={navTheme}>
-                    <StatusBar style="dark" />
-                    <RootNavigator />
-                  </NavigationContainer>
-                </AppLockGate>
-              </OverlayHostProvider>
+              <SyncProvider>
+                <OverlayHostProvider>
+                  <AppLockGate enabled={appLockEnabled}>
+                    <NavigationContainer theme={navTheme}>
+                      <StatusBar style="dark" />
+                      <RootNavigator />
+                    </NavigationContainer>
+                  </AppLockGate>
+                </OverlayHostProvider>
+              </SyncProvider>
             </AuthProvider>
           </DatabaseProvider>
         </FontScaleProvider>

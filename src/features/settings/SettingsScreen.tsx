@@ -7,6 +7,7 @@ import type AppSettings from '@/db/models/AppSettings';
 import type Template from '@/db/models/Template';
 import { getSettings, updateSettings } from '@/repositories/settings';
 import { listTemplates, setDefaultTemplate } from '@/repositories/templates';
+import { countOrphans, purgeOrphans } from '@/repositories/maintenance';
 import { canUseAppLock } from '@/lib/appLock';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
@@ -21,13 +22,38 @@ export default function SettingsScreen() {
   const { setLarge } = useFontScale();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [orphanCount, setOrphanCount] = useState(0);
   const [activeSetting, setActiveSetting] = useState<(typeof allSettings)[number] | null>(null);
 
 
   const load = useCallback(async () => {
     setSettings(await getSettings(database));
     setTemplates(await listTemplates(database));
+    setOrphanCount((await countOrphans(database)).total);
   }, []);
+
+  // One-time repair: remove orphaned, never-synced rows (leftovers from old empty drafts /
+  // manual cleanup) that reference deleted parents and so can never sync. Confirmed first.
+  const repairData = useCallback(() => {
+    Alert.alert(
+      'Clean up un-syncable data?',
+      `Found ${orphanCount} leftover row${orphanCount === 1 ? '' : 's'} that reference deleted ` +
+        `clients, sets, or templates and can never sync. Remove them? Your saved measurements ` +
+        `are not affected.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            const report = await purgeOrphans(database);
+            await load();
+            Alert.alert('Cleaned up', `Removed ${report.total} un-syncable row${report.total === 1 ? '' : 's'}.`);
+          },
+        },
+      ],
+    );
+  }, [orphanCount, load]);
 
   useFocusEffect(
     useCallback(() => {
@@ -130,6 +156,14 @@ export default function SettingsScreen() {
           )
         })
       }
+
+      {orphanCount > 0 ? (
+        <SettingsRow
+          title="Clean up un-syncable data"
+          value={`${orphanCount} found`}
+          onPress={repairData}
+        />
+      ) : null}
 
       <ItemPickerSheet
         visible={itemPickerVisible}
