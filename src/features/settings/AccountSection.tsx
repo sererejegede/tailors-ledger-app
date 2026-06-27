@@ -1,11 +1,21 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { useAuth } from '@/auth/AuthProvider';
 import { useSync } from '@/sync';
 import { getRelativeTime } from '@/lib/time';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import GoogleIcon from '@/assets/icons/google.svg';
+import RefreshIcon from '@/assets/icons/refresh-ccw-02.svg';
+import LogOutIcon from '@/assets/icons/log-out-01.svg';
 
 /**
  * Account & sync settings. Sync is opt-in: signed out, the app is fully usable offline.
@@ -20,6 +30,23 @@ export function AccountSection() {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
+
+  const spin = useSharedValue(0);
+  useEffect(() => {
+    if (syncing) {
+      spin.value = withRepeat(
+        withTiming(1, { duration: 900, easing: Easing.linear }),
+        -1,
+        false,
+      );
+    } else {
+      cancelAnimation(spin);
+      spin.value = 0;
+    }
+  }, [syncing, spin]);
+  const spinStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${spin.value * 360}deg` }],
+  }));
 
   const google = async () => {
     setBusy(true);
@@ -76,9 +103,13 @@ export function AccountSection() {
               onPress={syncNow}
             >
               <Text style={styles.secondaryText}>{syncing ? 'Syncing…' : 'Sync now'}</Text>
+              <Animated.View style={spinStyle}>
+                <RefreshIcon color={colors.accent} />
+              </Animated.View>
             </Pressable>
             <Pressable style={styles.secondaryBtn} onPress={signOut}>
               <Text style={styles.secondaryText}>Sign out</Text>
+              <LogOutIcon color={colors.accent} />
             </Pressable>
           </View>
         </View>
@@ -180,6 +211,8 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
     paddingInline: space.xl,
     alignItems: 'center',
+    flexDirection: 'row',
+    gap: space.sm,
   },
   secondaryText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.accent },
   link: { fontFamily: fonts.semibold, fontSize: 14, color: colors.accent },
