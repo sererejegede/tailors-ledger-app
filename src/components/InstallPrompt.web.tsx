@@ -130,6 +130,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
+    zIndex: 1,
   },
   text: { flex: 1, gap: 2 },
   title: { fontFamily: fonts.semibold, fontSize: 15, color: colors.accentInk },
