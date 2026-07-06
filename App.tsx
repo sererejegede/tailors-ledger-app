@@ -12,6 +12,7 @@ import { useAppFonts } from '@/theme/typography';
 import { FontScaleProvider } from '@/theme/textScale';
 import { colors } from '@/theme/tokens';
 import RootNavigator from '@/navigation/RootNavigator';
+import { linking } from '@/navigation/linking';
 import { OverlayHostProvider } from '@/components/OverlayHost';
 import { SnackbarProvider } from '@/components/Snackbar';
 import { AppLockGate } from '@/components/AppLockGate';
@@ -67,7 +68,7 @@ export default function App() {
                 <OverlayHostProvider>
                   <SnackbarProvider>
                     <AppLockGate enabled={appLockEnabled}>
-                      <NavigationContainer theme={navTheme}>
+                      <NavigationContainer theme={navTheme} linking={linking}>
                         <StatusBar style="dark" />
                         <RootNavigator />
                       </NavigationContainer>
