@@ -4,8 +4,8 @@
     {
       "name": "web-dist",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["--yes", "serve", "dist", "-l", "4173"],
-      "port": 4173
+      "runtimeArgs": ["--yes", "serve", "dist", "-s", "-l", "4174"],
+      "port": 4174
     }
   ]
 }
