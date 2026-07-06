@@ -10,6 +10,12 @@ type Props = {
   onPress: () => void;
 };
 
+// `activeThumbColor` is a react-native-web-only Switch prop (absent from RN's native
+// SwitchProps). Without it the "on" thumb falls back to RN-web's teal default (#009688);
+// setting it keeps the thumb white in both states. Ignored on native, where `thumbColor`
+// already covers both states.
+const webSwitchProps = { activeThumbColor: '#fff' } as { activeThumbColor?: string };
+
 const SettingsRowBase = ({ title, value, disabled, onPress }: Props) => {
   return (
     <Pressable
@@ -24,7 +30,8 @@ const SettingsRowBase = ({ title, value, disabled, onPress }: Props) => {
             onValueChange={onPress}
             trackColor={{ true: colors.accent, false: colors.line2 }}
             thumbColor="#fff"
-          /> 
+            {...webSwitchProps}
+          />
         : <Text style={styles.value}>{value}</Text>
       }
     </Pressable>
