@@ -7,7 +7,7 @@ import type ImageRecord from '@/db/models/ImageRecord';
 import { imagesForSet, createImage, softDeleteImage, type ImageKind } from '@/repositories/images';
 import { captureFromCamera, pickFromGallery } from '@/lib/images';
 import { useImageSrc } from '@/lib/imageSrc';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import PlusIcon from '@/assets/icons/plus.svg';
 
@@ -148,7 +148,7 @@ const THUMB = 84;
 
 const styles = StyleSheet.create({
   wrap: { gap: space.md },
-  label: { fontFamily: fonts.medium, fontSize: 16, color: colors.muted },
+  label: { fontFamily: fonts.medium, fontSize: fontSizes.base, color: colors.muted },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, paddingInline: space.md },
   thumbWrap: { width: THUMB, height: THUMB },
   thumb: { width: THUMB, height: THUMB, borderRadius: radius.md, backgroundColor: colors.line },
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  removeText: { color: '#fff', fontFamily: fonts.bold, fontSize: 14, lineHeight: 16 },
+  removeText: { color: '#fff', fontFamily: fonts.bold, fontSize: fontSizes.sm, lineHeight: 16 },
   addTile: {
     width: THUMB,
     height: THUMB,
@@ -175,8 +175,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
   },
-  addPlus: { fontFamily: fonts.bold, fontSize: 22, color: colors.accent },
-  addLabel: { fontFamily: fonts.body, fontSize: 11, color: colors.muted },
+  addPlus: { fontFamily: fonts.bold, fontSize: fontSizes['2xl'], color: colors.accent },
+  addLabel: { fontFamily: fonts.body, fontSize: fontSizes.xs, color: colors.muted },
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.35)',
@@ -191,12 +191,12 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontFamily: fonts.medium,
-    fontSize: 13,
+    fontSize: fontSizes.sm,
     color: colors.muted,
     textAlign: 'center',
     paddingVertical: space.sm,
   },
   sheetItem: { paddingVertical: space.md, alignItems: 'center', borderRadius: radius.md },
-  sheetItemText: { fontFamily: fonts.medium, fontSize: 17, color: colors.accent },
-  sheetCancel: { fontFamily: fonts.body, fontSize: 17, color: colors.muted },
+  sheetItemText: { fontFamily: fonts.medium, fontSize: fontSizes.lg, color: colors.accent },
+  sheetCancel: { fontFamily: fonts.body, fontSize: fontSizes.lg, color: colors.muted },
 });

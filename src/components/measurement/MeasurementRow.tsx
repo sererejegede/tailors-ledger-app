@@ -7,7 +7,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { colors, space } from '@/theme/tokens';
+import { colors, space, fontSizes } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
 import { formatInches } from '@/lib/units';
 
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  warnText: { fontFamily: fonts.bold, fontSize: 11, color: '#fff', lineHeight: 14 },
+  warnText: { fontFamily: fonts.bold, fontSize: fontSizes.xs, color: '#fff', lineHeight: 14 },
   val: { ...valueText },
 });
 

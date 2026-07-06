@@ -1,4 +1,4 @@
-import { colors, space } from "@/theme/tokens";
+import { colors, space, fontSizes } from "@/theme/tokens";
 import { fonts } from "@/theme/typography";
 import { memo } from "react";
 import { Text, StyleSheet, Pressable, Switch } from "react-native";
@@ -55,12 +55,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fonts.semibold,
-    fontSize: 16,
+    fontSize: fontSizes.base,
     color: colors.text,
   },
   value: {
     fontFamily: fonts.body,
-    fontSize: 14,
+    fontSize: fontSizes.sm,
     color: colors.muted,
   },
 });

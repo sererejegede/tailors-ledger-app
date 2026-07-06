@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { Portal } from '@/components/OverlayHost';
 import { hasSeenTip, markTipSeen } from '@/lib/seenTips';
@@ -110,8 +110,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
-  title: { fontFamily: fonts.title, fontSize: 19, color: colors.text, marginBottom: space.xs },
-  line: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, lineHeight: 22 },
+  title: { fontFamily: fonts.title, fontSize: fontSizes.xl, color: colors.text, marginBottom: space.xs },
+  line: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.muted, lineHeight: 22 },
   button: {
     alignSelf: 'flex-end',
     marginTop: space.sm,
@@ -120,5 +120,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
   },
-  buttonText: { fontFamily: fonts.bold, fontSize: 15, color: '#fff' },
+  buttonText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: '#fff' },
 });

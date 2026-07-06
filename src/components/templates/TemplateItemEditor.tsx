@@ -9,7 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { Portal } from '@/components/OverlayHost';
 import type { ItemDraft } from '@/features/templates/useTemplateEditor';
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(27,26,23,0.45)',
   },
   card: { backgroundColor: colors.surface, borderRadius: radius.default, padding: space.lg, gap: space.sm },
-  title: { fontFamily: fonts.title, fontSize: 20, color: colors.text },
+  title: { fontFamily: fonts.title, fontSize: fontSizes.xl, color: colors.text },
   input: {
     borderWidth: 1,
     borderColor: colors.line2,
@@ -132,12 +132,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: space.md,
     fontFamily: fonts.body,
-    fontSize: 16,
+    fontSize: fontSizes.base,
     color: colors.text,
   },
   rangeInputs: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   rangeInput: { flex: 1 },
-  dash: { fontFamily: fonts.body, fontSize: 18, color: colors.muted },
+  dash: { fontFamily: fonts.body, fontSize: fontSizes.lg, color: colors.muted },
   btns: { flexDirection: 'row', justifyContent: 'flex-end', gap: space.sm, marginTop: space.sm },
   btn: { paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.default },
   cancel: { backgroundColor: colors.bg },

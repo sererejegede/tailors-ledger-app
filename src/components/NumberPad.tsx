@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
 import ArrowRightIcon from '@/assets/icons/arrow-narrow-right.svg';
 
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   keyPressed: { backgroundColor: colors.line },
-  keyText: { ...valueText, fontSize: 24, color: colors.text },
+  keyText: { ...valueText, fontSize: fontSizes['2xl'], color: colors.text },
   next: {
     backgroundColor: colors.accent,
     borderColor: colors.accent,
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     gap: space.sm,
   },
   nextPressed: { backgroundColor: colors.accentInk },
-  nextText: { fontFamily: fonts.bold, fontSize: 18, color: '#fff', lineHeight: 18 },
+  nextText: { fontFamily: fonts.bold, fontSize: fontSizes.lg, color: '#fff', lineHeight: 18 },
 });
 
 export const NumberPad = memo(NumberPadBase);

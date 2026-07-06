@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, space } from '@/theme/tokens';
+import { colors, space, fontSizes } from '@/theme/tokens';
 import PlusIcon from '@/assets/icons/plus.svg';
 import { fonts } from '@/theme/typography';
 
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     gap: space.sm,
     justifyContent: 'center',
   },
-  label: { fontFamily: fonts.semibold, fontSize: 18, color: '#fff' },
+  label: { fontFamily: fonts.semibold, fontSize: fontSizes.lg, color: '#fff' },
 });
 
 export const FloatingActionButton = memo(FloatingActionButtonBase);

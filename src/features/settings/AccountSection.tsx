@@ -11,7 +11,7 @@ import Animated, {
 import { useAuth } from '@/auth/AuthProvider';
 import { useSync } from '@/sync';
 import { getRelativeTime } from '@/lib/time';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import GoogleIcon from '@/assets/icons/google.svg';
 import RefreshIcon from '@/assets/icons/refresh-ccw-02.svg';
@@ -160,7 +160,7 @@ export function AccountSection() {
 }
 
 const styles = StyleSheet.create({
-  section: { fontFamily: fonts.semibold, fontSize: 15, color: colors.text, marginTop: space.md },
+  section: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.text, marginTop: space.md },
   sectionContainer: { paddingHorizontal: space.lg },
   card: {
     backgroundColor: colors.surface,
@@ -172,11 +172,11 @@ const styles = StyleSheet.create({
     marginTop: space.xs,
   },
   row: { flexDirection: 'row', justifyContent: 'flex-end', gap: space.sm },
-  hint: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
-  syncStatus: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: space.xs },
-  warn: { fontFamily: fonts.medium, fontSize: 13, color: colors.accent },
-  muted: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, lineHeight: 20 },
-  email: { fontFamily: fonts.semibold, fontSize: 15, color: colors.text },
+  hint: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
+  syncStatus: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted, marginTop: space.xs },
+  warn: { fontFamily: fonts.medium, fontSize: fontSizes.sm, color: colors.accent },
+  muted: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted, lineHeight: 20 },
+  email: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.text },
   input: {
     borderWidth: 1,
     borderColor: colors.line2,
@@ -184,13 +184,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: space.md,
     fontFamily: fonts.body,
-    fontSize: 16,
+    fontSize: fontSizes.base,
     color: colors.text,
   },
-  error: { fontFamily: fonts.medium, fontSize: 13, color: colors.danger },
+  error: { fontFamily: fonts.medium, fontSize: fontSizes.sm, color: colors.danger },
   divider: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginVertical: space.xs },
   line: { flex: 1, height: 1, backgroundColor: colors.line },
-  or: { fontFamily: fonts.body, fontSize: 12, color: colors.faint },
+  or: { fontFamily: fonts.body, fontSize: fontSizes.xs, color: colors.faint },
   primaryBtn: {
     borderColor: colors.accent,
     borderWidth: 1,
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   btnDisabled: { opacity: 0.6 },
-  primaryText: { fontFamily: fonts.bold, fontSize: 15, color: colors.accent },
+  primaryText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: colors.accent },
   secondaryBtn: {
     borderWidth: 1,
     borderColor: colors.accent,
@@ -214,6 +214,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: space.sm,
   },
-  secondaryText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.accent },
-  link: { fontFamily: fonts.semibold, fontSize: 14, color: colors.accent },
+  secondaryText: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.accent },
+  link: { fontFamily: fonts.semibold, fontSize: fontSizes.sm, color: colors.accent },
 });

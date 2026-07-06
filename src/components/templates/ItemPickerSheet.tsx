@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { Portal } from '@/components/OverlayHost';
 
@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontFamily: fonts.titleSemi,
-    fontSize: 16,
+    fontSize: fontSizes.base,
     color: colors.text,
     marginBottom: space.sm,
   },
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
   },
-  optionText: { fontFamily: fonts.medium, fontSize: 16, color: colors.text },
+  optionText: { fontFamily: fonts.medium, fontSize: fontSizes.base, color: colors.text },
   optionCurrent: { color: colors.accent, fontFamily: fonts.semibold },
-  optionCheck: { fontFamily: fonts.bold, fontSize: 16, color: colors.accent },
+  optionCheck: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: colors.accent },
 });

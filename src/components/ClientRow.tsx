@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, space } from '@/theme/tokens';
+import { colors, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import ClockIcon from '@/assets/icons/clock-rewind.svg';
 import ChevronIcon from '@/assets/icons/chevron-right.svg';
@@ -56,9 +56,9 @@ const styles = StyleSheet.create({
   },
   pressed: { backgroundColor: colors.accentTint },
   main: { flex: 1, gap: 4 },
-  name: { fontFamily: fonts.semibold, fontSize: 18, color: colors.text },
+  name: { fontFamily: fonts.semibold, fontSize: fontSizes.lg, color: colors.text },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaText: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+  metaText: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
 });
 
 export const ClientRow = memo(ClientRowBase);

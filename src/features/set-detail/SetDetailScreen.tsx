@@ -10,7 +10,7 @@ import { getSet, setItems, updateSet } from '@/repositories/sets';
 import { earlierValuesByItem, quickEditItem } from '@/repositories/items';
 import { formatInches } from '@/lib/units';
 import { getRelativeTime } from '@/lib/time';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
 import { PromptModal } from '@/components/PromptModal';
 import { QuickEditSheet } from '@/components/QuickEditSheet';
@@ -198,14 +198,14 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { padding: space.lg, paddingBlockEnd: 96, gap: space.md },
   summary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  summaryText: { fontFamily: fonts.medium, fontSize: 14, color: colors.muted },
+  summaryText: { fontFamily: fonts.medium, fontSize: fontSizes.sm, color: colors.muted },
   remeasure: {
     backgroundColor: colors.accent,
     borderRadius: radius.default,
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
   },
-  remeasureText: { fontFamily: fonts.bold, fontSize: 14, color: '#fff' },
+  remeasureText: { fontFamily: fonts.bold, fontSize: fontSizes.sm, color: '#fff' },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,
@@ -221,9 +221,9 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
     paddingHorizontal: space.md,
   },
-  itemKey: { fontFamily: fonts.medium, fontSize: 16, color: colors.text, flexShrink: 1 },
+  itemKey: { fontFamily: fonts.medium, fontSize: fontSizes.base, color: colors.text, flexShrink: 1 },
   itemRight: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  itemValue: { ...valueText, fontSize: 17, color: colors.text },
+  itemValue: { ...valueText, fontSize: fontSizes.lg, color: colors.text },
   itemEmpty: { color: colors.faint },
   // history badge — count of earlier values on rows that have any
   badge: {
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { fontFamily: fonts.bold, fontSize: 11, color: colors.accent },
+  badgeText: { fontFamily: fonts.bold, fontSize: fontSizes.xs, color: colors.accent },
   // inline history accordion (earlier values only; current is on the row)
   histPanel: {
     paddingHorizontal: space.md,
@@ -245,8 +245,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dockBg,
   },
   histRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  histWhen: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
-  histValue: { ...valueText, fontSize: 15, color: colors.muted },
+  histWhen: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
+  histValue: { ...valueText, fontSize: fontSizes.base, color: colors.muted },
   noteCard: {
     // backgroundColor: colors.surface,
     borderRadius: radius.md,
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
     padding: space.md,
   },
-  noteLabel: { fontFamily: fonts.medium, fontSize: 16, color: colors.muted },
-  noteText: { fontFamily: fonts.body, fontSize: 15, color: colors.text, lineHeight: 21 },
+  noteLabel: { fontFamily: fonts.medium, fontSize: fontSizes.base, color: colors.muted },
+  noteText: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.text, lineHeight: 21 },
   placeholder: { color: colors.faint },
 });

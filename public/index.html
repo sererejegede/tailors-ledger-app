@@ -22,6 +22,12 @@
       body {
         height: 100%;
       }
+      /* Stop mobile Safari/Chrome from auto-inflating text in single-column layouts, which
+         otherwise renders the app's fonts noticeably larger than on native. */
+      html {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
       /* These styles disable body scrolling if you are using <ScrollView> */
       body {
         overflow: hidden;

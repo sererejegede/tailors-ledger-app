@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 
 /**
@@ -133,14 +133,14 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   text: { flex: 1, gap: 2 },
-  title: { fontFamily: fonts.semibold, fontSize: 15, color: colors.accentInk },
-  sub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+  title: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.accentInk },
+  sub: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
   cta: {
     backgroundColor: colors.accent,
     borderRadius: radius.default,
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
   },
-  ctaText: { fontFamily: fonts.bold, fontSize: 14, color: '#fff' },
-  close: { fontFamily: fonts.body, fontSize: 16, color: colors.muted, paddingHorizontal: 4 },
+  ctaText: { fontFamily: fonts.bold, fontSize: fontSizes.sm, color: '#fff' },
+  close: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.muted, paddingHorizontal: 4 },
 });
