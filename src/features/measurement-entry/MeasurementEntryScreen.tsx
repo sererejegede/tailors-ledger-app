@@ -5,6 +5,7 @@ import { colors } from '@/theme/tokens';
 import { Dock } from '@/components/Dock';
 import { EntryTopBar, EntryHeader, EntryList, EntryPrompts } from '@/components/measurement';
 import { ItemPickerSheet } from '@/components/templates';
+import { CoachMark, useCoachMark } from '@/components/CoachMark';
 import type { RootStackParamList } from '@/navigation/types';
 import { useEntrySession } from './useEntrySession';
 
@@ -18,6 +19,8 @@ type Props = NativeStackScreenProps<RootStackParamList, 'MeasurementEntry'>;
 export default function MeasurementEntryScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
   const s = useEntrySession(route, navigation);
+  // Shown once, after the list loads: the core measuring gestures aren't self-evident.
+  const coach = useCoachMark('entry-basics', !s.loading);
 
   if (s.loading) {
     return (
@@ -85,6 +88,18 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
         onSelect={s.switchTemplate}
         onClose={s.closeTemplatePicker}
         bottomInset={insets.bottom}
+      />
+
+      <CoachMark
+        visible={coach.visible}
+        onDismiss={coach.dismiss}
+        placement="center"
+        title="Measuring, the fast way"
+        lines={[
+          'Tap any row to jump straight to it — fill in any order.',
+          'Type inches → tap ¼ ½ ¾ → Next. It auto-advances to the next empty row.',
+          'No client yet? Just measure and add the name when you Save.',
+        ]}
       />
     </View>
   );

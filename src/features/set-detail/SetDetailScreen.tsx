@@ -2,19 +2,20 @@ import { useCallback, useLayoutEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { database, Tables } from '@/db';
+import { database } from '@/db';
 import type MeasurementSet from '@/db/models/MeasurementSet';
 import type MeasurementItem from '@/db/models/MeasurementItem';
 import type MeasurementValue from '@/db/models/MeasurementValue';
 import { getSet, setItems, updateSet } from '@/repositories/sets';
-import { earlierValuesByItem } from '@/repositories/items';
+import { earlierValuesByItem, quickEditItem } from '@/repositories/items';
 import { formatInches } from '@/lib/units';
 import { getRelativeTime } from '@/lib/time';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
 import { PromptModal } from '@/components/PromptModal';
+import { QuickEditSheet } from '@/components/QuickEditSheet';
+import { CoachMark, useCoachMark } from '@/components/CoachMark';
 import { SetImages } from '@/components/SetImages';
-import ChevronIcon from '@/assets/icons/chevron-right.svg';
 import type { RootStackParamList } from '@/navigation/types';
 import { Divider } from '@/components/Divider';
 
@@ -30,6 +31,7 @@ export default function SetDetailScreen({ route, navigation }: Props) {
   // we know up front which rows carry history (badge) and can show the panel instantly.
   const [history, setHistory] = useState<Record<string, MeasurementValue[]>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [editing, setEditing] = useState<MeasurementItem | null>(null);
 
   const load = useCallback(async () => {
     const { set, client } = await getSet(database, setId);
@@ -57,6 +59,19 @@ export default function SetDetailScreen({ route, navigation }: Props) {
   const toggleItem = useCallback((itemId: string) => {
     setExpanded((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
   }, []);
+
+  const saveQuickEdit = useCallback(
+    async (value: number) => {
+      if (!editing) return;
+      await quickEditItem(database, editing.id, value);
+      setEditing(null);
+      load();
+    },
+    [editing, load],
+  );
+
+  // First visit with items: teach quick-edit + the history affordance.
+  const coach = useCoachMark('set-detail-tips', !!set && items.length > 0);
 
   const saveNote = useCallback(
     async (value: string) => {
@@ -108,17 +123,13 @@ export default function SetDetailScreen({ route, navigation }: Props) {
                       <Text style={styles.badgeText}>{earlier.length}</Text>
                     </View>
                   ) : null}
-                  <Text style={[styles.itemValue, item.currentValue == null && styles.itemEmpty]}>
-                    {formatInches(item.currentValue ?? null)}
-                  </Text>
-                  {hasHistory ? (
-                    <ChevronIcon
-                      width={18}
-                      height={18}
-                      color={colors.faint}
-                      style={{ transform: [{ rotate: isOpen ? '90deg' : '0deg' }] }}
-                    />
-                  ) : null}
+                  {/* The value is its own tap target → quick-edit; the rest of the row
+                      toggles history. */}
+                  <Pressable onPress={() => setEditing(item)} hitSlop={6}>
+                    <Text style={[styles.itemValue, item.currentValue == null && styles.itemEmpty]}>
+                      {formatInches(item.currentValue ?? null)}
+                    </Text>
+                  </Pressable>
                 </View>
               </Pressable>
 
@@ -159,6 +170,25 @@ export default function SetDetailScreen({ route, navigation }: Props) {
         submitLabel="Save"
         onCancel={() => setEditingNote(false)}
         onSubmit={saveNote}
+      />
+
+      <QuickEditSheet
+        visible={!!editing}
+        itemKey={editing?.key ?? ''}
+        initial={editing?.currentValue ?? null}
+        onCancel={() => setEditing(null)}
+        onSave={saveQuickEdit}
+      />
+
+      <CoachMark
+        visible={coach.visible}
+        onDismiss={coach.dismiss}
+        placement="top"
+        title="Review & tweak"
+        lines={[
+          'Tap a value to quick-edit it.',
+          'Rows with a badge open to show earlier values.',
+        ]}
       />
     </ScrollView>
   );

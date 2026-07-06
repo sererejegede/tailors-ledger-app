@@ -1,7 +1,7 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Swipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Swipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
@@ -42,6 +42,9 @@ type Props = {
   // Mount the per-row gesture handlers only once true — gating until the screen's open
   // animation settles avoids the mount stutter on first paint.
   interactive?: boolean;
+  // One-time affordance: briefly open+close the top row's swipe action so the otherwise
+  // invisible swipe-to-delete gesture is discoverable (paired with the editor coach-mark).
+  nudgeFirst?: boolean;
 };
 
 export function DraggableTemplateItems({
@@ -50,21 +53,29 @@ export function DraggableTemplateItems({
   onEdit,
   onRemove,
   interactive = true,
+  nudgeFirst = false,
 }: Props) {
   const order = useSharedValue<string[]>(items.map((i) => i.id));
   const activeId = useSharedValue<string | null>(null);
   const startSlot = useSharedValue(0);
   const dragY = useSharedValue(0);
 
-  // Keep `order` reconciled with the data (reorder is a no-op here since the drag already
-  // updated it; this handles add/remove). Render in a stable, id-sorted order so React
+  // Keep `order` reconciled with the data. Render in a stable, id-sorted order so React
   // never reorders the rows — positions come from `order`, not child order.
   useEffect(() => {
     const ids = items.map((i) => i.id);
-    const kept = order.value.filter((id) => ids.includes(id));
-    const added = ids.filter((id) => !kept.includes(id));
-    order.value = [...kept, ...added];
-  }, [items, order]);
+    // Mid-drag: don't disturb the live UI-thread order; just drop any ids that vanished.
+    if (activeId.value !== null) {
+      const present = new Set(ids);
+      order.value = order.value.filter((id) => present.has(id));
+      return;
+    }
+    // Otherwise mirror the data order exactly. (Appending unknown ids at the bottom — the
+    // old behavior — sent a RESTORED undo item to the end even though its DB position is
+    // correct; a fresh drop is already reflected in both `order` and `items`, so this stays
+    // a no-op there.)
+    order.value = ids;
+  }, [items, order, activeId]);
 
   const stableItems = useMemo(
     () => [...items].sort((a, b) => (a.id < b.id ? -1 : 1)),
@@ -94,6 +105,7 @@ export function DraggableTemplateItems({
             startSlot={startSlot}
             dragY={dragY}
             interactive={interactive}
+            nudge={nudgeFirst && item.id === items[0]?.id}
             onReorder={onReorder}
             onEdit={() => onEdit(item)}
             onRemove={() => onRemove(item)}
@@ -112,14 +124,29 @@ type RowProps = {
   startSlot: SharedValue<number>;
   dragY: SharedValue<number>;
   interactive: boolean;
+  nudge: boolean;
   onReorder: (from: number, to: number) => void;
   onEdit: () => void;
   onRemove: () => void;
 };
 
-function Row({ item, count, order, activeId, startSlot, dragY, interactive, onReorder, onEdit, onRemove }: RowProps) {
+function Row({ item, count, order, activeId, startSlot, dragY, interactive, nudge, onReorder, onEdit, onRemove }: RowProps) {
   const id = item.id;
   const started = useSharedValue(false);
+  const swipeRef = useRef<SwipeableMethods>(null);
+  const nudged = useRef(false);
+
+  // Fire the swipe-affordance peek once, after the row is interactive (Swipeable mounted).
+  useEffect(() => {
+    if (!nudge || !interactive || nudged.current) return;
+    nudged.current = true;
+    const open = setTimeout(() => swipeRef.current?.openRight(), 450);
+    const close = setTimeout(() => swipeRef.current?.close(), 1350);
+    return () => {
+      clearTimeout(open);
+      clearTimeout(close);
+    };
+  }, [nudge, interactive]);
 
   const pan = Gesture.Pan()
     .onStart(() => {
@@ -197,6 +224,7 @@ function Row({ item, count, order, activeId, startSlot, dragY, interactive, onRe
     <Animated.View style={[styles.rowAbs, aStyle]}>
       {interactive ? (
         <Swipeable
+          ref={swipeRef}
           renderRightActions={() => (
             <Pressable style={styles.remove} onPress={onRemove}>
               <TrashIcon width={20} height={20} color="#fff" />

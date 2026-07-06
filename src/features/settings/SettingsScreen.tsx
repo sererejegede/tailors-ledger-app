@@ -8,6 +8,7 @@ import type Template from '@/db/models/Template';
 import { getSettings, updateSettings } from '@/repositories/settings';
 import { listTemplates, setDefaultTemplate } from '@/repositories/templates';
 import { countOrphans, purgeOrphans } from '@/repositories/maintenance';
+import { resetTips } from '@/lib/seenTips';
 import { canUseAppLock } from '@/lib/appLock';
 import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
@@ -99,6 +100,11 @@ export default function SettingsScreen() {
     [patch],
   );
 
+  const replayTips = useCallback(async () => {
+    await resetTips();
+    Alert.alert('How to use', 'Tips will show again the next time you open each screen.');
+  }, []);
+
   const fractionSteps = [
     { id: 'quarters', name: '¼ steps' },
     { id: 'eighths', name: '⅛ steps' },
@@ -156,6 +162,8 @@ export default function SettingsScreen() {
           )
         })
       }
+
+      <SettingsRow title="Show tips again" value="" onPress={replayTips} />
 
       {orphanCount > 0 ? (
         <SettingsRow

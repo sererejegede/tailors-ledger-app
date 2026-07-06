@@ -14,9 +14,11 @@ import {
   reorderTemplateItems,
   softDeleteTemplate,
   softDeleteTemplateItem,
+  restoreTemplateItem,
   createTemplateWithItems,
   DuplicateTemplateNameError,
 } from '@/repositories/templates';
+import { useSnackbar } from '@/components/Snackbar';
 import type { RootStackParamList } from '@/navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'TemplateEditor'>;
@@ -35,6 +37,7 @@ const makeItemId = () => `tmp-${tplItemSeq++}`;
  *    save, once there's a name + at least one item (lazy create — no empty "New template").
  */
 export function useTemplateEditor(route: Props['route'], navigation: Props['navigation']) {
+  const { showSnackbar } = useSnackbar();
   const templateId = route.params.templateId;
   const isNew = templateId == null;
   const [template, setTemplate] = useState<Template | null>(null);
@@ -157,13 +160,33 @@ export function useTemplateEditor(route: Props['route'], navigation: Props['navi
   const removeItem = useCallback(
     async (item: EditItem) => {
       if (isNew) {
+        const index = items.findIndex((it) => it.id === item.id);
         setItems((prev) => prev.filter((it) => it.id !== item.id));
+        showSnackbar({
+          message: `Removed “${item.key}”`,
+          actionLabel: 'Undo',
+          onAction: () =>
+            setItems((prev) => {
+              if (prev.some((it) => it.id === item.id)) return prev;
+              const next = [...prev];
+              next.splice(index < 0 ? prev.length : index, 0, item);
+              return next;
+            }),
+        });
         return;
       }
       await softDeleteTemplateItem(database, item.id);
       load();
+      showSnackbar({
+        message: `Removed “${item.key}”`,
+        actionLabel: 'Undo',
+        onAction: async () => {
+          await restoreTemplateItem(database, item.id);
+          load();
+        },
+      });
     },
-    [isNew, load],
+    [isNew, items, load, showSnackbar],
   );
 
   const removeTemplate = useCallback(() => {

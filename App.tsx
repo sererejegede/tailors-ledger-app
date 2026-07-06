@@ -13,6 +13,7 @@ import { FontScaleProvider } from '@/theme/textScale';
 import { colors } from '@/theme/tokens';
 import RootNavigator from '@/navigation/RootNavigator';
 import { OverlayHostProvider } from '@/components/OverlayHost';
+import { SnackbarProvider } from '@/components/Snackbar';
 import { AppLockGate } from '@/components/AppLockGate';
 import { AuthProvider } from '@/auth/AuthProvider';
 import { SyncProvider } from '@/sync';
@@ -64,12 +65,14 @@ export default function App() {
             <AuthProvider>
               <SyncProvider>
                 <OverlayHostProvider>
-                  <AppLockGate enabled={appLockEnabled}>
-                    <NavigationContainer theme={navTheme}>
-                      <StatusBar style="dark" />
-                      <RootNavigator />
-                    </NavigationContainer>
-                  </AppLockGate>
+                  <SnackbarProvider>
+                    <AppLockGate enabled={appLockEnabled}>
+                      <NavigationContainer theme={navTheme}>
+                        <StatusBar style="dark" />
+                        <RootNavigator />
+                      </NavigationContainer>
+                    </AppLockGate>
+                  </SnackbarProvider>
                 </OverlayHostProvider>
               </SyncProvider>
             </AuthProvider>
