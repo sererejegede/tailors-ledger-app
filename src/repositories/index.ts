@@ -8,4 +8,5 @@ export * as sets from './sets';
 export * as items from './items';
 export * as images from './images';
 export * as settings from './settings';
+export * as maintenance from './maintenance';
 export { notDeleted, softDelete, softDeleteById } from './softDelete';
