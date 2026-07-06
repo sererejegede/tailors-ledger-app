@@ -1,7 +1,6 @@
 import { Database, Model } from '@nozbe/watermelondb';
 import { sanitizedRaw, type DirtyRaw, type RawRecord } from '@nozbe/watermelondb/RawRecord';
 import { nowMs } from '@/lib/time';
-import { syncWarn } from './logger';
 import {
   SYNC_TABLES,
   PARENT_EDGES,
@@ -185,18 +184,16 @@ async function closeOverParents(database: Database, envelope: ChangeEnvelope): P
           if (typeof parentId !== 'string' || !parentId) continue; // null/optional FK
           if (present[edge.table].has(parentId)) continue;
 
-          present[edge.table].add(parentId); // mark seen up-front (skip re-fetch/re-warn)
+          present[edge.table].add(parentId); // mark seen up-front (skip re-fetch)
           let parent: Model;
           try {
             parent = await database.get(edge.table).find(parentId);
           } catch {
-            syncWarn(`push — dirty ${childTable} references missing ${edge.table}: ${parentId}`);
+            // Dirty child references a parent that's gone locally — skip (can't send it).
             continue;
           }
-          if ((parent._raw as { deleted_at?: number | null }).deleted_at != null) {
-            syncWarn(`push — dirty ${childTable} references deleted ${edge.table}: ${parentId}`);
-            continue;
-          }
+          // A soft-deleted parent shouldn't be resurrected as `updated`; skip it too.
+          if ((parent._raw as { deleted_at?: number | null }).deleted_at != null) continue;
           (envelope[edge.table] as EntityChanges).updated.push(toWireRow(edge.table, parent));
           added += 1;
           changed = true; // its own parents get picked up next pass

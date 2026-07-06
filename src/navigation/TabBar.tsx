@@ -61,8 +61,8 @@ function TabItem({ name, focused, Icon, onPress }: TabItemProps) {
   const labelStyle = useAnimatedStyle(() => ({
     color: interpolateColor(prog.value, [0, 1], [colors.muted, colors.accent]),
   }));
-
-  const tint = focused ? '#fff' : colors.muted;
+  // The white (active) icon cross-fades in with the pill, driven by the same `prog`.
+  const whiteIconStyle = useAnimatedStyle(() => ({ opacity: prog.value }));
 
   return (
     <Pressable
@@ -76,7 +76,15 @@ function TabItem({ name, focused, Icon, onPress }: TabItemProps) {
       <View style={styles.iconWrap}>
         <Animated.View pointerEvents="none" style={[styles.pill, pillStyle]} />
         <Animated.View style={iconStyle}>
-          {Icon ? <Icon width={22} height={22} color={tint} /> : null}
+          {/* Muted base icon; the white one fades in over it as the tab activates. Driving
+              the active colour off `prog` (like the label) fixes the plain SVG `color` prop
+              not repainting on focus change — first-paint-not-white and not-reverting-on-blur. */}
+          {Icon ? <Icon width={22} height={22} color={colors.muted} /> : null}
+          {Icon ? (
+            <Animated.View style={[styles.iconOverlay, whiteIconStyle]} pointerEvents="none">
+              <Icon width={22} height={22} color="#fff" />
+            </Animated.View>
+          ) : null}
         </Animated.View>
       </View>
       <Animated.Text style={[styles.label, labelStyle]} numberOfLines={1}>
@@ -140,6 +148,7 @@ const styles = StyleSheet.create({
     paddingVertical: space.xs,
     paddingHorizontal: space.lg,
   },
+  iconOverlay: { position: 'absolute', top: 0, left: 0 },
   pill: {
     position: 'absolute',
     top: 0,

@@ -1,5 +1,4 @@
 import { config } from '@/lib/config';
-import { syncLog, syncWarn } from './logger';
 import {
   SyncHttpError,
   type PullRequest,
@@ -39,7 +38,6 @@ async function rpc<T>(path: string, body: unknown, token: string): Promise<T> {
     // Network failure (offline / DNS / timeout). Treated as a retryable 0 so a sync that
     // started just as connectivity dropped backs off instead of crashing the loop.
     const message = e instanceof Error ? e.message : 'network request failed';
-    syncWarn(`POST ${path} — network error:`, message);
     throw new SyncHttpError(0, message);
   }
 
@@ -51,9 +49,6 @@ async function rpc<T>(path: string, body: unknown, token: string): Promise<T> {
     } catch {
       /* body not readable — keep the status message */
     }
-    // Log the raw status + server response body — this is where a server-side failure
-    // (e.g. an FK violation on push) surfaces verbatim.
-    syncWarn(`POST ${path} → ${response.status}:`, message, response);
     throw new SyncHttpError(
       response.status,
       message,
@@ -61,7 +56,6 @@ async function rpc<T>(path: string, body: unknown, token: string): Promise<T> {
     );
   }
 
-  syncLog(`POST ${path} → ${response.status}`);
   return (await response.json()) as T;
 }
 

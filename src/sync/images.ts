@@ -5,7 +5,6 @@ import { images as imagesRepo } from '@/repositories';
 import { notDeleted } from '@/repositories/softDelete';
 import { config } from '@/lib/config';
 import { getAccessToken } from '@/auth/supabase';
-import { syncLog, syncWarn } from './logger';
 import { SyncHttpError } from './types';
 
 /**
@@ -70,7 +69,6 @@ export async function runImageUploads(
 
   let uploaded = 0;
   let failed = 0;
-  if (pending.length) syncLog('images — uploading', pending.length, 'pending');
 
   for (const image of pending) {
     if (!image.localUri) continue;
@@ -91,9 +89,8 @@ export async function runImageUploads(
       }
       await imagesRepo.markUploaded(database, image.id, signed.remote_url);
       uploaded += 1;
-    } catch (e) {
-      // Non-blocking: leave it for the next cycle.
-      syncWarn('images — upload failed for', image.id, '—', e instanceof Error ? e.message : e);
+    } catch {
+      // Non-blocking: leave it for the next cycle (retried on the next sync).
       await imagesRepo.markFailed(database, image.id);
       failed += 1;
     }

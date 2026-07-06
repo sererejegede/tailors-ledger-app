@@ -240,3 +240,13 @@ export async function softDeleteTemplate(database: Database, id: string): Promis
 export async function softDeleteTemplateItem(database: Database, id: string): Promise<void> {
   await softDeleteById<TemplateItem>(database, Tables.templateItems, id);
 }
+
+/** Undo a soft-delete: clear the tombstone so the item reappears (undo-on-delete). */
+export async function restoreTemplateItem(database: Database, id: string): Promise<void> {
+  const item = await database.get<TemplateItem>(Tables.templateItems).find(id);
+  await database.write(async () => {
+    await item.update((ti) => {
+      ti.deletedAt = undefined;
+    });
+  });
+}

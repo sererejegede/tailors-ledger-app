@@ -19,14 +19,7 @@ import {
   normalizeEnvelope,
 } from './mapper';
 import { runImageUploads, defaultImageUploadDeps, type ImageUploadDeps } from './images';
-import {
-  syncLog,
-  syncWarn,
-  syncError,
-  envelopeSummary,
-  danglingTemplateRefs,
-  rejectionReport,
-} from './logger';
+import { syncError } from './logger';
 
 /**
  * The hand-rolled sync loop (sync-contract §12). Deliberately NOT WatermelonDB's
@@ -99,52 +92,29 @@ export async function runSync(database: Database, deps: SyncDeps = {}): Promise<
   const now = deps.now ?? nowMs;
   const sleep = deps.sleep ?? defaultSleep;
 
-  if (!isBackendConfigured) {
-    syncLog('skip — backend not configured');
-    return { ok: false, skipped: 'not-configured' };
-  }
-  if (running) {
-    syncLog('skip — already running');
-    return { ok: false, skipped: 'already-running' };
-  }
+  if (!isBackendConfigured) return { ok: false, skipped: 'not-configured' };
+  if (running) return { ok: false, skipped: 'already-running' };
 
   const token = await getToken();
-  if (!token) {
-    syncLog('skip — signed out (no token)');
-    return { ok: false, skipped: 'signed-out' };
-  }
+  if (!token) return { ok: false, skipped: 'signed-out' };
 
   running = true;
-  const startedAt = now();
   try {
     let cursor = await getCursor(database);
     let pushed = 0;
     let pulled = 0;
     const rejected: RejectedRow[] = [];
-    syncLog('start — cursor:', cursor ?? '(first sync)');
 
     // ── Image upload queue (before push, §12 step 2) ────────────────────────────────
     // So a freshly-uploaded image row carries its remote_url on the push below. Failures
     // are non-blocking (rows stay `failed`, retried next cycle). `null` skips the pass.
     if (deps.imageDeps !== null) {
-      const imgResult = await runImageUploads(database, deps.imageDeps ?? defaultImageUploadDeps);
-      if (!imgResult.skipped && (imgResult.uploaded || imgResult.failed)) {
-        syncLog('images — uploaded:', imgResult.uploaded, 'failed:', imgResult.failed);
-      }
+      await runImageUploads(database, deps.imageDeps ?? defaultImageUploadDeps);
     }
 
     // ── Push (before pull, §12 step 3) ──────────────────────────────────────────────
     const local = await collectLocalChanges(database);
     if (local.count > 0) {
-      syncLog('push →', local.count, 'rows |', envelopeSummary(local.envelope));
-      // Client-side referential check: if any template_items reference a templates row not
-      // in this push, the client is shipping dangling children. Empty means parents are
-      // present → an FK error on the server is its apply-order, not ours.
-      const dangling = danglingTemplateRefs(local.envelope);
-      if (dangling.length) {
-        syncWarn('push — template_items reference templates NOT in this push:', dangling);
-      }
-
       const resp: PushResponse = await withRetry(
         (t) => transport.push({ cursor, changes: local.envelope }, t),
         token,
@@ -160,15 +130,6 @@ export async function runSync(database: Database, deps: SyncDeps = {}): Promise<
       cursor = resp.cursor;
       await setCursor(database, cursor);
       pushed = local.count - rejected.length;
-      syncLog('push ✓ applied |', envelopeSummary(applied), '| rejected:', rejected.length);
-      if (rejected.length) {
-        // Cross-check each rejected row against what we actually sent (created vs updated
-        // vs absent) — pins down whether it's a client closure gap, a server created-then-
-        // updated ordering gap, or a pure cascade.
-        syncWarn('push rejected — cross-check vs envelope:\n' + rejectionReport(local.envelope, rejected));
-      }
-    } else {
-      syncLog('push — nothing to push');
     }
 
     // ── Pull (paged on has_more, §5) ────────────────────────────────────────────────
@@ -184,7 +145,6 @@ export async function runSync(database: Database, deps: SyncDeps = {}): Promise<
       } catch (e) {
         // 409: our cursor was pruned — drop it and restart the pull from scratch (§10).
         if (e instanceof SyncHttpError && e.status === 409) {
-          syncWarn('pull — 409 cursor too old; resetting to first sync');
           await resetCursor(database);
           cursor = null;
           continue;
@@ -197,21 +157,15 @@ export async function runSync(database: Database, deps: SyncDeps = {}): Promise<
       pulled += appliedResult.upserted + appliedResult.deleted;
       cursor = resp.cursor;
       await setCursor(database, cursor);
-      syncLog(`pull ✓ page ${page} |`, envelopeSummary(changes), '| has_more:', resp.has_more);
       if (!resp.has_more) break;
     }
 
     const syncedAt = now();
     await setLastSyncedAt(database, syncedAt);
-    syncLog(`done in ${syncedAt - startedAt}ms — pushed:`, pushed, 'pulled:', pulled, 'rejected:', rejected.length);
     return { ok: true, pushed, pulled, rejected, syncedAt };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
-    if (e instanceof SyncHttpError) {
-      syncError(`failed — HTTP ${e.status}:`, message);
-    } else {
-      syncError('failed:', message);
-    }
+    syncError(e instanceof SyncHttpError ? `failed — HTTP ${e.status}: ${message}` : `failed: ${message}`);
     return { ok: false, error: message };
   } finally {
     running = false;

@@ -7,6 +7,7 @@ import { DraggableTemplateItems, TemplateItemEditor } from '@/components/templat
 import type { RootStackParamList } from '@/navigation/types';
 import { useTemplateEditor } from './useTemplateEditor';
 import { FloatingActionButton } from '@/components/FloatingActionButton';
+import { CoachMark, useCoachMark } from '@/components/CoachMark';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'TemplateEditor'>;
 
@@ -27,6 +28,10 @@ export default function TemplateEditorScreen({ route, navigation }: Props) {
       clearTimeout(fallback);
     };
   }, [navigation]);
+
+  // First visit (once the rows are interactive and there's something to act on): teach the
+  // hidden swipe/drag gestures and nudge the top row's swipe action open.
+  const coach = useCoachMark('tpl-editor-gestures', interactive && s.items.length > 0);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -71,6 +76,7 @@ export default function TemplateEditorScreen({ route, navigation }: Props) {
             onEdit={s.openEditItem}
             onRemove={s.removeItem}
             interactive={interactive}
+            nudgeFirst={coach.visible}
           />
         )}
 
@@ -91,6 +97,18 @@ export default function TemplateEditorScreen({ route, navigation }: Props) {
         onChange={s.updateDraft}
         onCancel={s.closeDraft}
         onSave={s.saveDraft}
+      />
+
+      <CoachMark
+        visible={coach.visible}
+        onDismiss={coach.dismiss}
+        placement="center"
+        title="Manage template items"
+        lines={[
+          'Swipe a row left to delete it.',
+          'Drag the ☰ handle to reorder.',
+          'Tap a row to edit its name or range.',
+        ]}
       />
     </View>
   );
