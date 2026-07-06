@@ -19,6 +19,7 @@ import { colors, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { ClientRow } from '@/components/ClientRow';
 import { FloatingActionButton } from '@/components/FloatingActionButton';
+import { InstallPrompt } from '@/components/InstallPrompt';
 import type { RootStackParamList } from '@/navigation/types';
 
 /**
@@ -68,6 +69,8 @@ export default function ClientsScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top + space.md }]}>
       <Text style={styles.h1}>Clients</Text>
+
+      <InstallPrompt />
 
       <TextInput
         style={styles.search}
