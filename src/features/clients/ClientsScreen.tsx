@@ -15,10 +15,11 @@ import type Client from '@/db/models/Client';
 import { searchClients } from '@/repositories/clients';
 import { getSettings } from '@/repositories/settings';
 import { listTemplates } from '@/repositories/templates';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { ClientRow } from '@/components/ClientRow';
 import { FloatingActionButton } from '@/components/FloatingActionButton';
+import { InstallPrompt } from '@/components/InstallPrompt';
 import type { RootStackParamList } from '@/navigation/types';
 
 /**
@@ -69,6 +70,8 @@ export default function ClientsScreen() {
     <View style={[styles.screen, { paddingTop: insets.top + space.md }]}>
       <Text style={styles.h1}>Clients</Text>
 
+      <InstallPrompt />
+
       <TextInput
         style={styles.search}
         placeholder="Search name or phone"
@@ -110,7 +113,7 @@ export default function ClientsScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  h1: { fontFamily: fonts.title, fontSize: 28, color: colors.text, marginBottom: space.md, paddingHorizontal: space.lg },
+  h1: { fontFamily: fonts.title, fontSize: fontSizes['3xl'], color: colors.text, marginBottom: space.md, paddingHorizontal: space.lg },
   search: {
     borderWidth: 1,
     borderColor: colors.line2,
@@ -118,7 +121,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: space.md,
     fontFamily: fonts.body,
-    fontSize: 16,
+    fontSize: fontSizes.base,
     color: colors.text,
     backgroundColor: colors.surface,
     marginHorizontal: space.lg,
@@ -129,8 +132,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
   },
-  rowName: { fontFamily: fonts.semibold, fontSize: 17, color: colors.text },
-  rowPhone: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
+  rowName: { fontFamily: fonts.semibold, fontSize: fontSizes.lg, color: colors.text },
+  rowPhone: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted, marginTop: 2 },
   emptyWrap: { paddingTop: space.xl, alignItems: 'center' },
-  empty: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, textAlign: 'center' },
+  empty: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.muted, textAlign: 'center' },
 });

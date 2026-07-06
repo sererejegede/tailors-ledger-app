@@ -4,6 +4,7 @@ import ImageRecord from '@/db/models/ImageRecord';
 import { images as imagesRepo } from '@/repositories';
 import { notDeleted } from '@/repositories/softDelete';
 import { config } from '@/lib/config';
+import { put as putFile, fileSize as fileSizeIo } from '@/lib/imageUploadIo';
 import { getAccessToken } from '@/auth/supabase';
 import { SyncHttpError } from './types';
 
@@ -99,8 +100,9 @@ export async function runImageUploads(
   return { uploaded, failed, skipped: false };
 }
 
-// ── Default (native) deps — expo-file-system for IO, our API for signing ────────────────
-// Lazy-imported so importing this module never pulls in native modules (keeps it testable).
+// ── Default deps — platform file IO (imageUploadIo[.web]) + our API for signing ─────────
+// The put/fileSize IO is platform-split: native uses expo-file-system, web reads the bytes
+// from IndexedDB (imageUploadIo.web.ts). Both are lazy about native modules.
 
 async function defaultSign(req: SignRequest, token: string): Promise<SignResponse> {
   const res = await fetch(`${config.backendBaseUrl}/uploads/sign`, {
@@ -110,28 +112,6 @@ async function defaultSign(req: SignRequest, token: string): Promise<SignRespons
   });
   if (!res.ok) throw new SyncHttpError(res.status, `sign failed (${res.status})`);
   return (await res.json()) as SignResponse;
-}
-
-async function defaultFileSize(localUri: string): Promise<number> {
-  // expo-file-system v56: `File` implements Blob, so `.size` is the byte length.
-  const { File } = await import('expo-file-system');
-  return new File(localUri).size ?? 0;
-}
-
-async function defaultPut(
-  url: string,
-  localUri: string,
-  headers: Record<string, string>,
-): Promise<number> {
-  // v56 upload API: PUT the file bytes as-is (BINARY_CONTENT) to the signed bucket URL.
-  const { File, UploadType } = await import('expo-file-system');
-  const result = await new File(localUri).upload(url, {
-    httpMethod: 'PUT',
-    uploadType: UploadType.BINARY_CONTENT,
-    headers,
-    mimeType: headers['content-type'],
-  });
-  return result.status;
 }
 
 /** Read a signed GET url for a private-bucket image another device uploaded (§8 step 4). */
@@ -147,6 +127,6 @@ export async function getReadUrl(imageId: string, token: string): Promise<string
 
 export const defaultImageUploadDeps: ImageUploadDeps = {
   sign: defaultSign,
-  put: defaultPut,
-  fileSize: defaultFileSize,
+  put: putFile,
+  fileSize: fileSizeIo,
 };

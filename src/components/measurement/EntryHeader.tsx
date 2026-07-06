@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, space } from '@/theme/tokens';
+import { colors, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 
 /**
@@ -46,9 +46,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
   },
-  who: { fontFamily: fonts.semibold, fontSize: 16, color: colors.text },
-  unnamed: { fontFamily: fonts.semibold, fontSize: 16, color: colors.accent },
-  sub: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
-  progress: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+  who: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.text },
+  unnamed: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.accent },
+  sub: { fontFamily: fonts.body, fontSize: fontSizes.xs, color: colors.muted },
+  progress: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
   progressNum: { fontFamily: fonts.bold, color: colors.text },
 });

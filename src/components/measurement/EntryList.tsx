@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { type LayoutChangeEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { colors, space } from '@/theme/tokens';
+import { colors, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { MeasurementRow } from '@/components/measurement/MeasurementRow';
 import type { EntryRow } from '@/features/measurement-entry/useMeasurementEntry';
@@ -88,5 +88,5 @@ export function EntryList({ rows, active, dockDisplay, dockPlaceholder, onTapRow
 const styles = StyleSheet.create({
   list: { flex: 1 },
   addRow: { paddingVertical: space.md, paddingHorizontal: space.lg },
-  addText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.accent },
+  addText: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.accent },
 });

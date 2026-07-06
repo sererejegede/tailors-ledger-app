@@ -5,7 +5,7 @@ import { Portal } from '@/components/OverlayHost';
 import { FracChips, type Frac } from '@/components/FracChips';
 import { NumberPad } from '@/components/NumberPad';
 import { composeInches, formatInches, splitInches } from '@/lib/units';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
 
 /**
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: space.md,
   },
-  key: { fontFamily: fonts.semibold, fontSize: 18, color: colors.text, flexShrink: 1 },
-  value: { ...valueText, fontSize: 28, color: colors.accent },
+  key: { fontFamily: fonts.semibold, fontSize: fontSizes.lg, color: colors.text, flexShrink: 1 },
+  value: { ...valueText, fontSize: fontSizes['3xl'], color: colors.accent },
   placeholder: { color: colors.faint },
 });

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { Alert } from '@/lib/alert';
 import { database, Tables } from '@/db';
 import type MeasurementSet from '@/db/models/MeasurementSet';
 import type Template from '@/db/models/Template';

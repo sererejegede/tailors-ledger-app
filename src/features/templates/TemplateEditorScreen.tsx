@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { DraggableTemplateItems, TemplateItemEditor } from '@/components/templates';
 import type { RootStackParamList } from '@/navigation/types';
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: space.lg },
   fieldLabel: {
     fontFamily: fonts.medium,
-    fontSize: 13,
+    fontSize: fontSizes.sm,
     color: colors.muted,
     marginBlock: space.sm
   },
@@ -129,12 +129,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: space.md,
     fontFamily: fonts.semibold,
-    fontSize: 18,
+    fontSize: fontSizes.lg,
     color: colors.text,
     backgroundColor: colors.surface,
     marginBlockEnd: space.xxl,
   },
-  headerSave: { fontFamily: fonts.bold, fontSize: 16, color: colors.accent },
+  headerSave: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: colors.accent },
   defaultRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   },
   defaultBadge: {
     fontFamily: fonts.bold,
-    fontSize: 10,
+    fontSize: fontSizes.xxs,
     letterSpacing: 0.5,
     color: colors.accent,
     backgroundColor: colors.accentTint,
@@ -154,12 +154,12 @@ const styles = StyleSheet.create({
   makeDefault: { flexDirection: 'row', flex: 1, justifyContent: 'flex-end', paddingVertical: space.sm },
   makeDefaultText: {
     fontFamily: fonts.semibold,
-    fontSize: 14,
+    fontSize: fontSizes.sm,
     color: colors.accent,
   },
-  section: { fontFamily: fonts.titleSemi, fontSize: 18, color: colors.text },
-  add: { fontFamily: fonts.semibold, fontSize: 14, color: colors.accent },
-  empty: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, paddingVertical: space.sm },
+  section: { fontFamily: fonts.titleSemi, fontSize: fontSizes.lg, color: colors.text },
+  add: { fontFamily: fonts.semibold, fontSize: fontSizes.sm, color: colors.accent },
+  empty: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted, paddingVertical: space.sm },
   deleteTemplate: { alignSelf: 'center', paddingTop: space.lg, marginBlockEnd: 96, marginBlockStart: 'auto' },
-  deleteText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.danger },
+  deleteText: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.danger },
 });

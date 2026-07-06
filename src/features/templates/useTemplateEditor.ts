@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
-import { Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Alert } from '@/lib/alert';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { database } from '@/db';
 import { Tables } from '@/db/schema';

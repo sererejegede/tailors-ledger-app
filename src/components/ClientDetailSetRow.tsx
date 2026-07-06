@@ -2,7 +2,7 @@ import { Pressable, View, Text, StyleSheet } from "react-native";
 import { memo } from "react";
 import type MeasurementSet from "@/db/models/MeasurementSet";
 import { getRelativeTime } from "@/lib/time";
-import { colors, space } from "@/theme/tokens";
+import { colors, space, fontSizes } from "@/theme/tokens";
 import ChevronIcon from '@/assets/icons/chevron-right.svg';
 import { fonts } from "@/theme/typography";
 
@@ -42,9 +42,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
   },
-  setLabel: { fontFamily: fonts.semibold, fontSize: 16, color: colors.text },
+  setLabel: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.text },
   setMetaContainer: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  setMeta: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+  setMeta: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
 });
 
 export const ClientDetailSetRow = memo(ClientDetailSetRowBase);

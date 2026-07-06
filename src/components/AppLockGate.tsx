@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { authenticate } from '@/lib/appLock';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 
 /**
@@ -34,13 +34,13 @@ export function AppLockGate({ enabled, children }: { enabled: boolean; children:
 
 const styles = StyleSheet.create({
   screen: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg, gap: space.sm },
-  title: { fontFamily: fonts.title, fontSize: 26, color: colors.text },
-  sub: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, marginBottom: space.md },
+  title: { fontFamily: fonts.title, fontSize: fontSizes['2xl'], color: colors.text },
+  sub: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.muted, marginBottom: space.md },
   button: {
     backgroundColor: colors.accent,
     borderRadius: radius.default,
     paddingHorizontal: space.xl,
     paddingVertical: space.md,
   },
-  buttonText: { fontFamily: fonts.bold, fontSize: 16, color: '#fff' },
+  buttonText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: '#fff' },
 });

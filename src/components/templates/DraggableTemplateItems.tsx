@@ -9,7 +9,7 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import type { EditItem } from '@/features/templates/useTemplateEditor';
 import MenuIcon from '@/assets/icons/menu-01.svg';
@@ -269,8 +269,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   content: { flex: 1 },
-  key: { fontFamily: fonts.medium, fontSize: 16, color: colors.text },
-  range: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
+  key: { fontFamily: fonts.medium, fontSize: fontSizes.base, color: colors.text },
+  range: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted, marginTop: 2 },
   remove: {
     height: '100%',
     backgroundColor: colors.danger,

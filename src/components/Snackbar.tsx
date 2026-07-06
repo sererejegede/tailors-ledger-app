@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { Portal } from '@/components/OverlayHost';
 
@@ -126,6 +126,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 8,
   },
-  message: { flex: 1, fontFamily: fonts.medium, fontSize: 14, color: colors.bg },
-  action: { fontFamily: fonts.bold, fontSize: 14, color: colors.accentTint },
+  message: { flex: 1, fontFamily: fonts.medium, fontSize: fontSizes.sm, color: colors.bg },
+  action: { fontFamily: fonts.bold, fontSize: fontSizes.sm, color: colors.accentTint },
 });

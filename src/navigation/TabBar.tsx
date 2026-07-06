@@ -11,7 +11,7 @@ import Animated, {
 import type { SvgProps } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import UsersIcon from '@/assets/icons/users-01.svg';
 import CompassIcon from '@/assets/icons/compass.svg';
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: fonts.semibold,
-    fontSize: 12,
+    fontSize: fontSizes.xs,
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },

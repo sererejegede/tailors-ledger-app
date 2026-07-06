@@ -9,7 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { Portal } from '@/components/OverlayHost';
 
@@ -166,8 +166,8 @@ const styles = StyleSheet.create({
     padding: space.lg,
     gap: space.sm,
   },
-  title: { fontFamily: fonts.title, fontSize: 20, color: colors.text },
-  message: { fontFamily: fonts.body, fontSize: 14, color: colors.muted },
+  title: { fontFamily: fonts.title, fontSize: fontSizes.xl, color: colors.text },
+  message: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
   input: {
     // borderWidth: 1,
     borderColor: colors.line2,
@@ -175,13 +175,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.md,
     paddingVertical: space.md,
     fontFamily: fonts.body,
-    fontSize: 16,
+    fontSize: fontSizes.base,
     color: colors.text,
     marginTop: space.xs,
     height: null,
   },
   inputError: { borderColor: colors.danger, height: null },
-  error: { fontFamily: fonts.medium, fontSize: 13, color: colors.danger },
+  error: { fontFamily: fonts.medium, fontSize: fontSizes.sm, color: colors.danger },
   btns: { flexDirection: 'row', justifyContent: 'flex-end', gap: space.sm, marginTop: space.sm },
   btn: { paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.md },
   cancel: { backgroundColor: colors.bg },

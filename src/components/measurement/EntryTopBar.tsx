@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, space } from '@/theme/tokens';
+import { colors, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import BackIcon from '@/assets/icons/arrow-narrow-left.svg';
 import ChevronIcon from '@/assets/icons/chevron-right.svg';
@@ -50,14 +50,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingBottom: space.sm,
   },
-  title: { fontFamily: fonts.titleSemi, fontSize: 18, color: colors.text, flex: 1, textAlign: 'center' },
+  title: { fontFamily: fonts.titleSemi, fontSize: fontSizes.lg, color: colors.text, flex: 1, textAlign: 'center' },
   titleBtn: {
     // flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  titleText: { fontFamily: fonts.titleSemi, fontSize: 18, color: colors.text, flexShrink: 1, textAlign: 'center' },
+  titleText: { fontFamily: fonts.titleSemi, fontSize: fontSizes.lg, color: colors.text, flexShrink: 1, textAlign: 'center' },
   caret: { color: colors.accent, transform: [{ rotate: '90deg' }] },
-  save: { fontFamily: fonts.bold, fontSize: 16, color: colors.accent },
+  save: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: colors.accent },
 });

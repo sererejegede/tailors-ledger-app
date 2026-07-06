@@ -7,7 +7,7 @@ import type Client from '@/db/models/Client';
 import { getClient, updateClient } from '@/repositories/clients';
 import { setsForClient, type MeasurementSetWithItemsCount } from '@/repositories/sets';
 import { getDefaultTemplateId } from '@/repositories/templates';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { PromptModal } from '@/components/PromptModal';
 import EditIcon from '@/assets/icons/edit-02.svg';
@@ -160,7 +160,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { padding: space.lg, paddingTop: space.sm, gap: space.md, minHeight: '100%' },
-  name: { fontFamily: fonts.title, fontSize: 30, color: colors.text, textAlign: 'center' },
+  name: { fontFamily: fonts.title, fontSize: fontSizes['3xl'], color: colors.text, textAlign: 'center' },
   phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -168,8 +168,8 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: -space.xs,
   },
-  phoneGlyph: { fontSize: 14, color: colors.muted },
-  phone: { fontFamily: fonts.body, fontSize: 16 },
+  phoneGlyph: { fontSize: fontSizes.sm, color: colors.muted },
+  phone: { fontFamily: fonts.body, fontSize: fontSizes.base },
   placeholder: { color: colors.faint },
   // section headers
   sectionHeader: {
@@ -180,12 +180,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: fonts.bold,
-    fontSize: 14,
+    fontSize: fontSizes.sm,
     letterSpacing: 1,
     textTransform: 'uppercase',
     color: colors.text,
   },
-  count: { marginLeft: 'auto', fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+  count: { marginLeft: 'auto', fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
   noteCard: {
     backgroundColor: colors.accentTint,
     borderLeftWidth: 2,
@@ -198,12 +198,12 @@ const styles = StyleSheet.create({
   noteText: {
     fontFamily: fonts.italic,
     fontStyle: 'italic',
-    fontSize: 16,
+    fontSize: fontSizes.base,
     lineHeight: 24,
     color: colors.text,
     paddingRight: space.xl,
   },
-  notePlaceholder: { fontFamily: fonts.body, fontSize: 15, color: colors.faint, lineHeight: 22 },
+  notePlaceholder: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.faint, lineHeight: 22 },
   newSet: {
     borderWidth: 1,
     borderColor: colors.accent,
@@ -211,8 +211,8 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
     alignItems: 'center',
   },
-  newSetText: { fontFamily: fonts.bold, fontSize: 15, color: colors.accent },
-  empty: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, paddingVertical: space.md },
+  newSetText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: colors.accent },
+  empty: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.muted, paddingVertical: space.md },
   divider: { height: 2, backgroundColor: colors.accent, marginVertical: space.lg },
   edit: {
     flexDirection: 'row',
@@ -220,6 +220,6 @@ const styles = StyleSheet.create({
     gap: space.sm,
     marginLeft: 'auto',
   },
-  editText: { fontFamily: fonts.body, fontSize: 13, color: colors.accent },
+  editText: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.accent },
   setsList: { paddingBlockEnd: 96 },
 });

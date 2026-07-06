@@ -6,7 +6,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { database } from '@/db';
 import type Template from '@/db/models/Template';
 import { listTemplates, templateItems } from '@/repositories/templates';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import ChevronIcon from '@/assets/icons/chevron-right.svg';
 import type { RootStackParamList } from '@/navigation/types';
@@ -70,7 +70,7 @@ export default function TemplatesScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: space.lg, paddingBottom: space.xl, gap: space.md, minHeight: '100%' },
-  h1: { fontFamily: fonts.title, fontSize: 28, color: colors.text },
+  h1: { fontFamily: fonts.title, fontSize: fontSizes['3xl'], color: colors.text },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,
@@ -89,10 +89,10 @@ const styles = StyleSheet.create({
   },
   rowLast: { borderBottomWidth: 0 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  name: { fontFamily: fonts.semibold, fontSize: 17, color: colors.text },
+  name: { fontFamily: fonts.semibold, fontSize: fontSizes.lg, color: colors.text },
   badge: {
     fontFamily: fonts.bold,
-    fontSize: 10,
+    fontSize: fontSizes.xxs,
     letterSpacing: 0.5,
     color: colors.accent,
     backgroundColor: colors.accentTint,
@@ -101,6 +101,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     overflow: 'hidden',
   },
-  meta: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
-  intro: { fontFamily: fonts.body, fontSize: 16, color: colors.muted, marginBlock: space.md },
+  meta: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted, marginTop: 2 },
+  intro: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.muted, marginBlock: space.md },
 });

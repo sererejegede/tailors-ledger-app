@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { database } from '@/db';
@@ -9,8 +9,9 @@ import { getSettings, updateSettings } from '@/repositories/settings';
 import { listTemplates, setDefaultTemplate } from '@/repositories/templates';
 import { countOrphans, purgeOrphans } from '@/repositories/maintenance';
 import { resetTips } from '@/lib/seenTips';
+import { Alert } from '@/lib/alert';
 import { canUseAppLock } from '@/lib/appLock';
-import { colors, radius, space } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { useFontScale } from '@/theme/textScale';
 import { AccountSection } from './AccountSection';
@@ -193,10 +194,10 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   content: {  paddingBottom: space.xl },
-  h1: { paddingHorizontal: space.lg, fontFamily: fonts.title, fontSize: 28, color: colors.text, marginBottom: space.sm },
-  section: { paddingHorizontal: space.lg,fontFamily: fonts.semibold, fontSize: 15, color: colors.text, marginTop: space.md },
-  hint: { paddingHorizontal: space.lg,fontFamily: fonts.body, fontSize: 13, color: colors.muted },
-  optionText: { fontFamily: fonts.medium, fontSize: 16, color: colors.text },
+  h1: { paddingHorizontal: space.lg, fontFamily: fonts.title, fontSize: fontSizes['3xl'], color: colors.text, marginBottom: space.sm },
+  section: { paddingHorizontal: space.lg,fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.text, marginTop: space.md },
+  hint: { paddingHorizontal: space.lg,fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
+  optionText: { fontFamily: fonts.medium, fontSize: fontSizes.base, color: colors.text },
   radio: {
     width: 22,
     height: 22,
@@ -223,7 +224,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   segItemOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-  segText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.text },
+  segText: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.text },
   segTextOn: { color: '#fff' },
   toggleRow: {
     flexDirection: 'row',
@@ -231,5 +232,5 @@ const styles = StyleSheet.create({
     gap: space.md,
     marginTop: space.lg,
   },
-  toggleTitle: { fontFamily: fonts.semibold, fontSize: 16, color: colors.text },
+  toggleTitle: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.text },
 });

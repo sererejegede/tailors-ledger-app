@@ -24,6 +24,22 @@ export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
 // inputs, cards); `sm`/`md` are for tighter spots, `pill` for fully-rounded.
 export const radius = { sm: 8, md: 16, lg: 24, default: 32, pill: 999 } as const;
 
+// Type scale — Tailwind's font sizes (px). `xxs` (10) is a local extension below Tailwind's
+// smallest step (`xs` 12) for tiny badges/labels. Use these instead of literal fontSizes so
+// the app's type sizing stays centralized and consistent.
+export const fontSizes = {
+  xxs: 10,
+  xs: 12,
+  sm: 14,
+  base: 16,
+  lg: 18,
+  xl: 20,
+  '2xl': 24,
+  '3xl': 30,
+  '4xl': 36,
+} as const;
+
 export type Color = (typeof colors)[keyof typeof colors];
 export type Space = (typeof space)[keyof typeof space];
 export type Radius = (typeof radius)[keyof typeof radius];
+export type FontSize = (typeof fontSizes)[keyof typeof fontSizes];

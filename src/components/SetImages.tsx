@@ -1,11 +1,13 @@
 import { useCallback, useState } from 'react';
-import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Alert } from '@/lib/alert';
 import { database } from '@/db';
 import type ImageRecord from '@/db/models/ImageRecord';
 import { imagesForSet, createImage, softDeleteImage, type ImageKind } from '@/repositories/images';
 import { captureFromCamera, pickFromGallery } from '@/lib/images';
-import { colors, radius, space } from '@/theme/tokens';
+import { useImageSrc } from '@/lib/imageSrc';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import PlusIcon from '@/assets/icons/plus.svg';
 
@@ -42,7 +44,15 @@ export function SetImages({ setId }: { setId: string }) {
     [setId, load],
   );
 
+  // Web source-choice sheet: RN's Alert action sheet is a no-op on react-native-web, so the
+  // camera/gallery choice is shown as a small modal there instead (native keeps the Alert).
+  const [sourceMenu, setSourceMenu] = useState(false);
+
   const onAdd = useCallback(() => {
+    if (Platform.OS === 'web') {
+      setSourceMenu(true);
+      return;
+    }
     Alert.alert('Add photo', undefined, [
       { text: 'Take photo', onPress: () => add('camera') },
       { text: 'Choose from gallery', onPress: () => add('gallery') },
@@ -50,21 +60,32 @@ export function SetImages({ setId }: { setId: string }) {
     ]);
   }, [add]);
 
-  const remove = useCallback(
-    (img: ImageRecord) => {
-      Alert.alert('Remove photo', 'Remove this photo from the set?', [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: async () => {
-            await softDeleteImage(database, img.id);
-            load();
-          },
-        },
-      ]);
+  // Called straight from the source-menu tap so the file-picker click keeps its user gesture.
+  const pick = useCallback(
+    (kind: Extract<ImageKind, 'camera' | 'gallery'>) => {
+      setSourceMenu(false);
+      add(kind);
+    },
+    [add],
+  );
+
+  const doRemove = useCallback(
+    async (img: ImageRecord) => {
+      await softDeleteImage(database, img.id);
+      load();
     },
     [load],
+  );
+
+  const remove = useCallback(
+    (img: ImageRecord) => {
+      // Alert here is the cross-platform shim (window.confirm on web, native Alert on device).
+      Alert.alert('Remove photo', 'Remove this photo from the set?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: () => doRemove(img) },
+      ]);
+    },
+    [doRemove],
   );
 
   return (
@@ -72,18 +93,53 @@ export function SetImages({ setId }: { setId: string }) {
       <Text style={styles.label}>Photos</Text>
       <View style={styles.grid}>
         {images.map((img) => (
-          <View key={img.id} style={styles.thumbWrap}>
-            <Image source={{ uri: img.localUri }} style={styles.thumb} />
-            <Pressable style={styles.removeBtn} hitSlop={8} onPress={() => remove(img)}>
-              <PlusIcon color="#fff" width={12} height={12} style={{ transform: [{ rotate: '45deg' }] }} />
-            </Pressable>
-          </View>
+          <Thumbnail key={img.id} img={img} onRemove={() => remove(img)} />
         ))}
         <Pressable style={styles.addTile} onPress={onAdd}>
           <PlusIcon width={20} height={20} color={colors.accent} />
           <Text style={styles.addLabel}>Add photo</Text>
         </Pressable>
       </View>
+
+      {/* Web-only source chooser (native uses the Alert action sheet above). */}
+      <Modal
+        visible={sourceMenu}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSourceMenu(false)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setSourceMenu(false)}>
+          <View style={styles.sheet}>
+            <Text style={styles.sheetTitle}>Add photo</Text>
+            <Pressable style={styles.sheetItem} onPress={() => pick('camera')}>
+              <Text style={styles.sheetItemText}>Take photo</Text>
+            </Pressable>
+            <Pressable style={styles.sheetItem} onPress={() => pick('gallery')}>
+              <Text style={styles.sheetItemText}>Choose from gallery</Text>
+            </Pressable>
+            <Pressable style={styles.sheetItem} onPress={() => setSourceMenu(false)}>
+              <Text style={styles.sheetCancel}>Cancel</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+}
+
+/**
+ * One image tile. Split out so the platform image-src resolver (a hook) has a valid call
+ * site — on web it turns the row's `idb-image://` uri into an object URL; on native it's a
+ * passthrough of the `file://` path.
+ */
+function Thumbnail({ img, onRemove }: { img: ImageRecord; onRemove: () => void }) {
+  const src = useImageSrc(img.localUri);
+  return (
+    <View style={styles.thumbWrap}>
+      <Image source={src ? { uri: src } : undefined} style={styles.thumb} />
+      <Pressable style={styles.removeBtn} hitSlop={8} onPress={onRemove}>
+        <PlusIcon color="#fff" width={12} height={12} style={{ transform: [{ rotate: '45deg' }] }} />
+      </Pressable>
     </View>
   );
 }
@@ -92,7 +148,7 @@ const THUMB = 84;
 
 const styles = StyleSheet.create({
   wrap: { gap: space.md },
-  label: { fontFamily: fonts.medium, fontSize: 16, color: colors.muted },
+  label: { fontFamily: fonts.medium, fontSize: fontSizes.base, color: colors.muted },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, paddingInline: space.md },
   thumbWrap: { width: THUMB, height: THUMB },
   thumb: { width: THUMB, height: THUMB, borderRadius: radius.md, backgroundColor: colors.line },
@@ -107,7 +163,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  removeText: { color: '#fff', fontFamily: fonts.bold, fontSize: 14, lineHeight: 16 },
+  removeText: { color: '#fff', fontFamily: fonts.bold, fontSize: fontSizes.sm, lineHeight: 16 },
   addTile: {
     width: THUMB,
     height: THUMB,
@@ -119,6 +175,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
   },
-  addPlus: { fontFamily: fonts.bold, fontSize: 22, color: colors.accent },
-  addLabel: { fontFamily: fonts.body, fontSize: 11, color: colors.muted },
+  addPlus: { fontFamily: fonts.bold, fontSize: fontSizes['2xl'], color: colors.accent },
+  addLabel: { fontFamily: fonts.body, fontSize: fontSizes.xs, color: colors.muted },
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-end',
+    padding: space.md,
+  },
+  sheet: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: space.sm,
+    gap: 2,
+  },
+  sheetTitle: {
+    fontFamily: fonts.medium,
+    fontSize: fontSizes.sm,
+    color: colors.muted,
+    textAlign: 'center',
+    paddingVertical: space.sm,
+  },
+  sheetItem: { paddingVertical: space.md, alignItems: 'center', borderRadius: radius.md },
+  sheetItemText: { fontFamily: fonts.medium, fontSize: fontSizes.lg, color: colors.accent },
+  sheetCancel: { fontFamily: fonts.body, fontSize: fontSizes.lg, color: colors.muted },
 });
