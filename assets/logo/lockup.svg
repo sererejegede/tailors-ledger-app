@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 130" width="640" height="130">
+<style>@import url('https://fonts.googleapis.com/css2?family=Vollkorn:wght@700&amp;display=swap');.wm{font-family:'Vollkorn',Georgia,'Times New Roman',serif;font-weight:700;}</style>
+<svg x="5" y="5" width="120" height="120" viewBox="0 0 512 512">
+<rect width="512" height="512" rx="118" fill="#810B38"/>
+<rect x="102" y="150" width="140" height="46" fill="#FAF9F6"/>
+<rect x="149" y="150" width="46" height="212" fill="#FAF9F6"/>
+<rect x="270" y="150" width="46" height="212" fill="#FAF9F6"/>
+<rect x="270" y="316" width="140" height="46" fill="#FAF9F6"/>
+<rect x="292" y="173" width="24" height="5" fill="#5E0827"/>
+<rect x="304" y="199" width="12" height="5" fill="#5E0827"/>
+<rect x="292" y="225" width="24" height="5" fill="#5E0827"/>
+<rect x="304" y="251" width="12" height="5" fill="#5E0827"/>
+<rect x="292" y="277" width="24" height="5" fill="#5E0827"/>
+<rect x="334" y="316" width="5" height="24" fill="#5E0827"/>
+<rect x="358" y="316" width="5" height="12" fill="#5E0827"/>
+<rect x="382" y="316" width="5" height="24" fill="#5E0827"/>
+<rect x="406" y="316" width="5" height="12" fill="#5E0827"/>
+<line x1="330" y1="174" x2="392" y2="250" stroke="#FAF9F6" stroke-width="6" stroke-linecap="round" stroke-dasharray="0.5 24" opacity="0.5"/>
+</svg>
+<text x="150" y="83" class="wm" font-size="58" fill="#810B38">Tailor&#8217;s <tspan fill="#5E0827">Ledger</tspan></text>
+</svg>

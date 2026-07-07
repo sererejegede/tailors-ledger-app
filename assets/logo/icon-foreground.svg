@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><g transform="translate(256,256) scale(0.82) translate(-256,-256)">
+<rect x="102" y="150" width="140" height="46" fill="#FAF9F6"/>
+<rect x="149" y="150" width="46" height="212" fill="#FAF9F6"/>
+<rect x="270" y="150" width="46" height="212" fill="#FAF9F6"/>
+<rect x="270" y="316" width="140" height="46" fill="#FAF9F6"/>
+<rect x="292" y="173" width="24" height="5" fill="#5E0827"/>
+<rect x="304" y="199" width="12" height="5" fill="#5E0827"/>
+<rect x="292" y="225" width="24" height="5" fill="#5E0827"/>
+<rect x="304" y="251" width="12" height="5" fill="#5E0827"/>
+<rect x="292" y="277" width="24" height="5" fill="#5E0827"/>
+<rect x="334" y="316" width="5" height="24" fill="#5E0827"/>
+<rect x="358" y="316" width="5" height="12" fill="#5E0827"/>
+<rect x="382" y="316" width="5" height="24" fill="#5E0827"/>
+<rect x="406" y="316" width="5" height="12" fill="#5E0827"/><line x1="330" y1="174" x2="392" y2="250" stroke="#FAF9F6" stroke-width="6" stroke-linecap="round" stroke-dasharray="0.5 24" opacity="0.5"/></g></svg>

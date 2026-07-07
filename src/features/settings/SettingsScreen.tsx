@@ -16,6 +16,7 @@ import { fonts } from '@/theme/typography';
 import { useFontScale } from '@/theme/textScale';
 import { AccountSection } from './AccountSection';
 import { SettingsRow } from '@/components/SettingsRow';
+import { AppLogo } from '@/components/AppLogo';
 import { ItemPickerSheet } from '@/components/templates';
 import { Divider } from '@/components/Divider';
 
@@ -173,6 +174,8 @@ export default function SettingsScreen() {
           onPress={repairData}
         />
       ) : null}
+
+      <AppLogo />
 
       <ItemPickerSheet
         visible={itemPickerVisible}
