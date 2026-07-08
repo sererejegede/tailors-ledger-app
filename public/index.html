@@ -27,16 +27,23 @@
       html {
         -webkit-text-size-adjust: 100%;
         text-size-adjust: 100%;
+        /* Warm backdrop shown only around the centered app column on wide screens. */
+        background-color: #ebe7df;
       }
       /* These styles disable body scrolling if you are using <ScrollView> */
       body {
         overflow: hidden;
       }
-      /* These styles make the root element full-height */
+      /* The app is mobile-first; on desktop keep it a centered ~phone-width column rather
+         than stretching edge to edge. No effect on mobile (viewport < 680px). */
       #root {
         display: flex;
         height: 100%;
         flex: 1;
+        max-width: 680px;
+        margin: 0 auto;
+        background-color: #faf9f6;
+        box-shadow: 0 0 32px rgba(94, 8, 39, 0.06);
       }
     </style>
   </head>
