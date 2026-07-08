@@ -1,5 +1,5 @@
 import 'react-native-url-polyfill/auto';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { config, isSupabaseConfigured } from '@/lib/config';
@@ -16,7 +16,10 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
         storage: AsyncStorage,
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: false, // we handle the magic-link redirect ourselves (no web origin)
+        // Web/PWA: the OAuth + magic-link redirect returns to our own origin, so let
+        // supabase-js parse the session straight from the URL. Native has no web origin — we
+        // adopt the session from the custom-scheme deep link ourselves (AuthProvider).
+        detectSessionInUrl: Platform.OS === 'web',
       },
     })
   : null;
