@@ -20,6 +20,7 @@ import { fonts } from '@/theme/typography';
 import { ClientRow } from '@/components/ClientRow';
 import { FloatingActionButton } from '@/components/FloatingActionButton';
 import { InstallPrompt } from '@/components/InstallPrompt';
+import { PwaUpdatePrompt } from '@/components/PwaUpdatePrompt';
 import type { RootStackParamList } from '@/navigation/types';
 
 /**
@@ -71,6 +72,7 @@ export default function ClientsScreen() {
       <Text style={styles.h1}>Clients</Text>
 
       <InstallPrompt />
+      <PwaUpdatePrompt />
 
       <TextInput
         style={styles.search}

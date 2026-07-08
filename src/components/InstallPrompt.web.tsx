@@ -96,7 +96,7 @@ export function InstallPrompt() {
         <Text style={styles.title}>Install Tailor’s Ledger</Text>
         <Text style={styles.sub}>
           {deferred
-            ? 'Add it to your home screen for full-screen, offline use.'
+            ? 'Add it to your home screen for offline use.'
             : 'Tap the Share button, then “Add to Home Screen”.'}
         </Text>
       </View>

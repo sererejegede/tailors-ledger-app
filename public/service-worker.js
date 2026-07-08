@@ -15,15 +15,24 @@
  *    own ret/queue logic; the SW must never sit between a measurement session and the
  *    network (product spec §9 — never block on connectivity).
  *
- * Bump CACHE to force old caches out on the next activate.
+ * CACHE is a semantic version (keep in step with app.json `version`): bump the patch when
+ * cached shell assets change, minor/major with the app. Changing it makes the SW byte-
+ * different (triggering an update) and purges the old cache on the next activate.
  */
-const CACHE = 'tailors-ledger-v2';
+const CACHE = 'tailors-ledger-1.0.0';
 const SHELL = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png'];
 
+// A new SW installs and then WAITS (no auto skipWaiting) so it never activates mid-session
+// and reloads the page under the user — which would drop an unsaved in-memory measurement.
+// The app detects the waiting worker, shows an "Update available" prompt, and posts
+// SKIP_WAITING when the user taps Refresh (see PwaUpdatePrompt.web.tsx). First install (no
+// existing controller) still activates immediately, since there's nothing to wait behind.
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()),
-  );
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
