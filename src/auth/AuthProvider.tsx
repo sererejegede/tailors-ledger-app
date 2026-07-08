@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { Platform } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
@@ -6,10 +7,16 @@ import { supabase } from './supabase';
 
 /**
  * Magic-link / OAuth redirect target. Must be added VERBATIM to the Supabase dashboard
- * (Authentication → URL Configuration → Redirect URLs). It uses the app's custom scheme
- * (`scheme` in app.json), so the auth flow reopens the app instead of the web Site URL.
+ * (Authentication → URL Configuration → Redirect URLs). On native it uses the app's custom
+ * scheme (`scheme` in app.json) so the flow reopens the app; on web/PWA it's the app's own
+ * origin, so the provider redirects back into the browser and supabase-js reads the session
+ * from the URL (supabase.ts `detectSessionInUrl`). Add EACH web origin you deploy to (e.g.
+ * https://your-app.vercel.app, and http://localhost:4173 for local testing).
  */
-export const AUTH_REDIRECT = 'tailorsledger://auth-callback';
+export const AUTH_REDIRECT =
+  Platform.OS === 'web' && typeof window !== 'undefined'
+    ? window.location.origin
+    : 'tailorsledger://auth-callback';
 
 /** Adopt a session from a redirect URL — implicit flow (#access_token) or PKCE (?code). */
 async function completeFromUrl(sb: SupabaseClient, url: string | null): Promise<void> {
@@ -70,9 +77,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Adopt a magic-link deep-link redirect (OAuth completes inline via the web-auth session).
+  // Web skips this — supabase-js `detectSessionInUrl` handles the origin redirect there.
   useEffect(() => {
     const sb = supabase;
-    if (!sb) return;
+    if (!sb || Platform.OS === 'web') return;
     const handle = (url: string | null) => completeFromUrl(sb, url);
     Linking.getInitialURL().then(handle);
     const sub = Linking.addEventListener('url', (e) => handle(e.url));
@@ -82,6 +90,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = useCallback(async () => {
     const sb = supabase;
     if (!sb) return { error: 'Sync isn’t configured yet.' };
+
+    if (Platform.OS === 'web') {
+      // Web/PWA: full-page redirect to Google and back to our origin. On return, the session
+      // is read from the URL by detectSessionInUrl — no in-app browser / deep link needed.
+      const { error } = await sb.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: AUTH_REDIRECT },
+      });
+      return error ? { error: error.message } : {};
+    }
+
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: AUTH_REDIRECT, skipBrowserRedirect: true },
