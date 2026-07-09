@@ -58,7 +58,8 @@
     "extra": {
       "backendBaseUrl": "https://tailors-ledger-be.onrender.com/v1",
       "supabaseUrl": "https://enywrjcebqbhendeaswx.supabase.co",
-      "supabaseAnonKey": "sb_publishable_ZBj8m_kF-c_h3x7mUEOjuw_b38pGagx"
+      "supabaseAnonKey": "sb_publishable_ZBj8m_kF-c_h3x7mUEOjuw_b38pGagx",
+      "sentryDsn": "https://3ed97bf2d213ade24e9a566617258f3d@o4511705139642368.ingest.de.sentry.io/4511706001965136"
     }
   }
 }

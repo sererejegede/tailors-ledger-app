@@ -13,6 +13,7 @@ import { FontScaleProvider } from '@/theme/textScale';
 import { colors } from '@/theme/tokens';
 import RootNavigator from '@/navigation/RootNavigator';
 import { linking } from '@/navigation/linking';
+import { AppErrorBoundary } from '@/lib/sentry';
 import { OverlayHostProvider } from '@/components/OverlayHost';
 import { SnackbarProvider } from '@/components/Snackbar';
 import { AppLockGate } from '@/components/AppLockGate';
@@ -59,8 +60,9 @@ export default function App() {
   }
 
   return (
-    <GestureHandlerRootView style={styles.flex}>
-      <SafeAreaProvider>
+    <AppErrorBoundary>
+      <GestureHandlerRootView style={styles.flex}>
+        <SafeAreaProvider>
         <FontScaleProvider initialLarge={largeText}>
           <DatabaseProvider database={database}>
             <AuthProvider>
@@ -80,7 +82,8 @@ export default function App() {
           </DatabaseProvider>
         </FontScaleProvider>
       </SafeAreaProvider>
-    </GestureHandlerRootView>
+      </GestureHandlerRootView>
+    </AppErrorBoundary>
   );
 }
 

@@ -9,6 +9,7 @@ const extra = (Constants.expoConfig?.extra ?? {}) as {
   backendBaseUrl?: string;
   supabaseUrl?: string;
   supabaseAnonKey?: string;
+  sentryDsn?: string;
 };
 
 export const config = {
@@ -16,6 +17,8 @@ export const config = {
   backendBaseUrl: (extra.backendBaseUrl ?? '').replace(/\/$/, ''),
   supabaseUrl: extra.supabaseUrl ?? '',
   supabaseAnonKey: extra.supabaseAnonKey ?? '',
+  /** Sentry DSN (web error reporting). Empty = reporting disabled. Public/safe to ship. */
+  sentryDsn: extra.sentryDsn ?? '',
 };
 
 export const isSupabaseConfigured = Boolean(config.supabaseUrl && config.supabaseAnonKey);
