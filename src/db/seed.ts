@@ -1,5 +1,6 @@
 import { Database } from '@nozbe/watermelondb';
 import { Tables } from './schema';
+import { seededId } from '@/lib/ids';
 import type Template from './models/Template';
 import type TemplateItem from './models/TemplateItem';
 import type AppSettings from './models/AppSettings';
@@ -9,6 +10,9 @@ import type AppSettings from './models/AppSettings';
  * Templates are general-purpose; the natural divergence is sex (e.g. Women's carries
  * bust), so we ship an editable Men's (default) + Women's. Item lists and typical
  * ranges are taken verbatim from docs/tailor-app-wireframe.html (TEMPLATES).
+ *
+ * Seed rows get DETERMINISTIC ids (seededId), so two devices on one account converge on the
+ * same "Men's"/"Women's" (and item) ids and merge by id on sync rather than duplicating.
  */
 
 export type StarterItem = { key: string; min?: number; max?: number };
@@ -19,38 +23,40 @@ export const STARTER_TEMPLATES: StarterTemplate[] = [
     name: "Men's",
     isDefault: true,
     items: [
-      { key: 'Neck', min: 13, max: 20 },
-      { key: 'Shoulder', min: 15, max: 24 },
-      { key: 'Chest', min: 32, max: 56 },
-      { key: 'Stomach', min: 28, max: 54 },
-      { key: 'Top length', min: 24, max: 34 },
-      { key: 'Sleeve length', min: 8, max: 28 },
-      { key: 'Round sleeve', min: 12, max: 24 },
+      { key: 'Back', min: 20, max: 24 },
+      { key: 'Back to Sleeve', min: 24, max: 28 },
+      { key: 'Sleeve (Short)', min: 14, max: 18 },
+      { key: 'Sleeve (Long)', min: 21, max: 25 },
+      { key: 'Neck', min: 15, max: 19 },
+      { key: 'Cap', min: 21, max: 25 },
+      { key: 'Length', min: 40, max: 60 },
+      { key: 'Trouser length', min: 37, max: 41 },
       { key: 'Wrist', min: 6, max: 12 },
-      { key: 'Trouser length', min: 34, max: 46 },
-      { key: 'Waist', min: 28, max: 48 },
       { key: 'Thigh', min: 18, max: 34 },
-      { key: 'Base', min: 11, max: 20 },
     ],
   },
   {
     name: "Women's",
     isDefault: false,
     items: [
-      { key: 'Neck', min: 11, max: 18 },
       { key: 'Shoulder', min: 13, max: 20 },
-      { key: 'Bust', min: 30, max: 54 },
-      { key: 'Under-bust', min: 26, max: 48 },
-      { key: 'Waist', min: 22, max: 46 },
-      { key: 'Hip', min: 32, max: 58 },
-      { key: 'Top length', min: 20, max: 30 },
-      { key: 'Sleeve length', min: 6, max: 26 },
-      { key: 'Round sleeve', min: 9, max: 20 },
+      { key: 'Back width', min: 13, max: 18 },
+      { key: 'Back waist length', min: 12, max: 16 },
+      { key: 'Chest width', min: 15, max: 19 },
+      { key: 'Bust', min: 33, max: 45 },
+      { key: 'Waist', min: 28, max: 38 },
+      { key: 'Hip', min: 32, max: 45 },
+      { key: 'Armhole', min: 20, max: 30 },
+      { key: 'Bicep', min: 8, max: 14 },
+      { key: 'Elbow', min: 8, max: 14 },
       { key: 'Wrist', min: 5, max: 9 },
-      { key: 'Gown length', min: 36, max: 64 },
-      { key: 'Half length', min: 14, max: 22 },
+      { key: 'Sleeve length', min: 6, max: 26 },
+      { key: 'Bust span', min: 5, max: 10 },
+      { key: 'Shoulder - bust point', min: 5, max: 10 },
+      { key: 'Full length', min: 50, max: 70 },
+      { key: 'Knee length', min: 30, max: 45 },
       { key: 'Thigh', min: 18, max: 34 },
-      { key: 'Knee', min: 12, max: 24 },
+      { key: 'Trouser length', min: 37, max: 45 },
     ],
   },
 ];
@@ -76,7 +82,10 @@ export async function ensureSeeded(database: Database): Promise<boolean> {
     if (existingTemplates === 0) {
       const templateItems = database.get<TemplateItem>(Tables.templateItems);
       for (const starter of STARTER_TEMPLATES) {
+        // Deterministic ids (same on every device) so multi-device accounts merge the
+        // starter templates + items by id instead of duplicating them (see seededId).
         const created = await templates.create((t) => {
+          t._raw.id = seededId(`template:${starter.name}`);
           t.name = starter.name;
           t.isDefault = starter.isDefault;
         });
@@ -85,6 +94,7 @@ export async function ensureSeeded(database: Database): Promise<boolean> {
         await Promise.all(
           starter.items.map((item, position) =>
             templateItems.create((ti) => {
+              ti._raw.id = seededId(`template-item:${starter.name}:${item.key}`);
               ti.template!.id = created.id;
               ti.key = item.key;
               ti.position = position;
