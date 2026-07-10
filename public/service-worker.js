@@ -19,7 +19,7 @@
  * cached shell assets change, minor/major with the app. Changing it makes the SW byte-
  * different (triggering an update) and purges the old cache on the next activate.
  */
-const CACHE = 'tailors-ledger-1.0.0';
+const CACHE = 'tailors-ledger-1.0.1';
 const SHELL = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png'];
 
 // A new SW installs and then WAITS (no auto skipWaiting) so it never activates mid-session
