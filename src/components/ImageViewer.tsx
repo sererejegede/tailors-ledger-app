@@ -1,8 +1,9 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
   Image,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -33,20 +34,35 @@ export function ImageViewer({
   onClose: () => void;
 }) {
   const { width, height } = useWindowDimensions();
-  const [current, setCurrent] = useState(0);
+  const [current, setCurrent] = useState(index ?? 0);
   const listRef = useRef<FlatList<ImageRecord>>(null);
 
   const open = index != null;
 
-  // Sync the indicator to the settled page after a swipe.
-  const onMomentumEnd = useCallback(
+  // Reset the indicator to the opened photo each time the viewer opens (the component stays
+  // mounted, so the useState initializer is stale on reopen and initialScrollIndex doesn't
+  // reliably fire onScroll on web).
+  useEffect(() => {
+    if (index != null) setCurrent(index);
+  }, [index]);
+
+  // Track the page from scroll offset. onScroll (vs onMomentumScrollEnd) is used because the
+  // latter doesn't fire for paged FlatLists on react-native-web; the guard keeps setState to
+  // one call per page crossing.
+  const onScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      setCurrent(Math.round(e.nativeEvent.contentOffset.x / width));
+      const page = Math.round(e.nativeEvent.contentOffset.x / width);
+      setCurrent((prev) => (prev === page ? prev : page));
     },
     [width],
   );
 
   if (!open) return null;
+
+  // RNW doesn't reliably honor the shows*ScrollIndicator props for a paged FlatList, so on
+  // web we also tag the scroll node (data-noscrollbar) and hide its scrollbars via the global
+  // stylesheet in public/index.html. No-op / omitted on native.
+  const webNoScrollbar = Platform.OS === 'web' ? { dataSet: { noscrollbar: 'true' } } : {};
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
@@ -58,9 +74,12 @@ export function ImageViewer({
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
+          showsVerticalScrollIndicator={false}
+          {...webNoScrollbar}
           initialScrollIndex={index}
           getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
-          onMomentumScrollEnd={onMomentumEnd}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           renderItem={({ item }) => <Page img={item} width={width} height={height} />}
         />
 
