@@ -7,6 +7,7 @@ import type ImageRecord from '@/db/models/ImageRecord';
 import { imagesForSet, createImage, softDeleteImage, type ImageKind } from '@/repositories/images';
 import { captureFromCamera, pickFromGallery } from '@/lib/images';
 import { useImageSrc } from '@/lib/imageSrc';
+import { ImageViewer } from '@/components/ImageViewer';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import PlusIcon from '@/assets/icons/plus.svg';
@@ -18,6 +19,8 @@ import PlusIcon from '@/assets/icons/plus.svg';
  */
 export function SetImages({ setId }: { setId: string }) {
   const [images, setImages] = useState<ImageRecord[]>([]);
+  // Index of the photo shown full-screen in the lightbox; null = viewer closed.
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setImages(await imagesForSet(database, setId));
@@ -92,14 +95,21 @@ export function SetImages({ setId }: { setId: string }) {
     <View style={styles.wrap}>
       <Text style={styles.label}>Photos</Text>
       <View style={styles.grid}>
-        {images.map((img) => (
-          <Thumbnail key={img.id} img={img} onRemove={() => remove(img)} />
+        {images.map((img, i) => (
+          <Thumbnail
+            key={img.id}
+            img={img}
+            onOpen={() => setViewerIndex(i)}
+            onRemove={() => remove(img)}
+          />
         ))}
         <Pressable style={styles.addTile} onPress={onAdd}>
           <PlusIcon width={20} height={20} color={colors.accent} />
           <Text style={styles.addLabel}>Add photo</Text>
         </Pressable>
       </View>
+
+      <ImageViewer images={images} index={viewerIndex} onClose={() => setViewerIndex(null)} />
 
       {/* Web-only source chooser (native uses the Alert action sheet above). */}
       <Modal
@@ -132,11 +142,22 @@ export function SetImages({ setId }: { setId: string }) {
  * site — on web it turns the row's `idb-image://` uri into an object URL; on native it's a
  * passthrough of the `file://` path.
  */
-function Thumbnail({ img, onRemove }: { img: ImageRecord; onRemove: () => void }) {
+function Thumbnail({
+  img,
+  onOpen,
+  onRemove,
+}: {
+  img: ImageRecord;
+  onOpen: () => void;
+  onRemove: () => void;
+}) {
   const src = useImageSrc(img.localUri);
   return (
     <View style={styles.thumbWrap}>
-      <Image source={src ? { uri: src } : undefined} style={styles.thumb} />
+      {/* Tap the tile to open the lightbox; the × stays a separate target for removal. */}
+      <Pressable onPress={onOpen}>
+        <Image source={src ? { uri: src } : undefined} style={styles.thumb} />
+      </Pressable>
       <Pressable style={styles.removeBtn} hitSlop={8} onPress={onRemove}>
         <PlusIcon color="#fff" width={12} height={12} style={{ transform: [{ rotate: '45deg' }] }} />
       </Pressable>
