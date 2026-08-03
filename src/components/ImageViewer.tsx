@@ -17,6 +17,7 @@ import { useImageSrc } from '@/lib/imageSrc';
 import { colors, fontSizes, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import PlusIcon from '@/assets/icons/plus.svg';
+import ChevronRightIcon from '@/assets/icons/chevron-right.svg';
 
 /**
  * Full-screen photo lightbox for a set's images. Horizontal swipe pages between photos
@@ -39,6 +40,22 @@ export function ImageViewer({
 
   const open = index != null;
 
+  // Hide the pager's scrollbars on web. RNW's shows*ScrollIndicator only emits
+  // `scrollbar-width: none` (Firefox); Chrome/Safari need `::-webkit-scrollbar{display:none}`,
+  // a pseudo-element that can't be an inline style. Inject it once at runtime (rather than in
+  // public/index.html, a build-time template that needs a Metro restart to pick up).
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const id = 'gallery-noscrollbar-style';
+    if (document.getElementById(id)) return;
+    const el = document.createElement('style');
+    el.id = id;
+    el.textContent =
+      '[data-noscrollbar]{scrollbar-width:none;-ms-overflow-style:none;}' +
+      '[data-noscrollbar]::-webkit-scrollbar{display:none;}';
+    document.head.appendChild(el);
+  }, []);
+
   // Reset the indicator to the opened photo each time the viewer opens (the component stays
   // mounted, so the useState initializer is stale on reopen and initialScrollIndex doesn't
   // reliably fire onScroll on web).
@@ -57,12 +74,25 @@ export function ImageViewer({
     [width],
   );
 
+  // Step one photo left/right via the arrow buttons.
+  const go = useCallback(
+    (dir: -1 | 1) => {
+      setCurrent((prev) => {
+        const next = prev + dir;
+        if (next < 0 || next >= images.length) return prev;
+        listRef.current?.scrollToIndex({ index: next, animated: true });
+        return next;
+      });
+    },
+    [images.length],
+  );
+
   if (!open) return null;
 
-  // RNW doesn't reliably honor the shows*ScrollIndicator props for a paged FlatList, so on
-  // web we also tag the scroll node (data-noscrollbar) and hide its scrollbars via the global
-  // stylesheet in public/index.html. No-op / omitted on native.
+  // Tag the scroll node so the runtime-injected [data-noscrollbar] rule hides its scrollbars
+  // on web (see the injection effect above). No-op / omitted on native.
   const webNoScrollbar = Platform.OS === 'web' ? { dataSet: { noscrollbar: 'true' } } : {};
+  const showArrows = images.length > 1;
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
@@ -92,7 +122,27 @@ export function ImageViewer({
           />
         </Pressable>
 
-        {images.length > 1 ? (
+        {showArrows ? (
+          <>
+            {current > 0 ? (
+              <Pressable style={[styles.arrow, styles.arrowLeft]} hitSlop={8} onPress={() => go(-1)}>
+                <ChevronRightIcon
+                  color="#fff"
+                  width={22}
+                  height={22}
+                  style={{ transform: [{ rotate: '180deg' }] }}
+                />
+              </Pressable>
+            ) : null}
+            {current < images.length - 1 ? (
+              <Pressable style={[styles.arrow, styles.arrowRight]} hitSlop={8} onPress={() => go(1)}>
+                <ChevronRightIcon color="#fff" width={22} height={22} />
+              </Pressable>
+            ) : null}
+          </>
+        ) : null}
+
+        {showArrows ? (
           <View style={styles.counter} pointerEvents="none">
             <Text style={styles.counterText}>
               {current + 1} of {images.length}
@@ -136,6 +186,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  arrow: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -22,
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  arrowLeft: { left: space.md },
+  arrowRight: { right: space.md },
   counter: {
     position: 'absolute',
     bottom: space.xxl,

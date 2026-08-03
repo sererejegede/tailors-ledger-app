@@ -34,15 +34,6 @@
       body {
         overflow: hidden;
       }
-      /* Hide scrollbars on scroll nodes tagged data-noscrollbar (e.g. the image-gallery
-         pager) — RNW doesn't reliably honor shows*ScrollIndicator for paged lists. */
-      [data-noscrollbar] {
-        scrollbar-width: none; /* Firefox */
-        -ms-overflow-style: none; /* legacy Edge/IE */
-      }
-      [data-noscrollbar]::-webkit-scrollbar {
-        display: none; /* Chrome/Safari */
-      }
       /* The app is mobile-first; on desktop keep it a centered ~phone-width column rather
          than stretching edge to edge. No effect on mobile (viewport < 680px). */
       #root {

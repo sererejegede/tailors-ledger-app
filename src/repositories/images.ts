@@ -13,6 +13,9 @@ import { notDeleted, softDeleteById } from './softDelete';
 export type ImageKind = 'card' | 'camera' | 'gallery';
 export type UploadStatus = 'pending' | 'uploading' | 'uploaded' | 'failed';
 
+/** Max photos kept per set (spec §8 allows multiple; this is the app's cap). */
+export const MAX_IMAGES_PER_SET = 10;
+
 export type NewImage = {
   kind: ImageKind;
   localUri: string;
