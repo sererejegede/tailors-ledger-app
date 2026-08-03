@@ -3,7 +3,6 @@ import {
   FlatList,
   Image,
   Modal,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -37,49 +36,46 @@ export function ImageViewer({
   const { width, height } = useWindowDimensions();
   const [current, setCurrent] = useState(index ?? 0);
   const listRef = useRef<FlatList<ImageRecord>>(null);
+  // Target page of an in-flight arrow-triggered scroll; null when idle (i.e. user swiping).
+  const pendingRef = useRef<number | null>(null);
 
   const open = index != null;
-
-  // Hide the pager's scrollbars on web. RNW's shows*ScrollIndicator only emits
-  // `scrollbar-width: none` (Firefox); Chrome/Safari need `::-webkit-scrollbar{display:none}`,
-  // a pseudo-element that can't be an inline style. Inject it once at runtime (rather than in
-  // public/index.html, a build-time template that needs a Metro restart to pick up).
-  useEffect(() => {
-    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
-    const id = 'gallery-noscrollbar-style';
-    if (document.getElementById(id)) return;
-    const el = document.createElement('style');
-    el.id = id;
-    el.textContent =
-      '[data-noscrollbar]{scrollbar-width:none;-ms-overflow-style:none;}' +
-      '[data-noscrollbar]::-webkit-scrollbar{display:none;}';
-    document.head.appendChild(el);
-  }, []);
 
   // Reset the indicator to the opened photo each time the viewer opens (the component stays
   // mounted, so the useState initializer is stale on reopen and initialScrollIndex doesn't
   // reliably fire onScroll on web).
   useEffect(() => {
-    if (index != null) setCurrent(index);
+    if (index != null) {
+      setCurrent(index);
+      pendingRef.current = null;
+    }
   }, [index]);
 
   // Track the page from scroll offset. onScroll (vs onMomentumScrollEnd) is used because the
-  // latter doesn't fire for paged FlatLists on react-native-web; the guard keeps setState to
-  // one call per page crossing.
+  // latter doesn't fire for paged FlatLists on react-native-web.
   const onScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const page = Math.round(e.nativeEvent.contentOffset.x / width);
+      // While an arrow-triggered animation is running, ignore intermediate offsets — they'd
+      // briefly round back to the previous page and flicker the counter. Clear the guard once
+      // the animation reaches its target.
+      if (pendingRef.current != null) {
+        if (page === pendingRef.current) pendingRef.current = null;
+        return;
+      }
       setCurrent((prev) => (prev === page ? prev : page));
     },
     [width],
   );
 
-  // Step one photo left/right via the arrow buttons.
+  // Step one photo left/right via the arrow buttons. Mark the target as pending so onScroll
+  // ignores the animation's intermediate frames (see onScroll).
   const go = useCallback(
     (dir: -1 | 1) => {
       setCurrent((prev) => {
         const next = prev + dir;
         if (next < 0 || next >= images.length) return prev;
+        pendingRef.current = next;
         listRef.current?.scrollToIndex({ index: next, animated: true });
         return next;
       });
@@ -89,29 +85,31 @@ export function ImageViewer({
 
   if (!open) return null;
 
-  // Tag the scroll node so the runtime-injected [data-noscrollbar] rule hides its scrollbars
-  // on web (see the injection effect above). No-op / omitted on native.
-  const webNoScrollbar = Platform.OS === 'web' ? { dataSet: { noscrollbar: 'true' } } : {};
   const showArrows = images.length > 1;
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <FlatList
-          ref={listRef}
-          data={images}
-          keyExtractor={(img) => img.id}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          showsVerticalScrollIndicator={false}
-          {...webNoScrollbar}
-          initialScrollIndex={index}
-          getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
-          onScroll={onScroll}
-          scrollEventThrottle={16}
-          renderItem={({ item }) => <Page img={item} width={width} height={height} />}
-        />
+        {/* Clip window: the list is made SCROLLBAR_PAD taller than the visible area so the
+            (web) horizontal scrollbar sits below the clip and never shows. Node-agnostic —
+            no dependency on browser ::-webkit-scrollbar support. Harmless on native. */}
+        <View style={[styles.clip, { width, height }]}>
+          <FlatList
+            ref={listRef}
+            style={{ width, height: height + SCROLLBAR_PAD }}
+            data={images}
+            keyExtractor={(img) => img.id}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            showsVerticalScrollIndicator={false}
+            initialScrollIndex={index}
+            getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
+            onScroll={onScroll}
+            scrollEventThrottle={16}
+            renderItem={({ item }) => <Page img={item} width={width} height={height} />}
+          />
+        </View>
 
         <Pressable style={styles.closeBtn} hitSlop={8} onPress={onClose}>
           <PlusIcon
@@ -171,8 +169,13 @@ function Page({ img, width, height }: { img: ImageRecord; width: number; height:
   );
 }
 
+// Extra height given to the pager so the web horizontal scrollbar falls below the clip
+// window. Comfortably larger than any platform scrollbar (~15–17px).
+const SCROLLBAR_PAD = 24;
+
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)' },
+  clip: { overflow: 'hidden' },
   page: { alignItems: 'center', justifyContent: 'center' },
   image: { width: '100%', height: '100%' },
   closeBtn: {
