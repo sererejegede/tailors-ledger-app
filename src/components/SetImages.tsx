@@ -4,9 +4,16 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Alert } from '@/lib/alert';
 import { database } from '@/db';
 import type ImageRecord from '@/db/models/ImageRecord';
-import { imagesForSet, createImage, softDeleteImage, type ImageKind } from '@/repositories/images';
-import { captureFromCamera, pickFromGallery } from '@/lib/images';
+import {
+  imagesForSet,
+  createImage,
+  softDeleteImage,
+  MAX_IMAGES_PER_SET,
+  type ImageKind,
+} from '@/repositories/images';
+import { captureFromCamera, pickManyFromGallery } from '@/lib/images';
 import { useImageSrc } from '@/lib/imageSrc';
+import { ImageViewer } from '@/components/ImageViewer';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import PlusIcon from '@/assets/icons/plus.svg';
@@ -18,6 +25,8 @@ import PlusIcon from '@/assets/icons/plus.svg';
  */
 export function SetImages({ setId }: { setId: string }) {
   const [images, setImages] = useState<ImageRecord[]>([]);
+  // Index of the photo shown full-screen in the lightbox; null = viewer closed.
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setImages(await imagesForSet(database, setId));
@@ -31,17 +40,30 @@ export function SetImages({ setId }: { setId: string }) {
 
   const add = useCallback(
     async (kind: Extract<ImageKind, 'camera' | 'gallery'>) => {
-      const picked = kind === 'camera' ? await captureFromCamera() : await pickFromGallery();
-      if (!picked) return;
-      await createImage(database, setId, {
-        kind,
-        localUri: picked.localUri,
-        width: picked.width,
-        height: picked.height,
-      });
+      const remaining = MAX_IMAGES_PER_SET - images.length;
+      if (remaining <= 0) {
+        Alert.alert('Photo limit reached', `A set can have up to ${MAX_IMAGES_PER_SET} photos.`);
+        return;
+      }
+      // Camera captures one shot; gallery allows picking several at once (capped to the
+      // set's remaining slots).
+      const picked =
+        kind === 'camera'
+          ? [await captureFromCamera()].filter((p) => p != null)
+          : await pickManyFromGallery(remaining);
+      if (!picked.length) return;
+      // Cap defensively: the web file input ignores selectionLimit, so trim to remaining slots.
+      for (const p of picked.slice(0, remaining)) {
+        await createImage(database, setId, {
+          kind,
+          localUri: p.localUri,
+          width: p.width,
+          height: p.height,
+        });
+      }
       load();
     },
-    [setId, load],
+    [setId, load, images.length],
   );
 
   // Web source-choice sheet: RN's Alert action sheet is a no-op on react-native-web, so the
@@ -88,18 +110,41 @@ export function SetImages({ setId }: { setId: string }) {
     [doRemove],
   );
 
+  const atLimit = images.length >= MAX_IMAGES_PER_SET;
+
   return (
     <View style={styles.wrap}>
-      <Text style={styles.label}>Photos</Text>
+      <Text style={styles.label}>
+        Photos
+        {images.length > 0 ? (
+          <Text style={styles.count}>
+            {'  '}
+            {images.length}/{MAX_IMAGES_PER_SET}
+          </Text>
+        ) : null}
+      </Text>
       <View style={styles.grid}>
-        {images.map((img) => (
-          <Thumbnail key={img.id} img={img} onRemove={() => remove(img)} />
+        {images.map((img, i) => (
+          <Thumbnail
+            key={img.id}
+            img={img}
+            onOpen={() => setViewerIndex(i)}
+            onRemove={() => remove(img)}
+          />
         ))}
-        <Pressable style={styles.addTile} onPress={onAdd}>
-          <PlusIcon width={20} height={20} color={colors.accent} />
-          <Text style={styles.addLabel}>Add photo</Text>
-        </Pressable>
+        {/* Hide the add tile once the set is full; the picker is also capped defensively. */}
+        {atLimit ? null : (
+          <Pressable style={styles.addTile} onPress={onAdd}>
+            <PlusIcon width={20} height={20} color={colors.accent} />
+            <Text style={styles.addLabel}>Add photo</Text>
+          </Pressable>
+        )}
       </View>
+      {atLimit ? (
+        <Text style={styles.limitHint}>Maximum of {MAX_IMAGES_PER_SET} photos reached.</Text>
+      ) : null}
+
+      <ImageViewer images={images} index={viewerIndex} onClose={() => setViewerIndex(null)} />
 
       {/* Web-only source chooser (native uses the Alert action sheet above). */}
       <Modal
@@ -132,11 +177,22 @@ export function SetImages({ setId }: { setId: string }) {
  * site — on web it turns the row's `idb-image://` uri into an object URL; on native it's a
  * passthrough of the `file://` path.
  */
-function Thumbnail({ img, onRemove }: { img: ImageRecord; onRemove: () => void }) {
+function Thumbnail({
+  img,
+  onOpen,
+  onRemove,
+}: {
+  img: ImageRecord;
+  onOpen: () => void;
+  onRemove: () => void;
+}) {
   const src = useImageSrc(img.localUri);
   return (
     <View style={styles.thumbWrap}>
-      <Image source={src ? { uri: src } : undefined} style={styles.thumb} />
+      {/* Tap the tile to open the lightbox; the × stays a separate target for removal. */}
+      <Pressable onPress={onOpen}>
+        <Image source={src ? { uri: src } : undefined} style={styles.thumb} />
+      </Pressable>
       <Pressable style={styles.removeBtn} hitSlop={8} onPress={onRemove}>
         <PlusIcon color="#fff" width={12} height={12} style={{ transform: [{ rotate: '45deg' }] }} />
       </Pressable>
@@ -149,6 +205,8 @@ const THUMB = 84;
 const styles = StyleSheet.create({
   wrap: { gap: space.md },
   label: { fontFamily: fonts.medium, fontSize: fontSizes.base, color: colors.muted },
+  count: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.faint },
+  limitHint: { fontFamily: fonts.body, fontSize: fontSizes.xs, color: colors.faint, paddingInline: space.md },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, paddingInline: space.md },
   thumbWrap: { width: THUMB, height: THUMB },
   thumb: { width: THUMB, height: THUMB, borderRadius: radius.md, backgroundColor: colors.line },

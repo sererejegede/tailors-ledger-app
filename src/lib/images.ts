@@ -20,12 +20,26 @@ async function take(
   return { localUri: await persistImage(a.uri), width: a.width, height: a.height };
 }
 
-/** Pick from the photo library. Returns null if denied or cancelled. */
-export async function pickFromGallery(): Promise<PickedImage | null> {
+/**
+ * Pick one or more photos from the library at once. `limit` caps the selection (the caller
+ * passes the set's remaining slots). Returns [] if denied or cancelled.
+ */
+export async function pickManyFromGallery(limit?: number): Promise<PickedImage[]> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!perm.granted) return null;
-  return take(() =>
-    ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 }),
+  if (!perm.granted) return [];
+  const res = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    quality: 0.8,
+    allowsMultipleSelection: true,
+    selectionLimit: limit, // 0/undefined = unlimited on native; the caller always passes a cap
+  });
+  if (res.canceled || !res.assets?.length) return [];
+  return Promise.all(
+    res.assets.map(async (a) => ({
+      localUri: await persistImage(a.uri),
+      width: a.width,
+      height: a.height,
+    })),
   );
 }
 
