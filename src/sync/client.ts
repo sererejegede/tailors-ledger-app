@@ -11,7 +11,7 @@ import {
   type SyncTransport,
 } from './types';
 import { httpTransport } from './transport';
-import { getCursor, resetCursor, setCursor, setLastSyncedAt } from './cursor';
+import { getCursor, getLastSyncedAt, resetCursor, setCursor, setLastSyncedAt } from './cursor';
 import {
   applyServerChanges,
   collectLocalChanges,
@@ -19,6 +19,7 @@ import {
   normalizeEnvelope,
 } from './mapper';
 import { runImageUploads, defaultImageUploadDeps, type ImageUploadDeps } from './images';
+import { reconcileDefaultTemplate, reconcileStarterTemplates } from './seedReconcile';
 import { syncError } from './logger';
 
 /**
@@ -105,12 +106,49 @@ export async function runSync(database: Database, deps: SyncDeps = {}): Promise<
     let pulled = 0;
     const rejected: RejectedRow[] = [];
 
+    // ── Pull (paged on has_more, §5) ────────────────────────────────────────────────
+    const pullAll = async () => {
+      for (let page = 0; page < MAX_PULL_PAGES; page++) {
+        let resp: PullResponse;
+        try {
+          resp = await withRetry(
+            (t) => transport.pull({ cursor, limit: 500 }, t),
+            token,
+            getToken,
+            sleep,
+          );
+        } catch (e) {
+          // 409: our cursor was pruned — drop it and restart the pull from scratch (§10).
+          if (e instanceof SyncHttpError && e.status === 409) {
+            await resetCursor(database);
+            cursor = null;
+            continue;
+          }
+          throw e;
+        }
+
+        const changes = normalizeEnvelope(resp.changes);
+        const appliedResult = await applyServerChanges(database, changes, now());
+        pulled += appliedResult.upserted + appliedResult.deleted;
+        cursor = resp.cursor;
+        await setCursor(database, cursor);
+        if (!resp.has_more) break;
+      }
+    };
+
     // ── Image upload queue (before push, §12 step 2) ────────────────────────────────
     // So a freshly-uploaded image row carries its remote_url on the push below. Failures
     // are non-blocking (rows stay `failed`, retried next cycle). `null` skips the pass.
     if (deps.imageDeps !== null) {
       await runImageUploads(database, deps.imageDeps ?? defaultImageUploadDeps);
     }
+
+    // ── First sync on this device: pull before pushing (§12, data model §1b) ──────────
+    // So we know whether the account already has templates before sending our seed.
+    if ((await getLastSyncedAt(database)) == null) await pullAll();
+
+    // Drop unused starters / re-key legacy fixed-id seed rows before they're collected.
+    await reconcileStarterTemplates(database);
 
     // ── Push (before pull, §12 step 3) ──────────────────────────────────────────────
     const local = await collectLocalChanges(database);
@@ -132,33 +170,10 @@ export async function runSync(database: Database, deps: SyncDeps = {}): Promise<
       pushed = local.count - rejected.length;
     }
 
-    // ── Pull (paged on has_more, §5) ────────────────────────────────────────────────
-    for (let page = 0; page < MAX_PULL_PAGES; page++) {
-      let resp: PullResponse;
-      try {
-        resp = await withRetry(
-          (t) => transport.pull({ cursor, limit: 500 }, t),
-          token,
-          getToken,
-          sleep,
-        );
-      } catch (e) {
-        // 409: our cursor was pruned — drop it and restart the pull from scratch (§10).
-        if (e instanceof SyncHttpError && e.status === 409) {
-          await resetCursor(database);
-          cursor = null;
-          continue;
-        }
-        throw e;
-      }
+    await pullAll();
 
-      const changes = normalizeEnvelope(resp.changes);
-      const appliedResult = await applyServerChanges(database, changes, now());
-      pulled += appliedResult.upserted + appliedResult.deleted;
-      cursor = resp.cursor;
-      await setCursor(database, cursor);
-      if (!resp.has_more) break;
-    }
+    // Exactly one default per account once everything has landed (data model §1b).
+    await reconcileDefaultTemplate(database);
 
     const syncedAt = now();
     await setLastSyncedAt(database, syncedAt);

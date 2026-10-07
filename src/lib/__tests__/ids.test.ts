@@ -2,8 +2,9 @@ import { seededId } from '../ids';
 import { STARTER_TEMPLATES } from '@/db/seed';
 
 /**
- * seededId backs cross-device merge of the starter templates: the same seed string MUST give
- * the same id on every device, and the ids across the whole starter set must not collide.
+ * seededId is legacy-only: sync/seedReconcile.ts uses it to recognise starter rows that
+ * 9-July-2026 builds seeded under fixed ids. Recognition needs the same seed string to give
+ * the same id, and no collisions across the starter set.
  */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 

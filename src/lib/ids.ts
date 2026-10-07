@@ -12,12 +12,10 @@ export function newId(): string {
 }
 
 /**
- * Deterministic, stable id from a seed string — the SAME string yields the SAME id on every
- * device. Used only for seeded/reference rows (starter templates + their items) so two
- * devices on one account merge them by id instead of creating duplicates (a deliberate
- * exception to the device-generated-UUID rule, for seed data only). Not cryptographic; it
- * just needs to be stable, collision-free across our small seed set, and valid-UUID-shaped
- * (v7 version/variant nibbles set) so the Postgres `uuid` column accepts it.
+ * LEGACY — do not use for new rows. Deterministic id from a seed string: the same string
+ * yields the same id on every device of every user. Builds from 9 July 2026 used it for the
+ * starter templates, which made those ids collide across accounts (data model §1b). It is
+ * kept only so sync/seedReconcile.ts can recognise and re-key those rows.
  */
 export function seededId(seed: string): string {
   // cyrb128 — a compact 128-bit string hash (four 32-bit words).

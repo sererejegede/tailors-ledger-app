@@ -4,8 +4,18 @@ import { Tables } from '../schema';
 import type Template from '../models/Template';
 import type TemplateItem from '../models/TemplateItem';
 import type AppSettings from '../models/AppSettings';
+import { legacySeedIds } from '@/sync/seedReconcile';
 
 describe('ensureSeeded', () => {
+  it('uses fresh ids, never the legacy fixed ids that collide across accounts', async () => {
+    const db = makeTestDatabase();
+    await ensureSeeded(db);
+    const legacyIds = legacySeedIds();
+    const templates = await db.get<Template>(Tables.templates).query().fetch();
+    const items = await db.get<TemplateItem>(Tables.templateItems).query().fetch();
+    expect([...templates, ...items].some((record) => legacyIds.has(record.id))).toBe(false);
+  });
+
   it('seeds the Men\'s (default) + Women\'s starter templates with their items', async () => {
     const db = makeTestDatabase();
     const seeded = await ensureSeeded(db);

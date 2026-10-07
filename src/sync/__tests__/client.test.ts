@@ -23,6 +23,8 @@ import { runSync, _resetRunningGuard } from '../client';
 import { getCursor, getLastSyncedAt } from '../cursor';
 import { collectLocalChanges } from '../mapper';
 import { MockContractServer } from './contractMock';
+import { legacySeedIds } from '../seedReconcile';
+import { accountTemplateRow, addPulledTemplates, seedWithLegacyIds } from './seedFixtures';
 
 const NOW = 1_725_000_000_000;
 const deps = (server: MockContractServer) => ({
@@ -193,5 +195,71 @@ describe('runSync — push/pull round-trip against the contract mock', () => {
     const server = new MockContractServer();
     const result = await runSync(db, { ...deps(server), getToken: async () => null });
     expect(result).toEqual({ ok: false, skipped: 'signed-out' });
+  });
+});
+
+describe('runSync — starter templates across devices and accounts (data model §1b)', () => {
+  const liveTemplateNames = async (db: Database) =>
+    (await db.get<Template>(Tables.templates).query().fetch())
+      .filter((template) => template.deletedAt == null)
+      .map((template) => template.name)
+      .sort();
+
+  it('a second device joining an account adds no starter templates of its own', async () => {
+    const server = new MockContractServer();
+    const firstDevice = makeTestDatabase();
+    await ensureSeeded(firstDevice);
+    await runSync(firstDevice, deps(server));
+    _resetRunningGuard();
+
+    const secondDevice = makeTestDatabase();
+    await ensureSeeded(secondDevice);
+    const result = await runSync(secondDevice, deps(server));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.rejected).toHaveLength(0);
+    expect(server.liveCount('templates')).toBe(2);
+    expect(await liveTemplateNames(secondDevice)).toEqual(["Men's", "Women's"]);
+    const defaults = (await secondDevice.get<Template>(Tables.templates).query().fetch()).filter(
+      (template) => template.isDefault,
+    );
+    expect(defaults).toHaveLength(1);
+  });
+
+  it('clears legacy fixed-id seed rows another user owns (the iPhone case)', async () => {
+    const server = new MockContractServer();
+    server.foreignIds = legacySeedIds(); // another account synced them first → id_conflict
+    const accountWomen = { id: '019f3b2f-a5d0-7a1d-86d4-9a2d6c4ff6b3', name: 'Women', isDefault: true, updatedAt: NOW - 5000 };
+    server.seed('templates', accountTemplateRow(accountWomen));
+
+    // An install from an old build: legacy seed, already pulled the account, already synced.
+    const device = makeTestDatabase();
+    await seedWithLegacyIds(device);
+    await addPulledTemplates(device, [accountWomen]);
+    await updateSettings(device, { lastSyncedAt: NOW - 1000 });
+
+    const result = await runSync(device, deps(server));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.rejected).toHaveLength(0);
+    expect(await liveTemplateNames(device)).toEqual(['Women']);
+    expect(server.liveCount('templates')).toBe(1);
+  });
+
+  it('re-keys legacy seed rows on a brand-new account so they sync instead of conflicting', async () => {
+    const server = new MockContractServer();
+    server.foreignIds = legacySeedIds();
+    const device = makeTestDatabase();
+    await seedWithLegacyIds(device);
+
+    const result = await runSync(device, deps(server));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.rejected).toHaveLength(0);
+    expect(server.liveCount('templates')).toBe(2);
+    const localIds = (await device.get<Template>(Tables.templates).query().fetch()).map(
+      (template) => template.id,
+    );
+    expect(localIds.some((id) => server.foreignIds.has(id))).toBe(false);
   });
 });

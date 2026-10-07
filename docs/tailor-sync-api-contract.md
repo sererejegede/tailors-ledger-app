@@ -266,6 +266,8 @@ The client should never block a measurement session on any sync call — sync ru
 
 Push-before-pull keeps the client from overwriting its own un-pushed edits with older server state. (A WatermelonDB client that insists on pull-then-push also works, because resolution is server-side and idempotent.)
 
+**A device's first sync** (it has never completed one) runs an extra pull before step 3, so the client can see whether the account already has templates and drop its unused starter templates instead of pushing duplicates (data model §1b). A brand-new device has no un-pushed edits that a pull could overwrite, so the reason for push-first doesn't apply. No wire change.
+
 ---
 
 ## 13. Knobs to confirm
