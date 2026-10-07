@@ -1,6 +1,5 @@
 import { Database } from '@nozbe/watermelondb';
 import { Tables } from './schema';
-import { seededId } from '@/lib/ids';
 import type Template from './models/Template';
 import type TemplateItem from './models/TemplateItem';
 import type AppSettings from './models/AppSettings';
@@ -11,8 +10,9 @@ import type AppSettings from './models/AppSettings';
  * bust), so we ship an editable Men's (default) + Women's. Item lists and typical
  * ranges are taken verbatim from docs/tailor-app-wireframe.html (TEMPLATES).
  *
- * Seed rows get DETERMINISTIC ids (seededId), so two devices on one account converge on the
- * same "Men's"/"Women's" (and item) ids and merge by id on sync rather than duplicating.
+ * Seed rows get ordinary UUID v7 ids. Builds from 9 July 2026 gave them fixed ids, which
+ * are identical across every user and were rejected (`id_conflict`) for every account but
+ * the first; see data model §1b and sync/seedReconcile.ts, which cleans those up.
  */
 
 export type StarterItem = { key: string; min?: number; max?: number };
@@ -82,10 +82,9 @@ export async function ensureSeeded(database: Database): Promise<boolean> {
     if (existingTemplates === 0) {
       const templateItems = database.get<TemplateItem>(Tables.templateItems);
       for (const starter of STARTER_TEMPLATES) {
-        // Deterministic ids (same on every device) so multi-device accounts merge the
-        // starter templates + items by id instead of duplicating them (see seededId).
+        // Ordinary device-generated ids. A device joining an account that already has
+        // templates drops this seed on its first sync instead (sync/seedReconcile.ts).
         const created = await templates.create((t) => {
-          t._raw.id = seededId(`template:${starter.name}`);
           t.name = starter.name;
           t.isDefault = starter.isDefault;
         });
@@ -94,7 +93,6 @@ export async function ensureSeeded(database: Database): Promise<boolean> {
         await Promise.all(
           starter.items.map((item, position) =>
             templateItems.create((ti) => {
-              ti._raw.id = seededId(`template-item:${starter.name}:${item.key}`);
               ti.template!.id = created.id;
               ti.key = item.key;
               ti.position = position;

@@ -125,6 +125,8 @@ Before saving, items edited this session carry a subtle "changed" marker so the 
 
 Ship with a small set of editable starter templates so a tailor isn't staring at an empty app on first run. Since templates are general-purpose and the real divergence between them is **sex** (a women's template carries bust and similar items a men's wouldn't), the sensible defaults are a **Men's** and a **Women's** base template, each a reasonable common list of items. The tailor edits these or builds their own from scratch; nothing forces a sex label — it's just the practical organizing logic behind the starting content.
 
+A new device signing into an account that already has templates uses the account's templates; its own unused starter templates are discarded rather than added as duplicates (data model §1b).
+
 ---
 
 ## 11. v1 scope vs. later

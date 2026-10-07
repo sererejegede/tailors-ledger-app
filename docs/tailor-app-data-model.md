@@ -9,7 +9,7 @@
 The app must be fully usable with no connection and reconcile later, so the model follows five rules everywhere:
 
 1. **IDs are generated on the device**, not by the server. Use **UUID v7** (time-ordered, so rows also sort naturally by creation). Auto-increment integer keys are unusable offline because two devices would mint the same id.
-2. **Every syncable row carries bookkeeping**: `created_at`, `updated_at`, `deleted_at` (soft delete / tombstone), and a push/pull status. (On the actual WatermelonDB store this status is the engine's built-in `_status`/`_changed`, **not** a `sync_status` column — see §6.) Nothing is ever hard-deleted on the device — deletes are tombstones that propagate, then get purged after they've synced.
+2. **Every syncable row carries bookkeeping**: `created_at`, `updated_at`, `deleted_at` (soft delete / tombstone), and a push/pull status. (On the actual WatermelonDB store this status is the engine's built-in `_status`/`_changed`, **not** a `sync_status` column — see §6.) Nothing is ever hard-deleted on the device — deletes are tombstones that propagate, then get purged after they've synced. The one exception is an unused starter template that never left the device (§1b).
 3. **History is append-only.** Measurement values are never updated in place; a change writes a new immutable row. Append-only data effectively cannot conflict, which is exactly what you want over a flaky connection — and it's also the table that satisfies the "keep the previous sleeve length" requirement for free.
 4. **Binaries never live in a row.** Photos sit on the device filesystem; the database stores a local URI, an (eventual) remote URL, and an upload status. The image bytes sync through their own background queue, not through the row.
 5. **Conflict resolution is last-write-wins per row**, keyed on `updated_at`, with the server stamping the authoritative time at sync to absorb device-clock skew. Because the high-churn data (values) is append-only, true conflicts are rare and land only on small edits like renaming a client.
@@ -38,6 +38,40 @@ superseded by lazy create.)
 > **Continuous autosave** (spec §4) is a later enhancement, not built in v1. When added it
 > must stay empty-safe: defer the first write until there is a value or a name, so it never
 > reintroduces empty drafts.
+
+---
+
+## 1b. Starter templates across devices
+
+Every install seeds the starter templates (spec §10) locally, before any sign-in, so the
+app works offline from first launch. When that device signs into an account, its seed must
+not leak into an account that already has templates.
+
+- **Seed rows use ordinary device-generated UUID v7**, like every other row. Fixed,
+  deterministic seed ids are not allowed: they are identical on every install of every user,
+  so the first account to sync them owns them and every other account's seed is rejected
+  (`id_conflict`).
+- **A device's first sync pulls before it pushes** (sync contract §12), so it knows whether
+  the account already has templates before it sends anything.
+- **Discard rule.** If the account already has templates (any synced, non-deleted template
+  on the device), each local starter template is **hard-deleted together with its items**
+  when all of these hold:
+  - it has never synced;
+  - it is untouched: its name, item keys and item order match the starter exactly, nothing
+    was added or removed, and no row was edited (`updated_at` = `created_at`);
+  - no `measurement_sets` row (deleted or not) references it.
+
+  Nothing was ever sent for these rows, so there is no tombstone to propagate. The
+  `app_settings.default_template_id` pointer does not count as a reference; it is
+  repointed (below).
+- **Kept starters.** A starter template that fails the discard rule is user data and is
+  pushed. On an account that already has templates it is pushed with `is_default = false`.
+- **Legacy fixed ids.** Builds from 9 July 2026 seeded with fixed ids. Any such row that has
+  never synced and is kept is re-created under a fresh UUID v7, with its items, the sets that
+  reference it and the default pointer repointed, before it is pushed.
+- **One default per account.** After each pull, if several non-deleted templates have
+  `is_default = true`, the most recently updated one wins and the rest are set to false
+  (a normal synced edit). `app_settings.default_template_id` follows the winner.
 
 ---
 
@@ -77,7 +111,7 @@ A **client** has many **sets** (a set = one garment's worth of measurements, wit
 |---|---|---|
 | id | uuid v7 | PK |
 | name | text | e.g. "Men's", "Women's" |
-| is_default | bool | exactly one true per device; new measurements seed from it |
+| is_default | bool | exactly one true per account, reconciled after each pull (§1b); new measurements seed from it |
 | created_at / updated_at / deleted_at / sync_status | | as above |
 
 ### template_items

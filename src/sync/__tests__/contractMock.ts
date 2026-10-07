@@ -53,6 +53,9 @@ export class MockContractServer implements SyncTransport {
   public pushLog: PushRequest[] = [];
   /** When set, the next call throws this status once, then clears (to test the §10 matrix). */
   public failNextWith: number | null = null;
+  /** Ids owned by another user. Ids are global on the server, so pushing one is rejected
+   * with `id_conflict` (what the real backend did with the fixed seed ids). */
+  public foreignIds = new Set<string>();
 
   private key(table: SyncTable, id: string) {
     return `${table}:${id}`;
@@ -85,6 +88,10 @@ export class MockContractServer implements SyncTransport {
       for (const incoming of [...(changes.created ?? []), ...(changes.updated ?? [])]) {
         if (table === 'clients' && !String(incoming.name ?? '').trim()) {
           rejected.push({ entity: table, id: incoming.id, reason: 'name_required' });
+          continue;
+        }
+        if (this.foreignIds.has(incoming.id)) {
+          rejected.push({ entity: table, id: incoming.id, reason: 'id_conflict' });
           continue;
         }
         const k = this.key(table, incoming.id);
