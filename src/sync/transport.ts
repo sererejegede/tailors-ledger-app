@@ -42,10 +42,12 @@ async function rpc<T>(path: string, body: unknown, token: string): Promise<T> {
   }
 
   if (!response.ok) {
+    // Keep the endpoint in the message even when the server sends a body, so a reported
+    // failure says which RPC broke (push vs pull), not just the status.
     let message = `${path} failed (${response.status})`;
     try {
       const text = await response.text();
-      if (text) message = text;
+      if (text) message = `${message}: ${text}`;
     } catch {
       /* body not readable — keep the status message */
     }
