@@ -62,7 +62,7 @@ describe('saveMeasurements — append-only history rule', () => {
     const { set, items, firstEdits } = await freshlyMeasuredSet(db);
 
     // Re-open the set and re-submit every item's value, changing only the sleeve.
-    const sleeveIdx = items.findIndex((it) => it.key === 'Sleeve length');
+    const sleeveIdx = items.findIndex((it) => it.key === 'Sleeve (Long)');
     expect(sleeveIdx).toBeGreaterThanOrEqual(0);
     const sleeveId = items[sleeveIdx].id;
     const oldSleeve = firstEdits[sleeveIdx].value;
