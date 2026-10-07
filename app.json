@@ -2,7 +2,7 @@
   "expo": {
     "name": "Tailor's Ledger",
     "slug": "tailors-ledger",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "scheme": "tailorsledger",
     "icon": "./assets/icon.png",
