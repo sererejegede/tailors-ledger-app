@@ -14,6 +14,11 @@ export type SettingsPatch = Partial<{
   defaultTemplateId: string;
   shopName: string;
   logoUri: string;
+  shopPhone: string;
+  shopAddress: string;
+  receiptFooter: string;
+  currency: string;
+  nextReceiptNumber: number;
   appLockEnabled: boolean;
   textSize: string;
   highContrast: boolean;
@@ -41,6 +46,11 @@ export async function updateSettings(
       if (patch.defaultTemplateId !== undefined) s.defaultTemplateId = patch.defaultTemplateId;
       if (patch.shopName !== undefined) s.shopName = patch.shopName;
       if (patch.logoUri !== undefined) s.logoUri = patch.logoUri;
+      if (patch.shopPhone !== undefined) s.shopPhone = patch.shopPhone;
+      if (patch.shopAddress !== undefined) s.shopAddress = patch.shopAddress;
+      if (patch.receiptFooter !== undefined) s.receiptFooter = patch.receiptFooter;
+      if (patch.currency !== undefined) s.currency = patch.currency;
+      if (patch.nextReceiptNumber !== undefined) s.nextReceiptNumber = patch.nextReceiptNumber;
       if (patch.appLockEnabled !== undefined) s.appLockEnabled = patch.appLockEnabled;
       if (patch.textSize !== undefined) s.textSize = patch.textSize;
       if (patch.highContrast !== undefined) s.highContrast = patch.highContrast;

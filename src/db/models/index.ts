@@ -5,6 +5,9 @@ import MeasurementSet from './MeasurementSet';
 import MeasurementItem from './MeasurementItem';
 import MeasurementValue from './MeasurementValue';
 import ImageRecord from './ImageRecord';
+import Job from './Job';
+import JobItem from './JobItem';
+import Payment from './Payment';
 import AppSettings from './AppSettings';
 
 export {
@@ -15,6 +18,9 @@ export {
   MeasurementItem,
   MeasurementValue,
   ImageRecord,
+  Job,
+  JobItem,
+  Payment,
   AppSettings,
 };
 
@@ -27,5 +33,8 @@ export const modelClasses = [
   MeasurementItem,
   MeasurementValue,
   ImageRecord,
+  Job,
+  JobItem,
+  Payment,
   AppSettings,
 ];

@@ -40,12 +40,18 @@ Base path is versioned: **`/v1/...`**.
   "measurement_sets":   { "created": [], "updated": [], "deleted": [] },
   "measurement_items":  { "created": [], "updated": [], "deleted": [] },
   "measurement_values": { "created": [] },
-  "images":             { "created": [], "updated": [], "deleted": [] }
+  "images":             { "created": [], "updated": [], "deleted": [] },
+  "jobs":               { "created": [], "updated": [], "deleted": [] },
+  "job_items":          { "created": [], "updated": [], "deleted": [] },
+  "payments":           { "created": [], "updated": [], "deleted": [] }
 }
 ```
 
 - `created` / `updated` carry full rows. `deleted` carries bare id strings (tombstones).
 - **`measurement_values` only ever has `created`** — it is append-only and immutable, so it never appears in `updated` or `deleted`.
+- **Money is an integer of minor units** (`amount_minor: 5000000` is ₦50,000.00), never a decimal. `receipt_json` is an opaque string: the server stores and returns it without reading it.
+- `job_items.set_id` is a **soft reference** with no foreign key, like `measurement_sets.template_id`: a job item survives its set being deleted.
+- `payments.receipt_number` is **not unique**. Two phones offline can mint the same number, and the server must accept both.
 
 ---
 
@@ -54,6 +60,8 @@ Base path is versioned: **`/v1/...`**.
 The cursor is an **opaque string** the client stores after each successful pull and replays on the next pull/push. `null` (or omitted) means "first sync — send me everything."
 
 Reference implementation: the server keeps a per-user monotonic `server_seq` (bigint) that increments on every applied write. The cursor encodes the highest `server_seq` the client has received. Pull returns rows with `server_seq > cursor` ordered by `server_seq`. This sequence — not wall-clock time — is what makes pull ordering immune to device clock skew (the "server-authoritative checkpoint" from the data-model doc). `updated_at` is kept as the device edit time and used **only** for last-write-wins comparison.
+
+> **New tables and old cursors.** A client that doesn't know a table skips its rows, but its cursor still moves past them. So the first sync after an app upgrade that adds a table sends `cursor: null` once, to fetch what was skipped. The client tracks this on its side; no wire change.
 
 > **Client storage (resolved decision, 2026-06-25).** The app persists this opaque cursor in
 > its own side-channel — `app_settings.sync_cursor` (+ `last_synced_at`) — and drives

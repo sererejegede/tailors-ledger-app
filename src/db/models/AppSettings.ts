@@ -14,6 +14,11 @@ export default class AppSettings extends Model {
   @text('default_template_id') defaultTemplateId?: string;
   @text('shop_name') shopName?: string;
   @text('logo_uri') logoUri?: string;
+  @text('shop_phone') shopPhone?: string;
+  @text('shop_address') shopAddress?: string;
+  @text('receipt_footer') receiptFooter?: string;
+  @text('currency') currency?: string;
+  @field('next_receipt_number') nextReceiptNumber?: number | null;
   @field('app_lock_enabled') appLockEnabled: boolean;
   @text('text_size') textSize: string; // 'normal' | 'large'
   @field('high_contrast') highContrast: boolean;
