@@ -50,7 +50,7 @@ export type JobItemPatch = Partial<{
 }>;
 
 export type JobTotals = { totalMinor: number; paidMinor: number; balanceMinor: number };
-export type JobSummary = JobTotals & { job: Job; itemCount: number };
+export type JobSummary = JobTotals & { job: Job; label: string; itemCount: number };
 
 type Priced = Pick<JobItem, 'quantity' | 'unitPriceMinor'>;
 type Paid = Pick<Payment, 'amountMinor' | 'voidedAt'>;
@@ -303,7 +303,19 @@ export async function jobSummary(database: Database, jobId: string): Promise<Job
     jobItems(database, jobId),
     jobPayments(database, jobId),
   ]);
-  return { job, itemCount: items.length, ...totalsFor(items, payments) };
+  return { job, label: jobLabel(job, items), itemCount: items.length, ...totalsFor(items, payments) };
+}
+
+/** What a job is called: its title, or its first item. */
+function jobLabel(job: Job, items: JobItem[]): string {
+  if (job.title) return job.title;
+  const [first, ...rest] = items;
+  if (!first) return 'Job';
+  return rest.length ? `${first.description} +${rest.length}` : first.description;
+}
+
+export async function getPayment(database: Database, id: string): Promise<Payment> {
+  return database.get<Payment>(Tables.payments).find(id);
 }
 
 /** A client's jobs, newest first, with what each still owes (Client detail). */

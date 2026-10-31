@@ -6,6 +6,32 @@ export function nowMs(): number {
   return Date.now();
 }
 
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "30 Oct". Spelled out by hand so a receipt reads the same on every phone. */
+export function formatDayMonth(ms: number): string {
+  const d = new Date(ms);
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+}
+
+/** "30 Oct 2026". */
+export function formatDate(ms: number): string {
+  return `${formatDayMonth(ms)} ${new Date(ms).getFullYear()}`;
+}
+
+/** "Sat 14 Nov". */
+export function formatWeekday(ms: number): string {
+  return `${WEEKDAYS[new Date(ms).getDay()]} ${formatDayMonth(ms)}`;
+}
+
+/** The same time of day, `days` later. Calendar-based, so it survives clock changes. */
+export function addDays(ms: number, days: number): number {
+  const d = new Date(ms);
+  d.setDate(d.getDate() + days);
+  return d.getTime();
+}
+
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;

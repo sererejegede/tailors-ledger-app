@@ -5,6 +5,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { database } from '@/db';
 import type Client from '@/db/models/Client';
 import { getClient, updateClient } from '@/repositories/clients';
+import { jobsForClient, totalOwedMinor, type JobSummary } from '@/repositories/jobs';
 import { setsForClient, type MeasurementSetWithItemsCount } from '@/repositories/sets';
 import { getDefaultTemplateId } from '@/repositories/templates';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
@@ -15,8 +16,10 @@ import RulerIcon from '@/assets/icons/ruler.svg';
 import type { RootStackParamList } from '@/navigation/types';
 import { FloatingActionButton } from '@/components/FloatingActionButton';
 import { formatPhone } from '@/lib/utils';
+import { formatMoney } from '@/lib/money';
 import PhoneIcon from '@/assets/icons/phone.svg';
 import { ClientDetailSetRow } from '@/components/ClientDetailSetRow';
+import { ClientDetailJobRow } from '@/components/ClientDetailJobRow';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ClientDetail'>;
 type Edit = { field: 'name' | 'phone' | 'comment'; value: string; error?: string } | null;
@@ -31,12 +34,14 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   const { clientId } = route.params;
   const [client, setClient] = useState<Client | null>(null);
   const [sets, setSets] = useState<MeasurementSetWithItemsCount[]>([]);
+  const [jobs, setJobs] = useState<JobSummary[]>([]);
   const [edit, setEdit] = useState<Edit>(null);
 
   const load = useCallback(async () => {
     const c = await getClient(database, clientId);
     setClient(c);
     setSets(await setsForClient(database, clientId));
+    setJobs(await jobsForClient(database, clientId));
   }, [clientId]);
 
   useFocusEffect(
@@ -77,6 +82,8 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
   }, [clientId, navigation]);
 
   if (!client) return <View style={styles.screen} />;
+
+  const owedMinor = totalOwedMinor(jobs);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -123,7 +130,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
       {sets.length === 0 ? (
         <Text style={styles.empty}>No sets yet — start a new measurement set.</Text>
       ) : (
-        <View style={styles.setsList}>
+        <View>
           {sets.map(({ set, itemsCount }) => (
             <ClientDetailSetRow
               key={set.id}
@@ -132,8 +139,37 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               onPress={() => navigation.navigate('SetDetail', { setId: set.id })}
             />
           ))}
-        </View> 
+        </View>
       )}
+
+      {/* jobs */}
+      {jobs.length ? (
+        <>
+          <View style={styles.jobsHeader}>
+            <Text style={styles.jobsTitle}>Jobs</Text>
+            <Text style={styles.owed}>
+              {owedMinor ? `${formatMoney(owedMinor, jobs[0].job.currency)} owed` : 'Nothing owed'}
+            </Text>
+          </View>
+          <View>
+            {jobs.map((summary) => (
+              <ClientDetailJobRow
+                key={summary.job.id}
+                summary={summary}
+                onPress={() => navigation.navigate('JobDetail', { jobId: summary.job.id })}
+              />
+            ))}
+          </View>
+        </>
+      ) : null}
+
+      <Pressable
+        style={styles.recordPayment}
+        onPress={() => navigation.navigate('RecordPayment', { clientId })}
+        accessibilityRole="button"
+      >
+        <Text style={styles.recordPaymentText}>Record payment</Text>
+      </Pressable>
 
       <FloatingActionButton
         onPress={newSet}
@@ -221,5 +257,34 @@ const styles = StyleSheet.create({
     marginLeft: 'auto',
   },
   editText: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.accent },
-  setsList: { paddingBlockEnd: 96 },
+  jobsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: space.md,
+    marginHorizontal: -space.sm,
+    padding: space.sm,
+    borderRadius: radius.sm,
+    backgroundColor: colors.accentTint,
+  },
+  jobsTitle: {
+    fontFamily: fonts.bold,
+    fontSize: fontSizes.sm,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: colors.accentInk,
+  },
+  owed: { fontFamily: fonts.bold, fontSize: fontSizes.sm, color: colors.accent },
+  // The bottom margin keeps the full-width button clear of the floating +.
+  recordPayment: {
+    height: 48,
+    marginTop: space.xs,
+    marginBottom: 96,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    borderRadius: radius.default,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  recordPaymentText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: colors.accent },
 });
