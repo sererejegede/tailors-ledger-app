@@ -253,7 +253,10 @@ One row per payment. **A payment is a receipt.**
 **Receipt numbers.** The next number is the higher of `app_settings.next_receipt_number` and the highest number on the device plus one, so a tailor can continue from a paper receipt book. Numbers are never reused, including after a void. Two offline phones can mint the same number, which is why the server doesn't require uniqueness.
 
 ### app_settings (local, single row)
-Units, fraction granularity (`quarters` \| `eighths`), `default_template_id`, app-lock on/off, text size, range-warnings on/off, last successful sync time, and the **shop profile**: `shop_name`, `logo_uri`, `shop_phone`, `shop_address`, `receipt_footer`, `currency` (ISO code, default `NGN`), `next_receipt_number` (default 1). Mostly device-local; the shop profile bits can sync if you add accounts.
+Units, fraction granularity (`quarters` \| `eighths`), `default_template_id`, app-lock on/off, text size, range-warnings on/off, last successful sync time, and the **shop profile**: `shop_name`, `logo_uri`, `shop_phone`, `shop_address`, `receipt_footer`, `currency` (ISO code, default `NGN`), `next_receipt_number` (default 1), and the optional **payment details** printed on invoices: `bank_name`, `bank_account_name`, `bank_account_number` (text, so leading zeros survive). Mostly device-local; the shop profile bits can sync if you add accounts.
+
+### Invoices (not stored)
+An invoice is the job's bill, shared as a PDF. It is **never saved**: it is drawn from the job, its items, its payments and the shop profile each time it's shared, so it always shows the job as it is now. It has no number and no table, and nothing about it syncs. It shows the items, the total, what's been paid (voided payments don't count), the balance due, the job's `collect_on` as the due date when one is set, and the payment details when any are filled in. Setting a collection date while sharing an invoice saves it to the job.
 
 ### sync_outbox (optional)
 If your sync engine doesn't track dirty rows for you, keep an outbox: `id`, `entity`, `entity_id`, `op` (`upsert`/`delete`), `payload`, `created_at`, `attempts`. The sync loop drains it oldest-first and clears entries on server ack. Engines like WatermelonDB and PowerSync handle this internally, so you'd skip this table when using them.

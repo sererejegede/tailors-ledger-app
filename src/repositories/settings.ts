@@ -19,6 +19,9 @@ export type SettingsPatch = Partial<{
   receiptFooter: string;
   currency: string;
   nextReceiptNumber: number;
+  bankName: string;
+  bankAccountName: string;
+  bankAccountNumber: string;
   appLockEnabled: boolean;
   textSize: string;
   highContrast: boolean;
@@ -51,6 +54,9 @@ export async function updateSettings(
       if (patch.receiptFooter !== undefined) s.receiptFooter = patch.receiptFooter;
       if (patch.currency !== undefined) s.currency = patch.currency;
       if (patch.nextReceiptNumber !== undefined) s.nextReceiptNumber = patch.nextReceiptNumber;
+      if (patch.bankName !== undefined) s.bankName = patch.bankName;
+      if (patch.bankAccountName !== undefined) s.bankAccountName = patch.bankAccountName;
+      if (patch.bankAccountNumber !== undefined) s.bankAccountNumber = patch.bankAccountNumber;
       if (patch.appLockEnabled !== undefined) s.appLockEnabled = patch.appLockEnabled;
       if (patch.textSize !== undefined) s.textSize = patch.textSize;
       if (patch.highContrast !== undefined) s.highContrast = patch.highContrast;

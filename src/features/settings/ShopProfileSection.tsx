@@ -18,24 +18,40 @@ import { ItemPickerSheet } from '@/components/templates';
  * phone. A receipt freezes these when it's saved, except the logo, which is a local file.
  */
 
-type TextField = 'shopName' | 'shopPhone' | 'shopAddress' | 'receiptFooter';
+type TextField =
+  | 'shopName'
+  | 'shopPhone'
+  | 'shopAddress'
+  | 'receiptFooter'
+  | 'bankName'
+  | 'bankAccountName'
+  | 'bankAccountNumber';
 
-const TEXT_FIELDS: {
+type TextFieldSpec = {
   field: TextField;
   title: string;
   placeholder: string;
-  keyboardType?: 'phone-pad';
+  keyboardType?: 'phone-pad' | 'numeric';
   multiline?: boolean;
-}[] = [
+};
+
+const TEXT_FIELDS: TextFieldSpec[] = [
   { field: 'shopName', title: 'Shop name', placeholder: 'Your shop name' },
   { field: 'shopPhone', title: 'Phone', placeholder: '+234 803 555 0142', keyboardType: 'phone-pad' },
   { field: 'shopAddress', title: 'Address', placeholder: '14 Allen Avenue, Ikeja' },
   {
     field: 'receiptFooter',
-    title: 'Receipt footer',
+    title: 'Footer',
     placeholder: 'Goods not collected after 3 months may be disposed of.',
     multiline: true,
   },
+];
+
+/** Printed on invoices so a client can pay by transfer. All optional. */
+const PAYMENT_FIELDS: TextFieldSpec[] = [
+  { field: 'bankName', title: 'Bank', placeholder: 'GTBank' },
+  { field: 'bankAccountName', title: 'Account name', placeholder: 'Your shop name' },
+  { field: 'bankAccountNumber', title: 'Account number', placeholder: '0123456789', keyboardType: 'numeric' },
 ];
 
 const currencyOptions = CURRENCIES.map((c) => ({ id: c.code as string, name: `${c.symbol} ${c.name}` }));
@@ -74,7 +90,7 @@ export function ShopProfileSection({ settings, nextReceiptNumber, onPatch }: Pro
   };
 
   const currency = settings.currency || DEFAULT_CURRENCY;
-  const textField = TEXT_FIELDS.find((f) => f.field === editing);
+  const textField = [...TEXT_FIELDS, ...PAYMENT_FIELDS].find((f) => f.field === editing);
 
   return (
     <>
@@ -84,7 +100,7 @@ export function ShopProfileSection({ settings, nextReceiptNumber, onPatch }: Pro
         <LogoPreview uri={settings.logoUri} />
         <View style={styles.logoText}>
           <Text style={styles.logoTitle}>Logo</Text>
-          <Text style={styles.logoHint}>Shown on receipts</Text>
+          <Text style={styles.logoHint}>Shown on receipts and invoices</Text>
         </View>
         {settings.logoUri ? (
           <Pressable onPress={() => onPatch({ logoUri: '' })} hitSlop={space.sm}>
@@ -115,6 +131,17 @@ export function ShopProfileSection({ settings, nextReceiptNumber, onPatch }: Pro
         onPress={() => setPickingCurrency(true)}
       />
 
+      <SettingsHeading title="Payment details" />
+      <Text style={styles.groupHint}>Printed on invoices so clients can pay by transfer.</Text>
+      {PAYMENT_FIELDS.map((f) => (
+        <SettingsRow
+          key={f.field}
+          title={f.title}
+          value={settings[f.field] ?? ''}
+          onPress={() => setEditing(f.field)}
+        />
+      ))}
+
       <PromptModal
         visible={!!textField}
         title={textField?.title ?? ''}
@@ -122,6 +149,7 @@ export function ShopProfileSection({ settings, nextReceiptNumber, onPatch }: Pro
         initialValue={textField ? (settings[textField.field] ?? '') : ''}
         multilineInput={textField?.multiline}
         keyboardType={textField?.keyboardType}
+        inputMode={textField?.keyboardType === 'numeric' ? 'numeric' : undefined}
         onCancel={closeEditor}
         onSubmit={(value) => {
           if (textField) onPatch({ [textField.field]: value });
@@ -179,4 +207,11 @@ const styles = StyleSheet.create({
   logoHint: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
   change: { fontFamily: fonts.semibold, fontSize: fontSizes.sm, color: colors.accent },
   remove: { fontFamily: fonts.semibold, fontSize: fontSizes.sm, color: colors.muted },
+  groupHint: {
+    paddingHorizontal: space.lg,
+    paddingBottom: space.sm,
+    fontFamily: fonts.body,
+    fontSize: fontSizes.sm,
+    color: colors.muted,
+  },
 });
