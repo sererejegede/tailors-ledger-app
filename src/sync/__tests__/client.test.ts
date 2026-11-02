@@ -17,10 +17,12 @@ import { updateSettings } from '@/repositories/settings';
 import { templateItems } from '@/repositories/templates';
 import { createSetWithMeasurements, setItems } from '@/repositories/sets';
 import { saveMeasurements } from '@/repositories/items';
+import { createJob, jobsForClient, voidPayment } from '@/repositories/jobs';
 import Client from '@/db/models/Client';
 import Template from '@/db/models/Template';
 import { runSync, _resetRunningGuard } from '../client';
-import { getCursor, getLastSyncedAt } from '../cursor';
+import { getCursor, getLastSyncedAt, rememberSyncedTables, setCursor } from '../cursor';
+import { SYNC_TABLES } from '../types';
 import { collectLocalChanges } from '../mapper';
 import { MockContractServer } from './contractMock';
 import { legacySeedIds } from '../seedReconcile';
@@ -261,5 +263,100 @@ describe('runSync — starter templates across devices and accounts (data model 
       (template) => template.id,
     );
     expect(localIds.some((id) => server.foreignIds.has(id))).toBe(false);
+  });
+});
+
+describe('runSync — jobs and receipts', () => {
+  async function clientWithJob(db: Database) {
+    const client = await createClient(db, { name: 'Tunde Bello' });
+    const { job, payment } = await createJob(db, {
+      clientId: client.id,
+      items: [{ description: 'Senator suit', quantity: 2, unitPriceMinor: 3000000 }],
+      amountMinor: 2000000,
+    });
+    return { client, job, payment: payment! };
+  }
+
+  it('pushes a job with its items and payment, frozen receipt intact', async () => {
+    const db = makeTestDatabase();
+    await ensureSeeded(db);
+    const { job, payment } = await clientWithJob(db);
+    const server = new MockContractServer();
+
+    const result = await runSync(db, deps(server));
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.rejected).toHaveLength(0);
+    expect(server.liveCount('jobs')).toBe(1);
+    expect(server.liveCount('job_items')).toBe(1);
+    expect(server.liveCount('payments')).toBe(1);
+
+    const pushed = server.pushLog[0].changes.payments.created[0];
+    expect(pushed).toMatchObject({ id: payment.id, job_id: job.id, amount_minor: 2000000, receipt_number: 1 });
+    expect(JSON.parse(pushed.receipt_json as string)).toMatchObject({ kind: 'Deposit', balance_minor: 4000000 });
+    expect((await collectLocalChanges(db)).count).toBe(0);
+  });
+
+  it('pushes a void as an edit of the payment', async () => {
+    const db = makeTestDatabase();
+    await ensureSeeded(db);
+    const { payment } = await clientWithJob(db);
+    const server = new MockContractServer();
+    await runSync(db, deps(server));
+
+    await voidPayment(db, payment.id);
+    _resetRunningGuard();
+    await runSync(db, deps(server));
+
+    const last = server.pushLog[server.pushLog.length - 1].changes.payments.updated;
+    expect(last).toEqual([expect.objectContaining({ id: payment.id, voided_at: expect.any(Number) })]);
+  });
+
+  it('pulls another phone’s job onto this one', async () => {
+    const db = makeTestDatabase();
+    await ensureSeeded(db);
+    const client = await createClient(db, { name: 'Tunde Bello' });
+    const server = new MockContractServer();
+    await runSync(db, deps(server));
+
+    server.seed('jobs', {
+      id: '019f9bba-1f01-701d-89bd-0000000000a1', client_id: client.id, title: 'Wedding outfits',
+      currency: 'NGN', collect_on: null, note: null, created_at: NOW, updated_at: NOW, deleted_at: null,
+    });
+    _resetRunningGuard();
+    await runSync(db, deps(server));
+
+    const jobs = await jobsForClient(db, client.id);
+    expect(jobs.map((j) => j.job.title)).toEqual(['Wedding outfits']);
+  });
+
+  it('pulls everything once after an upgrade adds tables, then goes back to deltas', async () => {
+    const server = new MockContractServer();
+    const db = makeTestDatabase();
+    await ensureSeeded(db);
+    const client = await createClient(db, { name: 'Tunde Bello' });
+    await runSync(db, deps(server));
+
+    // Another phone's job landed while this one ran a build without jobs: its cursor moved
+    // past the job's seq without applying it.
+    server.seed('jobs', {
+      id: '019f9bba-1f01-701d-89bd-0000000000a2', client_id: client.id, title: 'Skipped',
+      currency: 'NGN', collect_on: null, note: null, created_at: NOW, updated_at: NOW, deleted_at: null,
+    });
+    server.seed('clients', {
+      id: '019f9bba-1f01-701d-89bd-0000000000c2', name: 'Later', phone: null, comment: null,
+      photo_remote_url: null, created_at: NOW, updated_at: NOW, deleted_at: null,
+    });
+    await setCursor(db, (await server.pull({ cursor: null }, 'mock-token')).cursor);
+    await rememberSyncedTables(db, SYNC_TABLES.filter((t) => !t.startsWith('job') && t !== 'payments'));
+
+    _resetRunningGuard();
+    await runSync(db, deps(server));
+    expect((await jobsForClient(db, client.id)).map((j) => j.job.title)).toEqual(['Skipped']);
+
+    // The next sync is a delta again: nothing new, nothing pulled.
+    _resetRunningGuard();
+    const again = await runSync(db, deps(server));
+    expect(again.ok && again.pulled).toBe(0);
   });
 });

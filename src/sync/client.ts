@@ -3,6 +3,7 @@ import { isBackendConfigured } from '@/lib/config';
 import { getAccessToken } from '@/auth/supabase';
 import { nowMs } from '@/lib/time';
 import {
+  SYNC_TABLES,
   SyncHttpError,
   type PullResponse,
   type PushResponse,
@@ -11,7 +12,15 @@ import {
   type SyncTransport,
 } from './types';
 import { httpTransport } from './transport';
-import { getCursor, getLastSyncedAt, resetCursor, setCursor, setLastSyncedAt } from './cursor';
+import {
+  getCursor,
+  getLastSyncedAt,
+  rememberSyncedTables,
+  resetCursor,
+  setCursor,
+  setLastSyncedAt,
+  syncedTablesChanged,
+} from './cursor';
 import {
   applyServerChanges,
   collectLocalChanges,
@@ -145,7 +154,11 @@ export async function runSync(database: Database, deps: SyncDeps = {}): Promise<
 
     // ── First sync on this device: pull before pushing (§12, data model §1b) ──────────
     // So we know whether the account already has templates before sending our seed.
-    if ((await getLastSyncedAt(database)) == null) await pullAll();
+    const firstSync = (await getLastSyncedAt(database)) == null;
+    // After an upgrade that adds a table, pull everything once: the old build skipped that
+    // table's rows while its cursor moved past them (§4). A first sync already does.
+    const fullPullDue = !firstSync && (await syncedTablesChanged(database, SYNC_TABLES));
+    if (firstSync) await pullAll();
 
     // Drop unused starters / re-key legacy fixed-id seed rows before they're collected.
     await reconcileStarterTemplates(database);
@@ -170,7 +183,11 @@ export async function runSync(database: Database, deps: SyncDeps = {}): Promise<
       pushed = local.count - rejected.length;
     }
 
+    // The upgrade's full pull runs after the push, not before, so un-pushed local edits
+    // are never overwritten.
+    if (fullPullDue) cursor = null;
     await pullAll();
+    await rememberSyncedTables(database, SYNC_TABLES);
 
     // Exactly one default per account once everything has landed (data model §1b).
     await reconcileDefaultTemplate(database);

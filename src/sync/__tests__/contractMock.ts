@@ -35,6 +35,9 @@ function emptyEnvelope(): ChangeEnvelope {
     measurement_items: emptyEntity(),
     measurement_values: { created: [] },
     images: emptyEntity(),
+    jobs: emptyEntity(),
+    job_items: emptyEntity(),
+    payments: emptyEntity(),
   };
 }
 

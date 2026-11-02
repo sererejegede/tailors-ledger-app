@@ -9,8 +9,8 @@
 /** One row as it travels on the wire — a bag of snake_case columns plus `id`. */
 export type WireRow = { id: string } & Record<string, unknown>;
 
-/** The seven syncable tables, in dependency order (parents before children) so a single
- * apply pass never references a not-yet-written parent. */
+/** The syncable tables, in dependency order (parents before children) so a single apply
+ * pass never references a not-yet-written parent. */
 export const SYNC_TABLES = [
   'clients',
   'templates',
@@ -19,6 +19,9 @@ export const SYNC_TABLES = [
   'measurement_items',
   'measurement_values',
   'images',
+  'jobs',
+  'job_items',
+  'payments',
 ] as const;
 
 export type SyncTable = (typeof SYNC_TABLES)[number];
@@ -42,6 +45,10 @@ export const PARENT_EDGES: Partial<Record<SyncTable, ParentEdge[]>> = {
   measurement_items: [{ table: 'measurement_sets', fk: 'set_id' }],
   measurement_values: [{ table: 'measurement_items', fk: 'item_id' }],
   images: [{ table: 'measurement_sets', fk: 'set_id' }],
+  // job_items.set_id is a soft reference with no server FK (contract §3), so no edge.
+  jobs: [{ table: 'clients', fk: 'client_id' }],
+  job_items: [{ table: 'jobs', fk: 'job_id' }],
+  payments: [{ table: 'jobs', fk: 'job_id' }],
 };
 
 /** created / updated carry full rows; deleted carries bare id strings (tombstones, §3). */
@@ -62,6 +69,9 @@ export type ChangeEnvelope = {
   measurement_items: EntityChanges;
   measurement_values: ValuesChanges;
   images: EntityChanges;
+  jobs: EntityChanges;
+  job_items: EntityChanges;
+  payments: EntityChanges;
 };
 
 export type PullRequest = { cursor: string | null; limit?: number };
