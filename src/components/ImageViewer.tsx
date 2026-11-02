@@ -15,7 +15,7 @@ import type ImageRecord from '@/db/models/ImageRecord';
 import { useImageSrc } from '@/lib/imageSrc';
 import { colors, fontSizes, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
-import PlusIcon from '@/assets/icons/plus.svg';
+import XCloseIcon from '@/assets/icons/x-close.svg';
 import ChevronRightIcon from '@/assets/icons/chevron-right.svg';
 
 /**
@@ -112,12 +112,7 @@ export function ImageViewer({
         </View>
 
         <Pressable style={styles.closeBtn} hitSlop={8} onPress={onClose}>
-          <PlusIcon
-            color="#fff"
-            width={18}
-            height={18}
-            style={{ transform: [{ rotate: '45deg' }] }}
-          />
+          <XCloseIcon color="#fff" width={18} height={18} />
         </Pressable>
 
         {showArrows ? (

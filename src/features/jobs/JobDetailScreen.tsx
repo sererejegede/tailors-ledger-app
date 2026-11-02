@@ -25,6 +25,7 @@ import { setsForClient } from '@/repositories/sets';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
 import { JobDetailsSheet, JobItemSheet, RecordPaymentSheet, type JobItemDraft } from '@/components/jobs';
+import PlusIcon from '@/assets/icons/plus.svg';
 import type { RootStackParamList } from '@/navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'JobDetail'>;
@@ -136,8 +137,9 @@ export default function JobDetailScreen({ route, navigation }: Props) {
         <View>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>ITEMS</Text>
-            <Pressable onPress={() => setItemSheet({})} hitSlop={space.sm} accessibilityRole="button">
-              <Text style={styles.add}>+ Add item</Text>
+            <Pressable style={styles.addButton} onPress={() => setItemSheet({})} hitSlop={space.sm} accessibilityRole="button">
+              <PlusIcon width={16} height={16} color={colors.accent} />
+              <Text style={styles.add}>Add item</Text>
             </Pressable>
           </View>
           {items.map((item) => {
@@ -264,6 +266,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.line2,
   },
   sectionTitle: { fontFamily: fonts.bold, fontSize: fontSizes.sm, letterSpacing: 1, color: colors.text },
+  addButton: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
   add: { fontFamily: fonts.semibold, fontSize: fontSizes.sm, color: colors.accent },
   row: {
     flexDirection: 'row',

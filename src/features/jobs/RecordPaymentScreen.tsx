@@ -25,6 +25,7 @@ import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
 import { AmountDock, JobDetailsSheet, JobItemSheet, type JobItemDraft } from '@/components/jobs';
 import EditIcon from '@/assets/icons/edit-02.svg';
+import PlusIcon from '@/assets/icons/plus.svg';
 import type { RootStackParamList } from '@/navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RecordPayment'>;
@@ -231,7 +232,8 @@ export default function RecordPaymentScreen({ route, navigation }: Props) {
         })}
 
         <Pressable style={styles.addRow} onPress={() => setItemSheet({})} accessibilityRole="button">
-          <Text style={styles.addText}>+ Add item</Text>
+          <PlusIcon width={18} height={18} color={colors.accent} />
+          <Text style={styles.addText}>Add item</Text>
         </Pressable>
 
         <View style={styles.totalRow}>
@@ -337,7 +339,14 @@ const styles = StyleSheet.create({
   rowDetail: { fontFamily: fonts.body, fontSize: fontSizes.xs, color: colors.muted },
   rowValue: { ...valueText, fontSize: fontSizes.lg, color: colors.text },
   rowEmpty: { color: colors.faint },
-  addRow: { paddingVertical: space.md, borderBottomWidth: 1, borderBottomColor: colors.line },
+  addRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+    paddingVertical: space.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
+  },
   addText: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.accent },
   totalRow: {
     flexDirection: 'row',

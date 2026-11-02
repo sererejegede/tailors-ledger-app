@@ -3,9 +3,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
 import ArrowRightIcon from '@/assets/icons/arrow-narrow-right.svg';
+import DeleteIcon from '@/assets/icons/delete.svg';
 
 /**
- * The whole-number pad: 1–9, ⌫, 0, and a prominent action in the bottom-right cell
+ * The whole-number pad: 1–9, delete, 0, and a prominent action in the bottom-right cell
  * (wireframe layout). Everything sits in the thumb zone; entering a value is a few taps.
  * The action is **Next** while items remain to fill, and flips to **Save** once every
  * item has a value (and nothing is mid-entry) so finishing is one tap, not a hunt for the
@@ -40,7 +41,7 @@ function NumberPadBase({ onPress, onDelete, onNext, saveMode = false }: Props) {
         accessibilityRole="button"
         accessibilityLabel="delete"
       >
-        <Text style={styles.keyText}>⌫</Text>
+        <DeleteIcon width={26} height={26} color={colors.text} />
       </Pressable>
       <Pressable
         style={({ pressed }) => [styles.key, pressed && styles.keyPressed]}

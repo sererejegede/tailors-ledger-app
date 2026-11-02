@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { addDays, formatWeekday, nowMs } from '@/lib/time';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
+import MinusIcon from '@/assets/icons/minus.svg';
+import PlusIcon from '@/assets/icons/plus.svg';
 import { BottomSheet } from './BottomSheet';
 
 /**
@@ -46,13 +48,13 @@ export function JobDetailsSheet({ title, collectOn, onSave, onClose }: Props) {
       <Text style={styles.label}>Collection date</Text>
       <View style={styles.dateRow}>
         <Pressable style={styles.step} onPress={() => nudge(-1)} accessibilityRole="button" accessibilityLabel="A day earlier">
-          <Text style={styles.stepText}>−</Text>
+          <MinusIcon width={20} height={20} color={colors.text} />
         </Pressable>
         <Text style={[styles.date, date == null && styles.dateEmpty]}>
           {date != null ? formatWeekday(date) : 'Not set'}
         </Text>
         <Pressable style={styles.step} onPress={() => nudge(1)} accessibilityRole="button" accessibilityLabel="A day later">
-          <Text style={styles.stepText}>+</Text>
+          <PlusIcon width={20} height={20} color={colors.text} />
         </Pressable>
       </View>
       <View style={styles.picks}>
@@ -109,7 +111,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepText: { fontFamily: fonts.semibold, fontSize: fontSizes['2xl'], color: colors.text, lineHeight: 28 },
   date: { ...valueText, fontSize: fontSizes.lg, color: colors.text },
   dateEmpty: { color: colors.faint },
   picks: { flexDirection: 'row', gap: space.sm },

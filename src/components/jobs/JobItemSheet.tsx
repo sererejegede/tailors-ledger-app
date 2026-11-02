@@ -3,6 +3,8 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { bufferToMinor, minorToBuffer } from '@/lib/amountEntry';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
+import MinusIcon from '@/assets/icons/minus.svg';
+import PlusIcon from '@/assets/icons/plus.svg';
 import { BottomSheet } from './BottomSheet';
 
 /**
@@ -74,7 +76,7 @@ export function JobItemSheet({ initial, sets, withPrice, onSave, onRemove, onClo
             accessibilityRole="button"
             accessibilityLabel="One less"
           >
-            <Text style={styles.stepText}>−</Text>
+            <MinusIcon width={20} height={20} color={colors.text} />
           </Pressable>
           <Text style={styles.quantity}>{quantity}</Text>
           <Pressable
@@ -83,7 +85,7 @@ export function JobItemSheet({ initial, sets, withPrice, onSave, onRemove, onClo
             accessibilityRole="button"
             accessibilityLabel="One more"
           >
-            <Text style={styles.stepText}>+</Text>
+            <PlusIcon width={20} height={20} color={colors.text} />
           </Pressable>
         </View>
       </View>
@@ -171,7 +173,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepText: { fontFamily: fonts.semibold, fontSize: fontSizes['2xl'], color: colors.text, lineHeight: 28 },
   quantity: { ...valueText, fontSize: fontSizes.xl, color: colors.text, minWidth: 28, textAlign: 'center' },
   priceInput: { flex: 1, maxWidth: 180, textAlign: 'right', ...valueText },
   setsBlock: { gap: space.sm },

@@ -3,6 +3,7 @@ import { type LayoutChangeEvent, Pressable, ScrollView, StyleSheet, Text, View }
 import { colors, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { MeasurementRow } from '@/components/measurement/MeasurementRow';
+import PlusIcon from '@/assets/icons/plus.svg';
 import type { EntryRow } from '@/features/measurement-entry/useMeasurementEntry';
 
 /**
@@ -78,7 +79,8 @@ export function EntryList({ rows, active, dockDisplay, dockPlaceholder, onTapRow
           />
         ))}
         <Pressable style={styles.addRow} onPress={onAddItem}>
-          <Text style={styles.addText}>＋ Add item</Text>
+          <PlusIcon width={18} height={18} color={colors.accent} />
+          <Text style={styles.addText}>Add item</Text>
         </Pressable>
       </View>
     </ScrollView>
@@ -87,6 +89,12 @@ export function EntryList({ rows, active, dockDisplay, dockPlaceholder, onTapRow
 
 const styles = StyleSheet.create({
   list: { flex: 1 },
-  addRow: { paddingVertical: space.md, paddingHorizontal: space.lg },
+  addRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+    paddingVertical: space.md,
+    paddingHorizontal: space.lg,
+  },
   addText: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.accent },
 });

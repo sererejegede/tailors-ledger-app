@@ -17,6 +17,7 @@ import { ImageViewer } from '@/components/ImageViewer';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import PlusIcon from '@/assets/icons/plus.svg';
+import XCloseIcon from '@/assets/icons/x-close.svg';
 
 /**
  * Photos for a set (spec §8): camera/gallery capture, local thumbnails, remove. The file
@@ -194,7 +195,7 @@ function Thumbnail({
         <Image source={src ? { uri: src } : undefined} style={styles.thumb} />
       </Pressable>
       <Pressable style={styles.removeBtn} hitSlop={8} onPress={onRemove}>
-        <PlusIcon color="#fff" width={12} height={12} style={{ transform: [{ rotate: '45deg' }] }} />
+        <XCloseIcon color="#fff" width={12} height={12} />
       </Pressable>
     </View>
   );
