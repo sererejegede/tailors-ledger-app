@@ -9,6 +9,7 @@ import {
   pressDigit,
 } from '@/lib/amountEntry';
 import { formatMoney } from '@/lib/money';
+import { confirmPayment } from '@/lib/overpayment';
 import { colors, space, fontSizes } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
 import { AmountDock } from './AmountDock';
@@ -37,7 +38,8 @@ export function RecordPaymentSheet({ balanceMinor, currency, onSave, onClose }: 
       setError('Enter what was paid.');
       return;
     }
-    onSave(amountMinor);
+    // "Change amount" leaves the sheet open with the amount still in it.
+    confirmPayment(balanceMinor, amountMinor, currency, () => onSave(amountMinor));
   };
 
   return (

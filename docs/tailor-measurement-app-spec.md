@@ -124,6 +124,7 @@ A **job** is one piece of work for one client: the clothes being made and the mo
 - **An item's price is optional**, and an item can be linked to one of the client's measurement sets.
 - **A job's title and collection date are optional.** The date is set with quick picks (1, 2, 3 weeks, 1 month) and a day-by-day ±, so there's no calendar to fish through.
 - **No payment method is recorded.**
+- **Paying more than the balance asks first** ("Record it anyway?"), so a mistyped amount is caught. It is never blocked.
 - **The receipt** is A5, carries the shop's logo and details, and lists every item on the job. One *Share* button makes a PDF and opens the phone's share sheet. It all works offline.
 - **Mistakes are voided**, never edited or deleted. Each receipt keeps exactly what it printed.
 - **The shop profile** (logo, name, phone, address, receipt footer, next receipt number, currency) lives in Settings, on the phone only.

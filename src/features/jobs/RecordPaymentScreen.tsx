@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { usePreventRemove } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { database } from '@/db';
 import { Alert } from '@/lib/alert';
@@ -14,6 +15,7 @@ import {
 } from '@/lib/amountEntry';
 import { newId } from '@/lib/ids';
 import { DEFAULT_CURRENCY, formatMoney } from '@/lib/money';
+import { confirmPayment } from '@/lib/overpayment';
 import { formatWeekday } from '@/lib/time';
 import { getClient } from '@/repositories/clients';
 import { createJob, InvalidJobError } from '@/repositories/jobs';
@@ -114,7 +116,7 @@ export default function RecordPaymentScreen({ route, navigation }: Props) {
     setItemSheet(null);
   };
 
-  const onSave = useCallback(async () => {
+  const save = useCallback(async () => {
     if (saving.current) return;
     saving.current = true;
     try {
@@ -140,16 +142,27 @@ export default function RecordPaymentScreen({ route, navigation }: Props) {
     }
   }, [clientId, title, collectOn, lines, paying, navigation]);
 
-  const onCancel = () => {
-    if (!lines.length && !paying) {
-      navigation.goBack();
+  // A new job owes its whole total, so that's the balance to check against.
+  const onSave = useCallback(
+    () => confirmPayment(totalMinor, bufferToMinor(paying), currency, save),
+    [totalMinor, paying, currency, save],
+  );
+
+  // Every way out (Cancel, the phone's back button, a swipe) asks first once something is
+  // entered. Save's own replace goes straight through.
+  const entered = lines.length > 0 || !!paying || !!title || collectOn != null;
+  usePreventRemove(entered, ({ data }) => {
+    if (saving.current) {
+      navigation.dispatch(data.action);
       return;
     }
     Alert.alert('Discard this job?', 'Nothing has been saved.', [
       { text: 'Keep going', style: 'cancel' },
-      { text: 'Discard', style: 'destructive', onPress: () => navigation.goBack() },
+      { text: 'Discard', style: 'destructive', onPress: () => navigation.dispatch(data.action) },
     ]);
-  };
+  });
+
+  const onCancel = () => navigation.goBack();
 
   const editing = lines.find((l) => l.key === itemSheet?.key);
 

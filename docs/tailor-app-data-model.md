@@ -226,7 +226,7 @@ One row per payment. **A payment is a receipt.**
 
 **Money.** Amounts are integers of minor units (₦50,000 is `5000000`), never decimals. The tailor enters whole naira; kobo exist so the format works for any currency.
 
-**Balance.** `total − sum(amount_minor of payments not voided)`. It can go below 0: a job with unpriced items can take a deposit larger than its total so far. This is shown, never blocked.
+**Balance.** `total − sum(amount_minor of payments not voided)`. It can go below 0: a job with unpriced items can take a deposit larger than its total so far. This is shown, never blocked. A payment above the balance asks first ("Record it anyway?"), even when items aren't priced yet, to catch a mistyped amount.
 
 **Frozen receipts.** `receipt_json` holds a snapshot written once, at save, so re-sending an old receipt never changes it, whatever happens to the job, the client or the shop profile later. The logo is the exception: it's a file on the device, so a receipt always shows the current one.
 
