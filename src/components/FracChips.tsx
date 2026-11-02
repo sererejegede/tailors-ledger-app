@@ -5,7 +5,7 @@ import { fonts } from '@/theme/typography';
 
 /**
  * The fraction row: three chips ¼ ½ ¾ (NO clear chip — clearing is a re-tap of the
- * active chip or the ⌫ key; PROGRESS.md brand decision). The active fraction is
+ * active chip or the delete key; PROGRESS.md brand decision). The active fraction is
  * highlighted with the accent.
  */
 export type Frac = 0 | 0.25 | 0.5 | 0.75;

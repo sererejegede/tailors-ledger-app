@@ -6,6 +6,9 @@ import MeasurementEntryScreen from '@/features/measurement-entry/MeasurementEntr
 import ClientDetailScreen from '@/features/client-detail/ClientDetailScreen';
 import SetDetailScreen from '@/features/set-detail/SetDetailScreen';
 import TemplateEditorScreen from '@/features/templates/TemplateEditorScreen';
+import RecordPaymentScreen from '@/features/jobs/RecordPaymentScreen';
+import JobDetailScreen from '@/features/jobs/JobDetailScreen';
+import ReceiptScreen from '@/features/jobs/ReceiptScreen';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -37,6 +40,13 @@ export default function RootNavigator() {
       <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={detailHeader} />
       <Stack.Screen name="SetDetail" component={SetDetailScreen} options={detailHeader} />
       <Stack.Screen name="TemplateEditor" component={TemplateEditorScreen} options={detailHeader} />
+      <Stack.Screen
+        name="RecordPayment"
+        component={RecordPaymentScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+      <Stack.Screen name="JobDetail" component={JobDetailScreen} options={detailHeader} />
+      <Stack.Screen name="Receipt" component={ReceiptScreen} options={detailHeader} />
     </Stack.Navigator>
   );
 }

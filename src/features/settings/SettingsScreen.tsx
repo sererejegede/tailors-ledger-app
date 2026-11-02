@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { Fragment, useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -8,6 +8,7 @@ import type Template from '@/db/models/Template';
 import { getSettings, updateSettings } from '@/repositories/settings';
 import { listTemplates, setDefaultTemplate } from '@/repositories/templates';
 import { countOrphans, purgeOrphans } from '@/repositories/maintenance';
+import { peekNextReceiptNumber } from '@/repositories/jobs';
 import { resetTips } from '@/lib/seenTips';
 import { Alert } from '@/lib/alert';
 import { canUseAppLock } from '@/lib/appLock';
@@ -15,10 +16,15 @@ import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { useFontScale } from '@/theme/textScale';
 import { AccountSection } from './AccountSection';
+import { ShopProfileSection } from './ShopProfileSection';
+import { SettingsHeading } from '@/components/SettingsHeading';
 import { SettingsRow } from '@/components/SettingsRow';
 import { AppLogo } from '@/components/AppLogo';
 import { ItemPickerSheet } from '@/components/templates';
 import { Divider } from '@/components/Divider';
+
+// Rows before this index in `allSettings` sit under Measurement, the rest under App.
+const FIRST_APP_ROW = 3;
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -26,6 +32,7 @@ export default function SettingsScreen() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [orphanCount, setOrphanCount] = useState(0);
+  const [nextReceipt, setNextReceipt] = useState(1);
   const [activeSetting, setActiveSetting] = useState<(typeof allSettings)[number] | null>(null);
 
 
@@ -33,6 +40,7 @@ export default function SettingsScreen() {
     setSettings(await getSettings(database));
     setTemplates(await listTemplates(database));
     setOrphanCount((await countOrphans(database)).total);
+    setNextReceipt(await peekNextReceiptNumber(database));
   }, []);
 
   // One-time repair: remove orphaned, never-synced rows (leftovers from old empty drafts /
@@ -120,8 +128,8 @@ export default function SettingsScreen() {
     return [
       { key: 'default_template', title: 'Default template', options: templates, onSave: chooseDefault, value: settings?.defaultTemplateId },
       { key: 'fraction_granularity', title: 'Fraction steps', options: fractionSteps, onSave: (id: string) => patch({ fractionGranularity: id }), value: settings?.fractionGranularity },
-      { key: 'text_size', title: 'Text size', options: textSizes, onSave: (id: string) => chooseTextSize(id as 'normal' | 'large'), value: settings?.textSize },
       { key: 'range_warnings', title: 'Range warnings', options: [], onSave: null, value: settings?.rangeWarningsEnabled },
+      { key: 'text_size', title: 'Text size', options: textSizes, onSave: (id: string) => chooseTextSize(id as 'normal' | 'large'), value: settings?.textSize },
       { key: 'app_lock', title: 'App lock', options: [], onSave: null, value: settings?.appLockEnabled },
     ]
   }, [templates, patch]);
@@ -140,8 +148,12 @@ export default function SettingsScreen() {
 
       <Divider color={colors.bg} />
 
+      <ShopProfileSection settings={settings} nextReceiptNumber={nextReceipt} onPatch={patch} />
+
+      <SettingsHeading title="Measurement" />
+
       {
-        allSettings.map((s) => {
+        allSettings.map((s, index) => {
           const value = s.value;
           const valueDisplay = (s?.options?.find((o) => o.id === value)?.name || value) ?? "";
           const handlePress = () => {
@@ -154,13 +166,15 @@ export default function SettingsScreen() {
             }
           }
           return (
-            <SettingsRow
-              key={s.key}
-              title={s.title}
-              value={valueDisplay}
-              disabled={s.key === "text_size"}
-              onPress={handlePress}
-            />
+            <Fragment key={s.key}>
+              {index === FIRST_APP_ROW ? <SettingsHeading title="App" /> : null}
+              <SettingsRow
+                title={s.title}
+                value={valueDisplay}
+                disabled={s.key === "text_size"}
+                onPress={handlePress}
+              />
+            </Fragment>
           )
         })
       }

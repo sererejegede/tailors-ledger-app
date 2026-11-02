@@ -84,6 +84,14 @@ export function PromptModal({
     };
   }, [visible, onCancel]);
 
+  // However the prompt closes (Save included), take the keyboard with it. Unmounting the
+  // focused input doesn't hide it on Android. Keyed on `visible` alone, so a caller's inline
+  // onCancel can't dismiss it mid-typing.
+  useEffect(() => {
+    if (!visible) return;
+    return () => Keyboard.dismiss();
+  }, [visible]);
+
   if (!visible) return null;
 
   // Closing always dismisses the keyboard too (an input behind the overlay can otherwise
@@ -98,7 +106,7 @@ export function PromptModal({
       <View style={styles.overlay}>
       {/* keyboardShouldPersistTaps="always": a button tap must not blur the input (which
           would start hiding the keyboard before the, possibly async, action runs). The
-          keyboard only dismisses when this overlay unmounts on close.
+          keyboard is dismissed once the prompt closes (the effect above).
           paddingBottom = keyboard height lifts the centered card above the keyboard. */}
       <ScrollView
         style={styles.flex}

@@ -32,3 +32,21 @@ export async function getLastSyncedAt(database: Database): Promise<number | null
   const settings = await settingsRepo.getSettings(database);
   return settings?.lastSyncedAt ?? null;
 }
+
+/**
+ * The tables this build syncs, remembered after each sync. A build that didn't know a
+ * table skipped its rows on pull while its cursor still moved past them, so the first
+ * sync after an upgrade that adds a table pulls everything once (`cursor: null`,
+ * sync-contract §4). Kept in WatermelonDB's local key-value store, not `app_settings`,
+ * so it needs no schema change.
+ */
+const SYNCED_TABLES_KEY = 'synced_tables';
+
+export async function syncedTablesChanged(database: Database, tables: readonly string[]): Promise<boolean> {
+  const stored = await database.localStorage.get<string>(SYNCED_TABLES_KEY);
+  return stored !== tables.join(',');
+}
+
+export async function rememberSyncedTables(database: Database, tables: readonly string[]): Promise<void> {
+  await database.localStorage.set(SYNCED_TABLES_KEY, tables.join(','));
+}

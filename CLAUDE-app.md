@@ -41,6 +41,10 @@ to the sync contract — do not invent fields or endpoints; change the docs firs
   adopt the server's canonical rows (that's how local rows go `pending → synced`).
 - Images: on the filesystem + upload queue; never bytes in a row or in a sync payload.
 - Units: store canonical decimal inches; fractions (quarters) are a UI concern only.
+- Money: integer minor units (kobo), never decimals. The balance is always calculated
+  from payments, never stored.
+- Receipts: every payment is one receipt, which freezes what it printed. Mistakes are
+  voided, never edited or deleted, and a receipt number is never reused.
 
 ## The hero screen — do not let it regress
 The measurement-entry screen IS the product. Mirror the paper card:

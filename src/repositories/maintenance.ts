@@ -33,6 +33,9 @@ const PURGE_PLAN: { table: string; edges: PurgeEdge[] }[] = [
   { table: Tables.images, edges: [{ parent: Tables.measurementSets, fk: 'set_id' }] },
   { table: Tables.measurementItems, edges: [{ parent: Tables.measurementSets, fk: 'set_id' }] },
   { table: Tables.measurementValues, edges: [{ parent: Tables.measurementItems, fk: 'item_id' }] },
+  { table: Tables.jobs, edges: [{ parent: Tables.clients, fk: 'client_id' }] },
+  { table: Tables.jobItems, edges: [{ parent: Tables.jobs, fk: 'job_id' }] },
+  { table: Tables.payments, edges: [{ parent: Tables.jobs, fk: 'job_id' }] },
 ];
 
 export type PurgeReport = { total: number } & Record<string, number>;

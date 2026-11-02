@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
+import XCloseIcon from '@/assets/icons/x-close.svg';
 
 /**
  * PWA "update available" prompt (web only). Our service worker no longer auto-activates a new
@@ -77,8 +78,8 @@ export function PwaUpdatePrompt() {
       <Pressable style={styles.cta} onPress={refresh} accessibilityRole="button">
         <Text style={styles.ctaText}>Refresh</Text>
       </Pressable>
-      <Pressable onPress={() => setDismissed(true)} hitSlop={8} accessibilityLabel="Dismiss update notice">
-        <Text style={styles.close}>✕</Text>
+      <Pressable onPress={() => setDismissed(true)} style={styles.close} hitSlop={8} accessibilityLabel="Dismiss update notice">
+        <XCloseIcon width={18} height={18} color={colors.muted} />
       </Pressable>
     </View>
   );
@@ -114,5 +115,5 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
   },
   ctaText: { fontFamily: fonts.bold, fontSize: fontSizes.sm, color: '#fff' },
-  close: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.muted, paddingHorizontal: 4 },
+  close: { width: 26, height: 26, alignItems: 'center', justifyContent: 'center' },
 });

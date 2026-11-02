@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
+import XCloseIcon from '@/assets/icons/x-close.svg';
 
 /**
  * PWA install banner (web only). Two platforms, two mechanisms:
@@ -105,8 +106,8 @@ export function InstallPrompt() {
           <Text style={styles.ctaText}>Install</Text>
         </Pressable>
       ) : null}
-      <Pressable onPress={dismiss} hitSlop={8} accessibilityLabel="Dismiss install banner">
-        <Text style={styles.close}>✕</Text>
+      <Pressable onPress={dismiss} style={styles.close} hitSlop={8} accessibilityLabel="Dismiss install banner">
+        <XCloseIcon width={18} height={18} color={colors.muted} />
       </Pressable>
     </View>
   );
@@ -142,5 +143,5 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
   },
   ctaText: { fontFamily: fonts.bold, fontSize: fontSizes.sm, color: '#fff' },
-  close: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.muted, paddingHorizontal: 4 },
+  close: { width: 26, height: 26, alignItems: 'center', justifyContent: 'center' },
 });

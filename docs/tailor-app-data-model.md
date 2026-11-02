@@ -81,12 +81,17 @@ not leak into an account that already has templates.
 clients ──1:N── measurement_sets ──1:N── measurement_items ──1:N── measurement_values   (append-only history)
    │                    │
    │                    └──1:N── images
+clients ──1:N── jobs ──1:N── job_items ┄┄ measurement_sets   (optional soft link)
+                  │
+                  └──1:N── payments   (one payment = one receipt)
 templates ──1:N── template_items
 app_settings (single local row)
 sync_outbox  (optional, engine-dependent)
 ```
 
 A **client** has many **sets** (a set = one garment's worth of measurements, with an optional label). A set has many **items** (Neck, Sleeve length…). Each item has many **values** over time, the newest being the current one. **Templates** are the reusable blueprints sets are created from.
+
+A **job** is one piece of work for one client: the clothes being made and the money paid towards them. Each cloth is a **job item**, and every **payment** on the job is one receipt.
 
 ---
 
@@ -178,8 +183,77 @@ The heart of the per-item history requirement. **Never updated, never deleted.**
 | width / height | int? | |
 | created_at / updated_at / deleted_at / sync_status | | |
 
+### jobs
+| field | type | notes |
+|---|---|---|
+| id | uuid v7 | PK |
+| client_id | uuid | FK → clients — **required and immutable** |
+| title | text? | optional ("Wedding outfits") |
+| currency | text | ISO code, copied from `app_settings.currency` at creation, e.g. `NGN` |
+| collect_on | int? (epoch ms) | collection date |
+| note | text? | |
+| created_at / updated_at / deleted_at / sync_status | | |
+
+The job's total and balance are **never stored**. Both are calculated from `job_items` and `payments`, so two devices can't disagree about them. A job is written whole on save, like a set (§1a); backing out leaves nothing.
+
+### job_items
+One row per cloth on a job.
+
+| field | type | notes |
+|---|---|---|
+| id | uuid v7 | PK |
+| job_id | uuid | FK → jobs |
+| description | text | "Agbada, 3-piece" |
+| quantity | int | default 1 |
+| unit_price_minor | int? | price of one, in minor units; null until priced. A line counts as 0 towards the total while unpriced |
+| set_id | uuid? | soft reference to `measurement_sets`, like `measurement_sets.template_id`: the item survives the set being deleted |
+| position | int | order on the job |
+| created_at / updated_at / deleted_at / sync_status | | |
+
+### payments
+One row per payment. **A payment is a receipt.**
+
+| field | type | notes |
+|---|---|---|
+| id | uuid v7 | PK |
+| job_id | uuid | FK → jobs |
+| receipt_number | int | printed as `R-0042`. Not unique across devices (see below) |
+| amount_minor | int | always above 0 |
+| paid_at | int (epoch ms) | |
+| receipt_json | text | what the receipt printed, frozen at save (below) |
+| voided_at | int? | set when voided; a voided payment no longer counts towards the balance |
+| created_at / updated_at / deleted_at / sync_status | | `deleted_at` exists for the sync pipeline; the app never sets it |
+
+**Money.** Amounts are integers of minor units (₦50,000 is `5000000`), never decimals. The tailor enters whole naira; kobo exist so the format works for any currency.
+
+**Balance.** `total − sum(amount_minor of payments not voided)`. It can go below 0: a job with unpriced items can take a deposit larger than its total so far. This is shown, never blocked. A payment above the balance asks first ("Record it anyway?"), even when items aren't priced yet, to catch a mistyped amount.
+
+**Frozen receipts.** `receipt_json` holds a snapshot written once, at save, so re-sending an old receipt never changes it, whatever happens to the job, the client or the shop profile later. The logo is the exception: it's a file on the device, so a receipt always shows the current one.
+
+```json
+{
+  "v": 1,
+  "kind": "Deposit",
+  "shop": { "name": "Kunle Couture", "phone": "+234 803 555 0142", "address": "14 Allen Avenue, Ikeja", "footer": "Goods not collected after 3 months may be disposed of." },
+  "client_name": "Tunde Bello",
+  "job_title": "Wedding outfits",
+  "collect_on": 1794614400000,
+  "currency": "NGN",
+  "items": [{ "description": "Senator suit", "quantity": 2, "unit_price_minor": 3000000, "line_total_minor": 6000000 }],
+  "total_minor": 11000000,
+  "paid_so_far_minor": 5000000,
+  "balance_minor": 6000000
+}
+```
+
+`kind` is decided at save: `Full payment` when the first payment clears the job, `Final payment` when a later one does, `Deposit` for any other first payment, `Part payment` otherwise. A voided receipt shows VOID, and its paid-so-far and balance are shown without its own amount.
+
+**Voiding.** A receipt is voided, never edited or deleted. Its number stays used.
+
+**Receipt numbers.** The next number is the higher of `app_settings.next_receipt_number` and the highest number on the device plus one, so a tailor can continue from a paper receipt book. Numbers are never reused, including after a void. Two offline phones can mint the same number, which is why the server doesn't require uniqueness.
+
 ### app_settings (local, single row)
-Units, fraction granularity (`quarters` \| `eighths`), `default_template_id`, shop/tailor name and logo URI, app-lock on/off, text size, range-warnings on/off, last successful sync time. Mostly device-local; the shop profile bits can sync if you add accounts.
+Units, fraction granularity (`quarters` \| `eighths`), `default_template_id`, app-lock on/off, text size, range-warnings on/off, last successful sync time, and the **shop profile**: `shop_name`, `logo_uri`, `shop_phone`, `shop_address`, `receipt_footer`, `currency` (ISO code, default `NGN`), `next_receipt_number` (default 1). Mostly device-local; the shop profile bits can sync if you add accounts.
 
 ### sync_outbox (optional)
 If your sync engine doesn't track dirty rows for you, keep an outbox: `id`, `entity`, `entity_id`, `op` (`upsert`/`delete`), `payload`, `created_at`, `attempts`. The sync loop drains it oldest-first and clears entries on server ack. Engines like WatermelonDB and PowerSync handle this internally, so you'd skip this table when using them.
@@ -233,6 +307,7 @@ This is why values are append-only and separate from the item: the requirement (
 - `measurement_items(set_id, position)` — render a set/entry screen in order.
 - `measurement_values(item_id, recorded_at DESC)` — current value + history; the most-hit index.
 - `images(set_id)` and `images(upload_status)` — the set's photos and the upload queue.
+- `jobs(client_id)`, `job_items(job_id)`, `payments(job_id)` — a client's jobs with their items and payments.
 - Partial/global: rows where `sync_status = pending` — the push set each sync.
 
 ---
@@ -255,5 +330,5 @@ A pragmatic default for this app: **SQLite on the device (WatermelonDB or drift)
 
 ## 9. Local-only vs synced
 
-- **Synced:** clients, templates, template_items, measurement_sets, measurement_items, measurement_values, images (+ binaries via the queue).
+- **Synced:** clients, templates, template_items, measurement_sets, measurement_items, measurement_values, images (+ binaries via the queue), jobs, job_items, payments.
 - **Local-only (unless you add accounts):** most of `app_settings` (units, text size, app-lock). Shop profile and `default_template_id` are worth syncing once a tailor uses more than one device.

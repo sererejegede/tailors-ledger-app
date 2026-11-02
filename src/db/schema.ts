@@ -15,7 +15,7 @@ import { appSchema, tableSchema } from '@nozbe/watermelondb';
  * - Migrations are immutable once shipped; bump SCHEMA_VERSION and add a migration.
  */
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const Tables = {
   clients: 'clients',
@@ -25,6 +25,9 @@ export const Tables = {
   measurementItems: 'measurement_items',
   measurementValues: 'measurement_values',
   images: 'images',
+  jobs: 'jobs',
+  jobItems: 'job_items',
+  payments: 'payments',
   appSettings: 'app_settings',
 } as const;
 
@@ -128,6 +131,51 @@ export const schema = appSchema({
       ],
     }),
 
+    tableSchema({
+      name: Tables.jobs,
+      columns: [
+        { name: 'client_id', type: 'string', isIndexed: true },
+        { name: 'title', type: 'string', isOptional: true },
+        { name: 'currency', type: 'string' },
+        { name: 'collect_on', type: 'number', isOptional: true },
+        { name: 'note', type: 'string', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'deleted_at', type: 'number', isOptional: true },
+      ],
+    }),
+
+    tableSchema({
+      name: Tables.jobItems,
+      columns: [
+        { name: 'job_id', type: 'string', isIndexed: true },
+        { name: 'description', type: 'string' },
+        { name: 'quantity', type: 'number' },
+        { name: 'unit_price_minor', type: 'number', isOptional: true },
+        { name: 'set_id', type: 'string', isOptional: true },
+        { name: 'position', type: 'number' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'deleted_at', type: 'number', isOptional: true },
+      ],
+    }),
+
+    // A payment is a receipt. `receipt_json` freezes what it printed (data-model §3).
+    tableSchema({
+      name: Tables.payments,
+      columns: [
+        { name: 'job_id', type: 'string', isIndexed: true },
+        { name: 'receipt_number', type: 'number' },
+        { name: 'amount_minor', type: 'number' },
+        { name: 'paid_at', type: 'number' },
+        { name: 'receipt_json', type: 'string' },
+        { name: 'voided_at', type: 'number', isOptional: true },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+        { name: 'deleted_at', type: 'number', isOptional: true },
+      ],
+    }),
+
     // Single local row. Mostly device-local (contract §11); cursor/last-sync live here too.
     tableSchema({
       name: Tables.appSettings,
@@ -137,6 +185,11 @@ export const schema = appSchema({
         { name: 'default_template_id', type: 'string', isOptional: true },
         { name: 'shop_name', type: 'string', isOptional: true },
         { name: 'logo_uri', type: 'string', isOptional: true },
+        { name: 'shop_phone', type: 'string', isOptional: true },
+        { name: 'shop_address', type: 'string', isOptional: true },
+        { name: 'receipt_footer', type: 'string', isOptional: true },
+        { name: 'currency', type: 'string', isOptional: true }, // ISO code; null = DEFAULT_CURRENCY
+        { name: 'next_receipt_number', type: 'number', isOptional: true }, // null = start at 1
         { name: 'app_lock_enabled', type: 'boolean' },
         { name: 'text_size', type: 'string' }, // 'normal' | 'large'
         { name: 'high_contrast', type: 'boolean' },

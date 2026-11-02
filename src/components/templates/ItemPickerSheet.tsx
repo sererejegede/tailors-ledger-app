@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { Portal } from '@/components/OverlayHost';
+import CheckIcon from '@/assets/icons/check.svg';
 
 type Option = {
   id: string;
@@ -30,7 +31,7 @@ export function ItemPickerSheet({ visible, options, currentId, onSelect, onClose
             return (
               <Pressable key={o.id} style={styles.option} onPress={() => onSelect(o.id)}>
                 <Text style={[styles.optionText, current && styles.optionCurrent]}>{o.name}</Text>
-                {current ? <Text style={styles.optionCheck}>✓</Text> : null}
+                {current ? <CheckIcon width={18} height={18} color={colors.accent} /> : null}
               </Pressable>
             );
           })}
@@ -75,5 +76,4 @@ const styles = StyleSheet.create({
   },
   optionText: { fontFamily: fonts.medium, fontSize: fontSizes.base, color: colors.text },
   optionCurrent: { color: colors.accent, fontFamily: fonts.semibold },
-  optionCheck: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: colors.accent },
 });

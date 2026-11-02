@@ -32,7 +32,7 @@ const SettingsRowBase = ({ title, value, disabled, onPress }: Props) => {
             thumbColor="#fff"
             {...webSwitchProps}
           />
-        : <Text style={styles.value}>{value}</Text>
+        : <Text style={styles.value} numberOfLines={1}>{value}</Text>
       }
     </Pressable>
   );
@@ -45,6 +45,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: space.lg,
     paddingBlock: space.lg,
     paddingInline: space.lg,
     borderBottomWidth: 1,
@@ -54,11 +55,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentTint,
   },
   title: {
+    flexShrink: 0,
     fontFamily: fonts.semibold,
     fontSize: fontSizes.base,
     color: colors.text,
   },
   value: {
+    flexShrink: 1,
     fontFamily: fonts.body,
     fontSize: fontSizes.sm,
     color: colors.muted,

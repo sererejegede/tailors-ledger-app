@@ -87,12 +87,15 @@ Before saving, items edited this session carry a subtle "changed" marker so the 
 | Screen | Purpose |
 |---|---|
 | **Clients** (home) | Search-first list of clients (by name/phone). Primary actions: *New measurement*, *Add client*. |
-| **Client detail** | Client info, the client-level **comment**, + list of their measurement sets (shown by label, or by date if unlabelled — e.g. "Wedding outfit — 2 wks ago", "12 May"). Action: *New measurement set*. |
+| **Client detail** | Client info, the client-level **comment**, + list of their measurement sets (shown by label, or by date if unlabelled — e.g. "Wedding outfit — 2 wks ago", "12 May"), + their jobs and what each still owes. Actions: *New measurement set*, *Record payment*. |
 | **Measurement entry** | The hero screen in §4. Used for new sets and re-measures. |
 | **Set detail (view)** | All items with current values, the set note, images, and a *Re-measure* button. Tap any item to see its history or quick-edit. |
 | **Item history** | Timeline of an item's previous values with dates. |
 | **Templates** | List, create, and edit templates (ordered items, default unit, optional ranges). |
 | **New client** | Name only to create; phone, photo, comment all optional and deferrable. Instant. |
+| **Record payment** | §9a. Starts a job from Client detail, or takes the next payment from Job detail. |
+| **Job detail** | The job's balance, items and payments. Action: *Record payment*. |
+| **Receipt preview** | The receipt as it will print. Actions: *Share*, *Void receipt*. |
 
 ---
 
@@ -110,6 +113,23 @@ Before saving, items edited this session carry a subtle "changed" marker so the 
 
 - **One free-text note per set** (set-level only in v1).
 - **Optional images per set**: camera or gallery, multiple allowed, uploaded via a background queue so it never blocks the session. A photo of the tailor's existing **paper card** is a first-class image and the intended migration path — onboard clients gradually by snapping their old cards.
+
+---
+
+## 9a. Jobs and receipts
+
+A **job** is one piece of work for one client: the clothes being made and the money paid towards them. Every payment gives one **receipt**. The measurement screen, Set detail and the bottom tabs don't change.
+
+- **Record payment** starts from Client detail only. It works like measuring: item rows on top, a pad in the thumb zone, *+ Add item* last, and nothing written until Save.
+- **An item's price is optional**, and an item can be linked to one of the client's measurement sets.
+- **A job's title and collection date are optional.** The date is set with quick picks (1, 2, 3 weeks, 1 month) and a day-by-day ±, so there's no calendar to fish through.
+- **No payment method is recorded.**
+- **Paying more than the balance asks first** ("Record it anyway?"), so a mistyped amount is caught. It is never blocked.
+- **The receipt** is A5, carries the shop's logo and details, and lists every item on the job. One *Share* button makes a PDF and opens the phone's share sheet. It all works offline.
+- **Mistakes are voided**, never edited or deleted. Each receipt keeps exactly what it printed.
+- **The shop profile** (logo, name, phone, address, receipt footer, next receipt number, currency) lives in Settings, on the phone only.
+
+Rules and fields are in the data-model doc, §3.
 
 ---
 
@@ -139,6 +159,7 @@ A new device signing into an account that already has templates uses the account
 - Set-level note + images (background upload)
 - Offline-first with background sync
 - Soft range validation, autosave drafts, Men's/Women's starter templates
+- Jobs, payments and shareable receipts; invoices follow
 
 **Later (architected for, not built)**
 - **Voice input** as an entry accelerator for the solo case

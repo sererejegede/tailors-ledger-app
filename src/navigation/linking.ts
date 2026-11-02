@@ -27,6 +27,9 @@ export const linking: LinkingOptions<RootStackParamList> = {
       ClientDetail: 'client/:clientId',
       SetDetail: 'set/:setId',
       TemplateEditor: 'template',
+      RecordPayment: 'record-payment/:clientId',
+      JobDetail: 'job/:jobId',
+      Receipt: 'receipt/:paymentId',
     },
   },
 };

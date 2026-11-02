@@ -2,9 +2,9 @@ import { schema, SCHEMA_VERSION, Tables } from '../schema';
 import { makeTestDatabase } from '../testDatabase';
 
 describe('schema', () => {
-  it('is at version 1 and declares every data-model table', () => {
+  it('is at version 2 and declares every data-model table', () => {
     expect(schema.version).toBe(SCHEMA_VERSION);
-    expect(SCHEMA_VERSION).toBe(1);
+    expect(SCHEMA_VERSION).toBe(2);
     for (const name of Object.values(Tables)) {
       expect(schema.tables[name]).toBeDefined();
     }

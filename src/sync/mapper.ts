@@ -44,6 +44,15 @@ const WIRE_COLUMNS: Record<SyncTable, string[]> = {
   ],
   measurement_values: ['item_id', 'value', 'recorded_at', 'source', 'created_at'],
   images: ['set_id', 'kind', 'remote_url', 'width', 'height', 'created_at', 'updated_at', 'deleted_at'],
+  jobs: ['client_id', 'title', 'currency', 'collect_on', 'note', 'created_at', 'updated_at', 'deleted_at'],
+  job_items: [
+    'job_id', 'description', 'quantity', 'unit_price_minor', 'set_id', 'position',
+    'created_at', 'updated_at', 'deleted_at',
+  ],
+  payments: [
+    'job_id', 'receipt_number', 'amount_minor', 'paid_at', 'receipt_json', 'voided_at',
+    'created_at', 'updated_at', 'deleted_at',
+  ],
 };
 
 /** measurement_values is append-only — it never carries `updated`/`deleted` (§3, §7). */
@@ -62,6 +71,9 @@ function emptyEnvelope(): ChangeEnvelope {
     measurement_items: emptyEntity(),
     measurement_values: { created: [] },
     images: emptyEntity(),
+    jobs: emptyEntity(),
+    job_items: emptyEntity(),
+    payments: emptyEntity(),
   };
 }
 
