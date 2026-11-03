@@ -197,6 +197,13 @@ export default function JobDetailScreen({ route, navigation }: Props) {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + space.lg }]}>
+        <Pressable
+          style={styles.invoice}
+          onPress={() => navigation.navigate('Invoice', { jobId })}
+          accessibilityRole="button"
+        >
+          <Text style={styles.invoiceText}>Send invoice</Text>
+        </Pressable>
         <Pressable style={styles.record} onPress={() => setPaying(true)} accessibilityRole="button">
           <Text style={styles.recordText}>Record payment</Text>
         </Pressable>
@@ -283,8 +290,20 @@ const styles = StyleSheet.create({
   voided: { color: colors.danger },
   struck: { color: colors.muted, textDecorationLine: 'line-through' },
   empty: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.muted, paddingVertical: space.md },
-  footer: { paddingHorizontal: space.lg, paddingTop: space.md },
+  footer: { flexDirection: 'row', gap: space.sm, paddingHorizontal: space.lg, paddingTop: space.md },
+  invoice: {
+    flex: 1,
+    height: 56,
+    borderRadius: radius.default,
+    borderWidth: 2,
+    borderColor: colors.accent,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  invoiceText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: colors.accent },
   record: {
+    flex: 1,
     height: 56,
     borderRadius: radius.default,
     backgroundColor: colors.accent,

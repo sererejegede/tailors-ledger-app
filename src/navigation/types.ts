@@ -23,4 +23,6 @@ export type RootStackParamList = {
   RecordPayment: { clientId: string };
   JobDetail: { jobId: string };
   Receipt: { paymentId: string };
+  // Drawn from the job each time; nothing about an invoice is saved.
+  Invoice: { jobId: string };
 };

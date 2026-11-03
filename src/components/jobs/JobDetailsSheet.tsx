@@ -12,7 +12,7 @@ import { BottomSheet } from './BottomSheet';
  * all thumb-reach, and the same on phone and web.
  */
 
-const QUICK_PICKS = [
+export const QUICK_PICKS = [
   { label: '1 week', days: 7 },
   { label: '2 weeks', days: 14 },
   { label: '3 weeks', days: 21 },

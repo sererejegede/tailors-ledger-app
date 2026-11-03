@@ -6,7 +6,7 @@ import { database } from '@/db';
 import type Payment from '@/db/models/Payment';
 import { Alert } from '@/lib/alert';
 import { receiptView } from '@/lib/receipt';
-import { shareReceipt } from '@/lib/shareReceipt';
+import { shareReceipt } from '@/lib/sharePdf';
 import { getPayment, voidPayment } from '@/repositories/jobs';
 import { getSettings } from '@/repositories/settings';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';

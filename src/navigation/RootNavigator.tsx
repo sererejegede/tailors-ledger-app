@@ -9,6 +9,7 @@ import TemplateEditorScreen from '@/features/templates/TemplateEditorScreen';
 import RecordPaymentScreen from '@/features/jobs/RecordPaymentScreen';
 import JobDetailScreen from '@/features/jobs/JobDetailScreen';
 import ReceiptScreen from '@/features/jobs/ReceiptScreen';
+import InvoiceScreen from '@/features/jobs/InvoiceScreen';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -47,6 +48,7 @@ export default function RootNavigator() {
       />
       <Stack.Screen name="JobDetail" component={JobDetailScreen} options={detailHeader} />
       <Stack.Screen name="Receipt" component={ReceiptScreen} options={detailHeader} />
+      <Stack.Screen name="Invoice" component={InvoiceScreen} options={{ ...detailHeader, title: 'Invoice' }} />
     </Stack.Navigator>
   );
 }
