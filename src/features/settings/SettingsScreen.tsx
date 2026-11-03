@@ -13,7 +13,7 @@ import { resetTips } from '@/lib/seenTips';
 import { Alert } from '@/lib/alert';
 import { canUseAppLock } from '@/lib/appLock';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { fonts } from '@/theme/typography';
+import { buttonLabel, fonts } from '@/theme/typography';
 import { useFontScale } from '@/theme/textScale';
 import { AccountSection } from './AccountSection';
 import { ShopProfileSection } from './ShopProfileSection';
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   segItemOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-  segText: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.text },
+  segText: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes.base), color: colors.text },
   segTextOn: { color: '#fff' },
   toggleRow: {
     flexDirection: 'row',

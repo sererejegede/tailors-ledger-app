@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { fonts } from '@/theme/typography';
+import { buttonLabel, fonts } from '@/theme/typography';
 import XCloseIcon from '@/assets/icons/x-close.svg';
 
 /**
@@ -142,6 +142,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
   },
-  ctaText: { fontFamily: fonts.bold, fontSize: fontSizes.sm, color: '#fff' },
+  ctaText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.sm), color: '#fff' },
   close: { width: 26, height: 26, alignItems: 'center', justifyContent: 'center' },
 });

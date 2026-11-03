@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { bufferToMinor, minorToBuffer } from '@/lib/amountEntry';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { fonts, valueText } from '@/theme/typography';
+import { buttonLabel, fonts, valueText } from '@/theme/typography';
 import MinusIcon from '@/assets/icons/minus.svg';
 import PlusIcon from '@/assets/icons/plus.svg';
 import { BottomSheet } from './BottomSheet';
@@ -187,11 +187,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   setOn: { backgroundColor: colors.accentTint, borderColor: colors.accent },
-  setText: { fontFamily: fonts.medium, fontSize: fontSizes.sm, color: colors.text },
+  setText: { fontFamily: fonts.medium, ...buttonLabel(fontSizes.sm), color: colors.text },
   setTextOn: { color: colors.accentInk },
   actions: { flexDirection: 'row', gap: space.sm, marginTop: space.xs },
   remove: { height: 52, paddingHorizontal: space.xl, alignItems: 'center', justifyContent: 'center' },
-  removeText: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.danger },
+  removeText: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes.base), color: colors.danger },
   save: {
     flex: 1,
     height: 52,
@@ -200,5 +200,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: '#fff' },
+  saveText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: '#fff' },
 });

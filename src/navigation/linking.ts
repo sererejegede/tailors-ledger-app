@@ -30,6 +30,7 @@ export const linking: LinkingOptions<RootStackParamList> = {
       RecordPayment: 'record-payment/:clientId',
       JobDetail: 'job/:jobId',
       Receipt: 'receipt/:paymentId',
+      Invoice: 'invoice/:jobId',
     },
   },
 };

@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 import { config } from '@/lib/config';
 import { deepRedact } from '@/lib/redact';
 import { colors, fontSizes, radius, space } from '@/theme/tokens';
-import { fonts } from '@/theme/typography';
+import { buttonLabel, fonts } from '@/theme/typography';
 
 /**
  * Web-only Sentry error reporting. Errors only — no performance/tracing/replay — and only
@@ -85,5 +85,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xl,
     paddingVertical: space.md,
   },
-  buttonText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: '#fff' },
+  buttonText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: '#fff' },
 });

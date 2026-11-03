@@ -15,7 +15,7 @@ import { appSchema, tableSchema } from '@nozbe/watermelondb';
  * - Migrations are immutable once shipped; bump SCHEMA_VERSION and add a migration.
  */
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const Tables = {
   clients: 'clients',
@@ -190,6 +190,10 @@ export const schema = appSchema({
         { name: 'receipt_footer', type: 'string', isOptional: true },
         { name: 'currency', type: 'string', isOptional: true }, // ISO code; null = DEFAULT_CURRENCY
         { name: 'next_receipt_number', type: 'number', isOptional: true }, // null = start at 1
+        // Payment details printed on invoices. Text, so an account number keeps its leading 0s.
+        { name: 'bank_name', type: 'string', isOptional: true },
+        { name: 'bank_account_name', type: 'string', isOptional: true },
+        { name: 'bank_account_number', type: 'string', isOptional: true },
         { name: 'app_lock_enabled', type: 'boolean' },
         { name: 'text_size', type: 'string' }, // 'normal' | 'large'
         { name: 'high_contrast', type: 'boolean' },

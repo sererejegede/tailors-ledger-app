@@ -64,5 +64,19 @@ export const migrations = schemaMigrations({
         }),
       ],
     },
+    {
+      // Payment details for invoices (data-model §3, app_settings).
+      toVersion: 3,
+      steps: [
+        addColumns({
+          table: 'app_settings',
+          columns: [
+            { name: 'bank_name', type: 'string', isOptional: true },
+            { name: 'bank_account_name', type: 'string', isOptional: true },
+            { name: 'bank_account_number', type: 'string', isOptional: true },
+          ],
+        }),
+      ],
+    },
   ],
 });

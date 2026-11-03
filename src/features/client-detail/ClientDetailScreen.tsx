@@ -9,7 +9,7 @@ import { jobsForClient, totalOwedMinor, type JobSummary } from '@/repositories/j
 import { setsForClient, type MeasurementSetWithItemsCount } from '@/repositories/sets';
 import { getDefaultTemplateId } from '@/repositories/templates';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { fonts } from '@/theme/typography';
+import { buttonLabel, fonts } from '@/theme/typography';
 import { PromptModal } from '@/components/PromptModal';
 import EditIcon from '@/assets/icons/edit-02.svg';
 import RulerIcon from '@/assets/icons/ruler.svg';
@@ -151,7 +151,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
               {owedMinor ? `${formatMoney(owedMinor, jobs[0].job.currency)} owed` : 'Nothing owed'}
             </Text>
           </View>
-          <View>
+          <View style={styles.jobs}>
             {jobs.map((summary) => (
               <ClientDetailJobRow
                 key={summary.job.id}
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
     alignItems: 'center',
   },
-  newSetText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: colors.accent },
+  newSetText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: colors.accent },
   empty: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.muted, paddingVertical: space.md },
   divider: { height: 2, backgroundColor: colors.accent, marginVertical: space.lg },
   edit: {
@@ -261,7 +261,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: space.md,
+    // More room above the bar than below it, so it reads as the heading of the jobs under it.
+    marginTop: space.xl,
     marginHorizontal: -space.sm,
     padding: space.sm,
     borderRadius: radius.sm,
@@ -275,6 +276,8 @@ const styles = StyleSheet.create({
     color: colors.accentInk,
   },
   owed: { fontFamily: fonts.bold, fontSize: fontSizes.sm, color: colors.accent },
+  // Each row has its own 14px top padding, so pull the list up under the bar.
+  jobs: { marginTop: -space.sm },
   // The bottom margin keeps the full-width button clear of the floating +.
   recordPayment: {
     height: 48,
@@ -286,5 +289,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  recordPaymentText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: colors.accent },
+  recordPaymentText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: colors.accent },
 });

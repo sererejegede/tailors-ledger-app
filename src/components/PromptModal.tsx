@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { fonts } from '@/theme/typography';
+import { buttonLabel, fonts } from '@/theme/typography';
 import { Portal } from '@/components/OverlayHost';
 
 /**
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   btns: { flexDirection: 'row', justifyContent: 'flex-end', gap: space.sm, marginTop: space.sm },
   btn: { paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.md },
   cancel: { backgroundColor: colors.bg },
-  cancelText: { fontFamily: fonts.semibold, color: colors.muted },
+  cancelText: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes.sm), color: colors.muted },
   go: { backgroundColor: colors.accent },
-  goText: { fontFamily: fonts.semibold, color: '#fff' },
+  goText: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes.sm), color: '#fff' },
 });

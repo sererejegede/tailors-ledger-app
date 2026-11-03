@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { fonts } from '@/theme/typography';
+import { buttonLabel, fonts } from '@/theme/typography';
 
 /**
  * The fraction row: three chips ¼ ½ ¾ (NO clear chip — clearing is a re-tap of the
@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  label: { fontFamily: fonts.semibold, fontSize: fontSizes['2xl'], color: colors.text },
+  label: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes['2xl']), color: colors.text },
   labelActive: { color: '#fff' },
 });
 

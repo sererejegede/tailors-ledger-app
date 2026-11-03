@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { addDays, formatWeekday, nowMs } from '@/lib/time';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { fonts, valueText } from '@/theme/typography';
+import { buttonLabel, fonts, valueText } from '@/theme/typography';
 import MinusIcon from '@/assets/icons/minus.svg';
 import PlusIcon from '@/assets/icons/plus.svg';
 import { BottomSheet } from './BottomSheet';
@@ -12,7 +12,7 @@ import { BottomSheet } from './BottomSheet';
  * all thumb-reach, and the same on phone and web.
  */
 
-const QUICK_PICKS = [
+export const QUICK_PICKS = [
   { label: '1 week', days: 7 },
   { label: '2 weeks', days: 14 },
   { label: '3 weeks', days: 21 },
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pickText: { fontFamily: fonts.semibold, fontSize: fontSizes.sm, color: colors.text },
+  pickText: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes.sm), color: colors.text },
   clear: { fontFamily: fonts.semibold, fontSize: fontSizes.sm, color: colors.muted, textAlign: 'center' },
   save: {
     height: 52,
@@ -134,5 +134,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: space.xs,
   },
-  saveText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: '#fff' },
+  saveText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: '#fff' },
 });

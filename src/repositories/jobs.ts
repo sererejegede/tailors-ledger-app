@@ -5,6 +5,7 @@ import Client from '@/db/models/Client';
 import Job from '@/db/models/Job';
 import JobItem from '@/db/models/JobItem';
 import Payment, { type ReceiptKind, type ReceiptSnapshot } from '@/db/models/Payment';
+import type { InvoiceSource } from '@/lib/invoice';
 import { DEFAULT_CURRENCY, lineTotalMinor } from '@/lib/money';
 import { nowMs } from '@/lib/time';
 import { notDeleted, softDeleteById } from './softDelete';
@@ -330,4 +331,49 @@ export async function jobsForClient(database: Database, clientId: string): Promi
 /** What a client owes across their jobs. A job that's overpaid doesn't offset another. */
 export function totalOwedMinor(summaries: JobTotals[]): number {
   return summaries.reduce((sum, s) => sum + Math.max(s.balanceMinor, 0), 0);
+}
+
+/**
+ * Everything an invoice is drawn from, read fresh each time it's opened, so it always shows
+ * the job as it is now (data-model §3, "Invoices"). Also the logo, which is a local file.
+ */
+export async function invoiceSource(
+  database: Database,
+  jobId: string,
+): Promise<{ source: InvoiceSource; logoUri?: string }> {
+  const job = await database.get<Job>(Tables.jobs).find(jobId);
+  const [client, items, payments, settings] = await Promise.all([
+    job.client.fetch() as Promise<Client>,
+    jobItems(database, jobId),
+    jobPayments(database, jobId),
+    requireSettings(database),
+  ]);
+  return {
+    source: {
+      date: nowMs(),
+      shop: {
+        name: settings.shopName ?? '',
+        phone: settings.shopPhone ?? '',
+        address: settings.shopAddress ?? '',
+        footer: settings.receiptFooter ?? '',
+      },
+      bank: {
+        name: settings.bankName ?? '',
+        accountName: settings.bankAccountName ?? '',
+        accountNumber: settings.bankAccountNumber ?? '',
+      },
+      clientName: client.name,
+      clientPhone: client.phone ?? '',
+      jobTitle: job.title || null,
+      collectOn: job.collectOn ?? null,
+      currency: job.currency,
+      items: items.map((i) => ({
+        description: i.description,
+        quantity: i.quantity,
+        unitPriceMinor: i.unitPriceMinor ?? null,
+      })),
+      payments: payments.map((p) => ({ amountMinor: p.amountMinor, voidedAt: p.voidedAt ?? null })),
+    },
+    logoUri: settings.logoUri || undefined,
+  };
 }

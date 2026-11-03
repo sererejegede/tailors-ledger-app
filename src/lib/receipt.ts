@@ -39,6 +39,12 @@ export type ReceiptView = {
 
 export const UNPRICED = '—';
 
+/** "2 × ₦30,000", "× 3" while unpriced, or nothing for one of something. */
+export function lineDetail(quantity: number, unitPriceMinor: number | null, money: (minor: number) => string): string {
+  if (quantity <= 1) return '';
+  return unitPriceMinor != null ? `${quantity} × ${money(unitPriceMinor)}` : `× ${quantity}`;
+}
+
 export function receiptView(source: ReceiptSource): ReceiptView {
   const { receipt } = source;
   const money = (minor: number) => formatMoney(minor, receipt.currency);
@@ -57,12 +63,7 @@ export function receiptView(source: ReceiptSource): ReceiptView {
     job: receipt.job_title,
     items: receipt.items.map((line) => ({
       name: line.description,
-      detail:
-        line.quantity > 1 && line.unit_price_minor != null
-          ? `${line.quantity} × ${money(line.unit_price_minor)}`
-          : line.quantity > 1
-            ? `× ${line.quantity}`
-            : '',
+      detail: lineDetail(line.quantity, line.unit_price_minor, money),
       amount: line.unit_price_minor == null ? UNPRICED : money(line.line_total_minor),
     })),
     total: money(receipt.total_minor),

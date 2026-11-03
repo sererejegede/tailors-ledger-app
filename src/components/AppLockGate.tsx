@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { authenticate } from '@/lib/appLock';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { fonts } from '@/theme/typography';
+import { buttonLabel, fonts } from '@/theme/typography';
 
 /**
  * Gates the app behind device auth when app lock is on (settings). Prompts on launch;
@@ -42,5 +42,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xl,
     paddingVertical: space.md,
   },
-  buttonText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: '#fff' },
+  buttonText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: '#fff' },
 });

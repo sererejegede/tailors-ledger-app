@@ -8,6 +8,7 @@ import { createClient, updateClient } from '../clients';
 import {
   addJobItem,
   createJob,
+  invoiceSource,
   InvalidJobError,
   jobItems,
   jobPayments,
@@ -339,6 +340,34 @@ describe('jobs repository', () => {
       const summaries = await jobsForClient(db, client.id);
       expect(summaries.map((s) => s.job.title).sort()).toEqual(['Overpaid', 'Wedding']);
       expect(totalOwedMinor(summaries)).toBe(6000000);
+    });
+  });
+
+  describe('invoiceSource', () => {
+    it('reads the job as it is now, with the shop and its payment details', async () => {
+      await updateSettings(db, { shopName: 'Kunle Couture', bankName: 'GTBank', bankAccountNumber: '0123456789', logoUri: 'file:///logo.png' });
+      const { job, payment } = await createJob(db, { clientId: client.id, title: 'Wedding', items: wedding, amountMinor: 5000000 });
+      await voidPayment(db, payment!.id);
+      await recordPayment(db, job.id, 2000000);
+      await updateJob(db, job.id, { collectOn: 1794614400000 });
+
+      const { source, logoUri } = await invoiceSource(db, job.id);
+      expect(source.clientName).toBe(client.name);
+      expect(source.clientPhone).toBe(client.phone);
+      expect(source.jobTitle).toBe('Wedding');
+      expect(source.collectOn).toBe(1794614400000);
+      expect(source.shop.name).toBe('Kunle Couture');
+      expect(source.bank).toEqual({ name: 'GTBank', accountName: '', accountNumber: '0123456789' });
+      expect(source.items.map((i) => i.description)).toEqual(wedding.map((i) => i.description));
+      // Both were saved in the same instant here, so their order isn't fixed.
+      expect(source.payments).toHaveLength(2);
+      expect(source.payments).toEqual(
+        expect.arrayContaining([
+          { amountMinor: 5000000, voidedAt: expect.any(Number) },
+          { amountMinor: 2000000, voidedAt: null },
+        ]),
+      );
+      expect(logoUri).toBe('file:///logo.png');
     });
   });
 

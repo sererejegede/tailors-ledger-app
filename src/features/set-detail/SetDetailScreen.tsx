@@ -11,7 +11,7 @@ import { earlierValuesByItem, quickEditItem } from '@/repositories/items';
 import { formatInches } from '@/lib/units';
 import { getRelativeTime } from '@/lib/time';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { fonts, valueText } from '@/theme/typography';
+import { buttonLabel, fonts, valueText } from '@/theme/typography';
 import { PromptModal } from '@/components/PromptModal';
 import { QuickEditSheet } from '@/components/QuickEditSheet';
 import { CoachMark, useCoachMark } from '@/components/CoachMark';
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
   },
-  remeasureText: { fontFamily: fonts.bold, fontSize: fontSizes.sm, color: '#fff' },
+  remeasureText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.sm), color: '#fff' },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,

@@ -19,6 +19,9 @@ export default class AppSettings extends Model {
   @text('receipt_footer') receiptFooter?: string;
   @text('currency') currency?: string;
   @field('next_receipt_number') nextReceiptNumber?: number | null;
+  @text('bank_name') bankName?: string;
+  @text('bank_account_name') bankAccountName?: string;
+  @text('bank_account_number') bankAccountNumber?: string;
   @field('app_lock_enabled') appLockEnabled: boolean;
   @text('text_size') textSize: string; // 'normal' | 'large'
   @field('high_contrast') highContrast: boolean;
