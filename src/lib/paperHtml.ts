@@ -35,6 +35,9 @@ export function esc(text: string): string {
     .replace(/"/g, '&quot;');
 }
 
+/** Clear space between the last item and the total: about one item row's height. */
+const TOTAL_GAP = 32;
+
 /** The items table, total row included. */
 export function itemsHtml(
   items: { name: string; detail: string; amount: string; pending?: boolean }[],
@@ -56,7 +59,7 @@ export function itemsHtml(
     <div>Items</div><div>Amount</div>
   </div>
   ${rows}
-  <div style="${ROW};padding-top:${em(7)};font-weight:700;color:${INK}">
+  <div style="${ROW};margin-top:${em(TOTAL_GAP)};padding-top:${em(7)};font-weight:700;color:${INK}">
     <div>Total</div><div style="${MONEY}">${esc(total)}</div>
   </div>`;
 }
@@ -109,8 +112,11 @@ export function paperHtml(
 </html>`;
 }
 
-/** "Received from" / "Bill to" on the left, the job on the right when it has a title. */
-export function partiesHtml(label: string, client: string, job: string | null): string {
+/**
+ * "Received from" / "Bill to" on the left, with the client's phone when there is one, and the
+ * job on the right when it has a title.
+ */
+export function partiesHtml(label: string, client: string, job: string | null, phone: string | null = null): string {
   const jobBlock = job
     ? `<div style="flex:1;min-width:0;text-align:right">
          <div style="font-size:${em(12)};color:${SOFT}">Job</div>
@@ -121,6 +127,7 @@ export function partiesHtml(label: string, client: string, job: string | null): 
     <div style="flex:1;min-width:0">
       <div style="font-size:${em(12)};color:${SOFT}">${esc(label)}</div>
       <div style="font-size:${em(17)};font-weight:600;color:${INK}">${esc(client)}</div>
+      ${phone ? `<div style="font-size:${em(12)};color:${SOFT}">${esc(phone)}</div>` : ''}
     </div>
     ${jobBlock}
   </div>`;

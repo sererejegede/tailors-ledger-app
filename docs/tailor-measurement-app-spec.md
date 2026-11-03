@@ -96,7 +96,7 @@ Before saving, items edited this session carry a subtle "changed" marker so the 
 | **Record payment** | §9a. Starts a job from Client detail, or takes the next payment from Job detail. |
 | **Job detail** | The job's balance, items and payments. Actions: *Send invoice*, *Record payment*. |
 | **Receipt preview** | The receipt as it will print. Actions: *Share*, *Void receipt*. |
-| **Invoice preview** | The job's invoice as it will print. Actions: *Share*, *Add collection date* (only when none is set). |
+| **Invoice preview** | The job's invoice as it will print. Actions: *Share*, *Add collection date* when none is set, otherwise *Change* (which can also clear it). |
 
 ---
 
@@ -129,7 +129,7 @@ A **job** is one piece of work for one client: the clothes being made and the mo
 - **The receipt** is A5, carries the shop's logo and details, and lists every item on the job. One *Share* button makes a PDF and opens the phone's share sheet. It all works offline.
 - **Mistakes are voided**, never edited or deleted. Each receipt keeps exactly what it printed.
 - **The shop profile** (logo, name, phone, address, footer, next receipt number, currency, and payment details: bank, account name, account number) lives in Settings, on the phone only.
-- **Invoices** are the job's bill, shared from *Send invoice* on Job detail. One *Share* button makes the PDF, like the receipt. An invoice is never saved and has no number: it's drawn from the job each time, so it always shows the job as it is now. It carries the shop's payment details when they're set. If the job has no collection date, *Add collection date* sets one (saved to the job); there is no remove there.
+- **Invoices** are the job's bill, shared from *Send invoice* on Job detail. One *Share* button makes the PDF, like the receipt. An invoice is never saved and has no number: it's drawn from the job each time, so it always shows the job as it is now. It carries the client's phone and the shop's payment details when they're set. If the job has no collection date, *Add collection date* sets one (saved to the job); once set, *Change* picks another or clears it.
 
 Rules and fields are in the data-model doc, §3.
 

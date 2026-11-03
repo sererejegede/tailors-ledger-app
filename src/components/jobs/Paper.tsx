@@ -55,13 +55,29 @@ export function PaperPage({ s, width, shopName, shopContact, footer, logoUri, ch
   );
 }
 
-/** "Received from" / "Bill to" on the left, the job on the right when it has a title. */
-export function PaperParties({ s, label, client, job }: { s: PaperStyles; label: string; client: string; job: string | null }) {
+/**
+ * "Received from" / "Bill to" on the left, with the client's phone when there is one, and the
+ * job on the right when it has a title.
+ */
+export function PaperParties({
+  s,
+  label,
+  client,
+  job,
+  phone,
+}: {
+  s: PaperStyles;
+  label: string;
+  client: string;
+  job: string | null;
+  phone?: string | null;
+}) {
   return (
     <View style={s.parties}>
       <View style={s.party}>
         <Text style={s.small}>{label}</Text>
         <Text style={s.client}>{client}</Text>
+        {phone ? <Text style={s.small}>{phone}</Text> : null}
       </View>
       {job ? (
         <View style={s.party}>
@@ -174,7 +190,8 @@ function paperStyles(k: number) {
     },
     itemName: text(14, { fontFamily: fonts.medium, color: INK, flex: 1 }),
     money: money(14),
-    total: { ...row, paddingTop: px(7) },
+    // Clear space before the total, about one item row's height (paperHtml's TOTAL_GAP).
+    total: { ...row, marginTop: px(32), paddingTop: px(7) },
     // The tinted box: what was received on a receipt, the balance due on an invoice.
     received: { ...box, backgroundColor: colors.accentTint },
     receivedSmall: text(12, { color: colors.accentInk }),

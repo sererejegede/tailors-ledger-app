@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { fonts } from '@/theme/typography';
+import { buttonLabel, fonts } from '@/theme/typography';
 import { Portal } from '@/components/OverlayHost';
 import { hasSeenTip, markTipSeen } from '@/lib/seenTips';
 
@@ -120,5 +120,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingVertical: space.sm,
   },
-  buttonText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: '#fff' },
+  buttonText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: '#fff' },
 });

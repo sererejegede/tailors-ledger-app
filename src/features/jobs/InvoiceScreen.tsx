@@ -9,7 +9,7 @@ import { invoiceView, type InvoiceSource } from '@/lib/invoice';
 import { shareInvoice } from '@/lib/sharePdf';
 import { invoiceSource, updateJob } from '@/repositories/jobs';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { fonts } from '@/theme/typography';
+import { buttonLabel, fonts } from '@/theme/typography';
 import { CollectionDateSheet, InvoiceCard } from '@/components/jobs';
 import PlusIcon from '@/assets/icons/plus.svg';
 import type { RootStackParamList } from '@/navigation/types';
@@ -57,7 +57,7 @@ export default function InvoiceScreen({ route }: Props) {
     }
   }, [view, logoUri, sharing]);
 
-  const pickDate = async (collectOn: number) => {
+  const pickDate = async (collectOn: number | null) => {
     setPicking(false);
     await updateJob(database, jobId, { collectOn });
     load();
@@ -75,7 +75,7 @@ export default function InvoiceScreen({ route }: Props) {
       </ScrollView>
 
       <View style={[styles.actions, { paddingBottom: insets.bottom + space.lg }]}>
-        {/* A due date only matters while something's owed. Adding is the only action; no remove. */}
+        {/* A due date only matters while something's owed. */}
         {view.paidInFull ? null : view.collection ? (
           <View style={styles.dated}>
             <Text style={styles.datedText}>
@@ -101,7 +101,13 @@ export default function InvoiceScreen({ route }: Props) {
         </Pressable>
       </View>
 
-      {picking ? <CollectionDateSheet onPick={pickDate} onClose={() => setPicking(false)} /> : null}
+      {picking ? (
+        <CollectionDateSheet
+          onPick={pickDate}
+          onClear={source?.collectOn != null ? () => pickDate(null) : undefined}
+          onClose={() => setPicking(false)}
+        />
+      ) : null}
     </View>
   );
 }
@@ -112,7 +118,7 @@ const styles = StyleSheet.create({
   paper: { borderWidth: PAPER_BORDER, borderColor: colors.line },
   actions: { paddingHorizontal: space.lg, paddingTop: space.md, gap: space.sm },
   addDate: { height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs },
-  addDateText: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.accent },
+  addDateText: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes.base), color: colors.accent },
   dated: {
     height: 44,
     flexDirection: 'row',
@@ -131,5 +137,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   shareBusy: { opacity: 0.6 },
-  shareText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: '#fff' },
+  shareText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: '#fff' },
 });

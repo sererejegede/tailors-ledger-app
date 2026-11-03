@@ -363,6 +363,7 @@ export async function invoiceSource(
         accountNumber: settings.bankAccountNumber ?? '',
       },
       clientName: client.name,
+      clientPhone: client.phone ?? '',
       jobTitle: job.title || null,
       collectOn: job.collectOn ?? null,
       currency: job.currency,

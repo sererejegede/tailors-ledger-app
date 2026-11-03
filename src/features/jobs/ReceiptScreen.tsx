@@ -10,7 +10,7 @@ import { shareReceipt } from '@/lib/sharePdf';
 import { getPayment, voidPayment } from '@/repositories/jobs';
 import { getSettings } from '@/repositories/settings';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { fonts } from '@/theme/typography';
+import { buttonLabel, fonts } from '@/theme/typography';
 import { ReceiptCard } from '@/components/jobs';
 import type { RootStackParamList } from '@/navigation/types';
 
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   shareBusy: { opacity: 0.6 },
-  shareText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: '#fff' },
+  shareText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: '#fff' },
   void: { height: 44, alignItems: 'center', justifyContent: 'center' },
-  voidText: { fontFamily: fonts.semibold, fontSize: fontSizes.sm, color: colors.danger },
+  voidText: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes.sm), color: colors.danger },
 });

@@ -31,6 +31,20 @@ export const valueText: TextStyle = {
   fontVariant: ['tabular-nums'],
 };
 
+/**
+ * A label centred in a button. Plus Jakarta Sans has more room above its letters than below,
+ * so it sits about 0.05em low in its line, and Android pads text with the font's taller
+ * outer metrics on top of that. This drops the padding and lifts the label to match.
+ */
+export function buttonLabel(fontSize: number): TextStyle {
+  return {
+    fontSize,
+    includeFontPadding: false,
+    // Half-pixel steps: 0.5px at 14, 1px at 16 to 24.
+    transform: [{ translateY: -Math.round(fontSize * 0.1) / 2 }],
+  };
+}
+
 /** Load the brand fonts. Returns true once ready. */
 export function useAppFonts(): boolean {
   const [loaded] = useFonts({

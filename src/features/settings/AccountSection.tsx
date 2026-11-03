@@ -12,7 +12,7 @@ import { useAuth } from '@/auth/AuthProvider';
 import { useSync } from '@/sync';
 import { getRelativeTime } from '@/lib/time';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { fonts } from '@/theme/typography';
+import { buttonLabel, fonts } from '@/theme/typography';
 import GoogleIcon from '@/assets/icons/google.svg';
 import RefreshIcon from '@/assets/icons/refresh-ccw-02.svg';
 import LogOutIcon from '@/assets/icons/log-out-01.svg';
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   btnDisabled: { opacity: 0.6 },
-  primaryText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: colors.accent },
+  primaryText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: colors.accent },
   secondaryBtn: {
     borderWidth: 1,
     borderColor: colors.accent,
@@ -214,6 +214,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: space.sm,
   },
-  secondaryText: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.accent },
+  secondaryText: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes.base), color: colors.accent },
   link: { fontFamily: fonts.semibold, fontSize: fontSizes.sm, color: colors.accent },
 });

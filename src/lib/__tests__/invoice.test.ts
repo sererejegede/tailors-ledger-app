@@ -6,6 +6,7 @@ const source: InvoiceSource = {
   shop: { name: 'Kunle Couture', phone: '+234 803 555 0142', address: '14 Allen Avenue, Ikeja', footer: 'Thank you.' },
   bank: { name: 'GTBank', accountName: 'Kunle Couture', accountNumber: '0123456789' },
   clientName: 'Tunde Bello',
+  clientPhone: '+234 803 555 0199',
   jobTitle: 'Wedding outfits',
   collectOn: new Date(2026, 10, 14).getTime(),
   currency: 'NGN',
@@ -22,6 +23,7 @@ describe('invoiceView', () => {
     const view = invoiceView(source);
     expect(view.date).toBe('2 Nov 2026');
     expect(view.client).toBe('Tunde Bello');
+    expect(view.clientPhone).toBe('+234 803 555 0199');
     expect(view.job).toBe('Wedding outfits');
     expect(view.total).toBe('₦110,000');
     expect(view.paid).toBe('₦50,000');
@@ -69,7 +71,8 @@ describe('invoiceView', () => {
   });
 
   it('leaves out what a walk-in job does not have', () => {
-    const view = invoiceView({ ...source, jobTitle: null, collectOn: null });
+    const view = invoiceView({ ...source, clientPhone: ' ', jobTitle: null, collectOn: null });
+    expect(view.clientPhone).toBeNull();
     expect(view.job).toBeNull();
     expect(view.collection).toBeNull();
   });
@@ -83,6 +86,7 @@ describe('invoiceHtml', () => {
     const page = html();
     expect(page).toContain('INVOICE');
     expect(page).toContain('Bill to');
+    expect(page).toContain('+234 803 555 0199');
     expect(page).toContain('Senator suit');
     expect(page).toContain('Paid so far');
     expect(page).toContain('Balance due');

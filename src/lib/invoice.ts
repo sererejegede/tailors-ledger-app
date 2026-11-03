@@ -14,6 +14,7 @@ export type InvoiceSource = {
   shop: { name: string; phone: string; address: string; footer: string };
   bank: { name: string; accountName: string; accountNumber: string };
   clientName: string;
+  clientPhone: string;
   jobTitle: string | null;
   collectOn: number | null;
   currency: string;
@@ -30,6 +31,8 @@ export type InvoiceView = {
   shopContact: string;
   footer: string;
   client: string;
+  /** The client's phone, when it's on file. */
+  clientPhone: string | null;
   job: string | null;
   items: InvoiceLineView[];
   total: string;
@@ -68,6 +71,7 @@ export function invoiceView(source: InvoiceSource): InvoiceView {
     shopContact: [source.shop.address, source.shop.phone].filter(Boolean).join(' · '),
     footer: source.shop.footer,
     client: source.clientName,
+    clientPhone: source.clientPhone.trim() || null,
     job: source.jobTitle || null,
     items: source.items.map((item) => ({
       name: item.description,

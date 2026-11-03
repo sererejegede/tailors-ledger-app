@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, space, fontSizes } from '@/theme/tokens';
 import PlusIcon from '@/assets/icons/plus.svg';
-import { fonts } from '@/theme/typography';
+import { buttonLabel, fonts } from '@/theme/typography';
 
 type Props = {
   onPress: () => void;
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     gap: space.sm,
     justifyContent: 'center',
   },
-  label: { fontFamily: fonts.semibold, fontSize: fontSizes.lg, color: '#fff' },
+  label: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes.lg), color: '#fff' },
 });
 
 export const FloatingActionButton = memo(FloatingActionButtonBase);

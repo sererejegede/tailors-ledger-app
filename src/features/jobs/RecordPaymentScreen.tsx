@@ -259,6 +259,8 @@ export default function RecordPaymentScreen({ route, navigation }: Props) {
           onHalf={onHalf}
           onAll={onAll}
           allLabel="All"
+          halfActive={totalMinor > 0 && bufferToMinor(paying) === bufferToMinor(halfOf(totalMinor))}
+          allActive={totalMinor > 0 && bufferToMinor(paying) === totalMinor}
           onSave={onSave}
         />
       </View>

@@ -353,6 +353,7 @@ describe('jobs repository', () => {
 
       const { source, logoUri } = await invoiceSource(db, job.id);
       expect(source.clientName).toBe(client.name);
+      expect(source.clientPhone).toBe(client.phone);
       expect(source.jobTitle).toBe('Wedding');
       expect(source.collectOn).toBe(1794614400000);
       expect(source.shop.name).toBe('Kunle Couture');

@@ -24,7 +24,7 @@ function InvoiceCardBase({ view, logoUri, width }: Props) {
         <Text style={s.small}>{view.date}</Text>
       </View>
 
-      <PaperParties s={s} label="Bill to" client={view.client} job={view.job} />
+      <PaperParties s={s} label="Bill to" client={view.client} phone={view.clientPhone} job={view.job} />
       <PaperItems s={s} items={view.items} total={view.total} />
       {view.unpriced ? <Text style={[s.small, s.right]}>{view.unpriced}</Text> : null}
       {view.paid ? (

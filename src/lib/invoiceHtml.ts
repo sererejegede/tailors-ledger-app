@@ -56,7 +56,7 @@ export function invoiceHtml(view: InvoiceView, opts: PaperOptions): string {
     <div style="font-size:${em(12)};color:${SOFT}">${esc(view.date)}</div>
   </div>
 
-  ${partiesHtml('Bill to', view.client, view.job)}
+  ${partiesHtml('Bill to', view.client, view.job, view.clientPhone)}
   ${itemsHtml(view.items, view.total)}
   ${unpriced}
   ${paid}

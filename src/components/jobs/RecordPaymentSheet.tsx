@@ -60,6 +60,7 @@ export function RecordPaymentSheet({ balanceMinor, currency, onSave, onClose }: 
         onHalf={() => change(halfOf(balanceMinor))}
         onAll={() => change(minorToBuffer(balanceMinor))}
         allLabel="Balance"
+        halfActive={balanceMinor > 0 && amountMinor === bufferToMinor(halfOf(balanceMinor))}
         allActive={balanceMinor > 0 && amountMinor === balanceMinor}
         onSave={save}
       />

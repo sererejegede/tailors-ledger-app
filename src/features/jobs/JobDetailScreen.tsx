@@ -23,8 +23,9 @@ import {
 } from '@/repositories/jobs';
 import { setsForClient } from '@/repositories/sets';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { fonts, valueText } from '@/theme/typography';
+import { buttonLabel, fonts, valueText } from '@/theme/typography';
 import { JobDetailsSheet, JobItemSheet, RecordPaymentSheet, type JobItemDraft } from '@/components/jobs';
+import EditIcon from '@/assets/icons/edit-02.svg';
 import PlusIcon from '@/assets/icons/plus.svg';
 import type { RootStackParamList } from '@/navigation/types';
 
@@ -110,9 +111,6 @@ export default function JobDetailScreen({ route, navigation }: Props) {
   const { job, label, totalMinor, paidMinor, balanceMinor } = summary;
   const money = (minor: number) => formatMoney(minor, job.currency);
   const setName = (id?: string | null) => sets.find((s) => s.id === id)?.name;
-  const subtitle = [clientName, job.collectOn ? `Collect ${formatWeekday(job.collectOn)}` : null]
-    .filter(Boolean)
-    .join(' • ');
   const editing = itemSheet?.item;
 
   return (
@@ -120,7 +118,7 @@ export default function JobDetailScreen({ route, navigation }: Props) {
       <ScrollView contentContainerStyle={styles.content}>
         <Pressable onPress={() => setDetailsOpen(true)} accessibilityRole="button" accessibilityLabel="Edit job details">
           <Text style={styles.title}>{label}</Text>
-          <Text style={styles.subtitle}>{subtitle}</Text>
+          <Text style={styles.subtitle}>{clientName}</Text>
         </Pressable>
 
         <View style={styles.balanceCard}>
@@ -133,6 +131,27 @@ export default function JobDetailScreen({ route, navigation }: Props) {
             <Text style={styles.balanceMeta}>Paid {money(paidMinor)}</Text>
           </View>
         </View>
+
+        {/* Its own row, so it's plain the date can be set and changed here. */}
+        <Pressable
+          style={styles.dateRow}
+          onPress={() => setDetailsOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={job.collectOn ? 'Change collection date' : 'Add collection date'}
+        >
+          <View style={styles.rowText}>
+            <Text style={styles.rowName}>Collection date</Text>
+            <Text style={styles.rowMeta}>{job.collectOn ? formatWeekday(job.collectOn) : 'Not set'}</Text>
+          </View>
+          <View style={styles.dateAction}>
+            {job.collectOn ? (
+              <EditIcon width={16} height={16} color={colors.accent} />
+            ) : (
+              <PlusIcon width={16} height={16} color={colors.accent} />
+            )}
+            <Text style={styles.add}>{job.collectOn ? 'Change' : 'Add'}</Text>
+          </View>
+        </Pressable>
 
         <View>
           <View style={styles.sectionHeader}>
@@ -167,7 +186,7 @@ export default function JobDetailScreen({ route, navigation }: Props) {
           })}
         </View>
 
-        <View>
+        <View style={styles.payments}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>PAYMENTS</Text>
           </View>
@@ -274,6 +293,19 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontFamily: fonts.bold, fontSize: fontSizes.sm, letterSpacing: 1, color: colors.text },
   addButton: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.md,
+    borderWidth: 1,
+    borderColor: colors.line2,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+  },
+  dateAction: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  payments: { marginTop: space.xxl },
   add: { fontFamily: fonts.semibold, fontSize: fontSizes.sm, color: colors.accent },
   row: {
     flexDirection: 'row',
@@ -301,7 +333,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  invoiceText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: colors.accent },
+  invoiceText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: colors.accent },
   record: {
     flex: 1,
     height: 56,
@@ -310,5 +342,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  recordText: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: '#fff' },
+  recordText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: '#fff' },
 });
