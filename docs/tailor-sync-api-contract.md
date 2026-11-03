@@ -161,13 +161,14 @@ Reference implementation: the server keeps a per-user monotonic `server_seq` (bi
 {
   "applied": { /* canonical server rows for every id the client pushed */ },
   "rejected": [ { "entity": "clients", "id": "0190f2a0-...-01", "reason": "name_required" } ],
-  "cursor": "c2VxOjQ4Mw"
+  "cursor": "c2VxOjQ4Mg"
 }
 ```
 
 - The server applies the whole push in **one transaction**, assigns a fresh `server_seq` to each write, and resolves conflicts per §9.
 - **`applied`** is the server's canonical version of each pushed row. The client overwrites its local copies with these — that's how the device adopts the server's `server_seq` and learns whether its write won or lost. Locally, those rows flip from `pending` to `synced`.
 - **`rejected`** lists rows that failed validation; the client keeps them `pending` and surfaces them, or fixes and re-pushes.
+- **`cursor`** is the cursor the client sent (the zero cursor if it sent `null`). A push never advances it: another device may have written rows whose `server_seq` falls between the client's cursor and the seqs this push assigned, and the client's next pull must still fetch them. That pull also returns the client's own pushed rows, which it re-applies idempotently.
 - Because pushes are idempotent (UUID-keyed; equal `updated_at` is a no-op; an existing value id is a no-op), a retried push after a flaky connection is safe.
 
 ---
@@ -269,7 +270,7 @@ The client should never block a measurement session on any sync call — sync ru
 
 1. Authenticate (bearer token).
 2. **Sign + upload** any pending image binaries (§8), so their rows can reference a `remote_url`.
-3. **Push** local pending rows (upserts + tombstones + new value rows) with the stored cursor. Apply the returned `applied` rows locally; mark them `synced`; handle `rejected`. Save the new cursor.
+3. **Push** local pending rows (upserts + tombstones + new value rows) with the stored cursor. Apply the returned `applied` rows locally; mark them `synced`; handle `rejected`. The cursor comes back unchanged (§6).
 4. **Pull** with the cursor; apply the returned changes locally; if `has_more`, pull again until `false`. Save the final cursor.
 
 Push-before-pull keeps the client from overwriting its own un-pushed edits with older server state. (A WatermelonDB client that insists on pull-then-push also works, because resolution is server-side and idempotent.)
