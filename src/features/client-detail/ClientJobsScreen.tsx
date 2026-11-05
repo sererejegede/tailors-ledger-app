@@ -11,7 +11,7 @@ import { formatMoney } from '@/lib/money';
 import { nowMs } from '@/lib/time';
 import { colors, fontSizes, space } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
-import { BottomBar, Button, ScreenHeader, SectionLabel } from '@/components/ui';
+import { BottomBar, Button, FadeInView, ScreenHeader, SectionLabel } from '@/components/ui';
 import { ClientDetailJobRow } from '@/components/ClientDetailJobRow';
 import type { RootStackParamList } from '@/navigation/types';
 
@@ -43,35 +43,37 @@ export default function ClientJobsScreen({ route, navigation }: Props) {
       {rows == null ? (
         <ActivityIndicator color={colors.accent} style={{ marginTop: space.xl }} />
       ) : (
-        <SectionList
-          sections={sections}
-          keyExtractor={(r) => r.jobId}
-          stickySectionHeadersEnabled={false}
-          contentContainerStyle={styles.list}
-          ListHeaderComponent={
-            count > 0 ? (
-              <Text style={styles.summary}>
-                {count} {count === 1 ? 'job' : 'jobs'}
-                {owed > 0 ? (
-                  <>
-                    {' · '}
-                    <Text style={styles.owed}>{formatMoney(owed, rows[0].currency)}</Text> still owed
-                  </>
-                ) : null}
-              </Text>
-            ) : null
-          }
-          renderSectionHeader={({ section }) => <SectionLabel title={section.title} aside={String(section.data.length)} />}
-          ListEmptyComponent={<Text style={styles.empty}>No jobs yet.</Text>}
-          renderItem={({ item, index, section }) => (
-            <ClientDetailJobRow
-              row={item}
-              now={now}
-              last={index === section.data.length - 1}
-              onPress={() => navigation.navigate('JobDetail', { jobId: item.jobId })}
-            />
-          )}
-        />
+        <FadeInView>
+          <SectionList
+            sections={sections}
+            keyExtractor={(r) => r.jobId}
+            stickySectionHeadersEnabled={false}
+            contentContainerStyle={styles.list}
+            ListHeaderComponent={
+              count > 0 ? (
+                <Text style={styles.summary}>
+                  {count} {count === 1 ? 'job' : 'jobs'}
+                  {owed > 0 ? (
+                    <>
+                      {' · '}
+                      <Text style={styles.owed}>{formatMoney(owed, rows[0].currency)}</Text> still owed
+                    </>
+                  ) : null}
+                </Text>
+              ) : null
+            }
+            renderSectionHeader={({ section }) => <SectionLabel title={section.title} aside={String(section.data.length)} />}
+            ListEmptyComponent={<Text style={styles.empty}>No jobs yet.</Text>}
+            renderItem={({ item, index, section }) => (
+              <ClientDetailJobRow
+                row={item}
+                now={now}
+                last={index === section.data.length - 1}
+                onPress={() => navigation.navigate('JobDetail', { jobId: item.jobId })}
+              />
+            )}
+          />
+        </FadeInView>
       )}
       <BottomBar>
         <Button kind="primary" label="Add job" onPress={() => navigation.navigate('NewJob', { clientId })} />

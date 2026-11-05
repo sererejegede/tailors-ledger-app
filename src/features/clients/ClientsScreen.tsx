@@ -16,7 +16,7 @@ import { fonts, valueText } from '@/theme/typography';
 import { ClientRow } from '@/components/ClientRow';
 import { InstallPrompt } from '@/components/InstallPrompt';
 import { PwaUpdatePrompt } from '@/components/PwaUpdatePrompt';
-import { NameSheet, PlusMenu, SectionLabel, TabTitle } from '@/components/ui';
+import { FadeInView, NameSheet, PlusMenu, SectionLabel, TabTitle } from '@/components/ui';
 import SearchIcon from '@/assets/icons/search-sm.svg';
 import RulerIcon from '@/assets/icons/ruler.svg';
 import UserPlusIcon from '@/assets/icons/user-plus-01.svg';
@@ -157,29 +157,31 @@ export default function ClientsScreen() {
       {clients == null ? (
         <ActivityIndicator color={colors.accent} style={{ marginTop: space.xl }} />
       ) : (
-        <FlatList
-          data={clients}
-          keyExtractor={(c) => c.id}
-          keyboardShouldPersistTaps="handled"
-          ListHeaderComponent={header}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <Text style={styles.empty}>
-              {searching ? 'No matching clients.' : 'No clients yet. Tap + to add one or start measuring.'}
-            </Text>
-          }
-          renderItem={({ item, index }) => {
-            const minor = owed.get(item.id);
-            return (
-              <ClientRow
-                client={item}
-                owed={minor ? formatMoney(minor, currency) : undefined}
-                last={index === clients.length - 1}
-                onPress={() => navigation.navigate('ClientDetail', { clientId: item.id })}
-              />
-            );
-          }}
-        />
+        <FadeInView>
+          <FlatList
+            data={clients}
+            keyExtractor={(c) => c.id}
+            keyboardShouldPersistTaps="handled"
+            ListHeaderComponent={header}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              <Text style={styles.empty}>
+                {searching ? 'No matching clients.' : 'No clients yet. Tap + to add one or start measuring.'}
+              </Text>
+            }
+            renderItem={({ item, index }) => {
+              const minor = owed.get(item.id);
+              return (
+                <ClientRow
+                  client={item}
+                  owed={minor ? formatMoney(minor, currency) : undefined}
+                  last={index === clients.length - 1}
+                  onPress={() => navigation.navigate('ClientDetail', { clientId: item.id })}
+                />
+              );
+            }}
+          />
+        </FadeInView>
       )}
 
       <PlusMenu

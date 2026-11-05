@@ -8,6 +8,7 @@ import { historyRows } from '@/lib/setDetail';
 import { colors, fontSizes, radius, space } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
 import XCloseIcon from '@/assets/icons/x-close.svg';
+import { Cursor } from '@/components/ui/Cursor';
 
 /**
  * One item (S7), opened from Set detail: the new value, the item's history, the fraction
@@ -58,7 +59,11 @@ export function ItemSheet({ itemKey, current, currentAt, earlier, onClose, onSav
 
       <View style={styles.newValue}>
         <Text style={styles.newLabel}>New value</Text>
-        <Text style={[styles.newNum, !typing && styles.faint]}>{formatInches(typing ? value : current)}</Text>
+        <View style={styles.newRow}>
+          {typing ? null : <Cursor height={32} />}
+          <Text style={[styles.newNum, !typing && styles.faint]}>{formatInches(typing ? value : current)}</Text>
+          {typing ? <Cursor height={32} /> : null}
+        </View>
       </View>
 
       {history.length > 0 ? (
@@ -87,13 +92,14 @@ const styles = StyleSheet.create({
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -space.sm },
   newValue: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.accentTint,
     borderRadius: radius.card,
     paddingHorizontal: space.lg,
     paddingVertical: 10,
   },
+  newRow: { flexDirection: 'row', alignItems: 'center' },
   newLabel: { fontFamily: fonts.semibold, fontSize: fontSizes.sm, color: colors.accentInk },
   newNum: { ...valueText, fontSize: fontSizes['4xl'], color: colors.accentInk },
   faint: { color: colors.faint },

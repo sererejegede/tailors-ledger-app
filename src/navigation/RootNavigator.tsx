@@ -1,6 +1,4 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { colors } from '@/theme/tokens';
-import { fonts } from '@/theme/typography';
 import Tabs from './Tabs';
 import MeasurementEntryScreen from '@/features/measurement-entry/MeasurementEntryScreen';
 import ClientDetailScreen from '@/features/client-detail/ClientDetailScreen';
@@ -18,46 +16,28 @@ import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-/** Branded native header for the detail screens (back arrow + title). */
-const detailHeader = {
-  headerShown: true,
-  headerStyle: { backgroundColor: colors.bg },
-  headerTintColor: colors.accent,
-  headerTitleStyle: { fontFamily: fonts.titleSemi, color: colors.text },
-  headerShadowVisible: false,
-  animation: 'slide_from_right' as const,
-};
-
 /**
  * Root stack. `Tabs` holds the top-level tab screens; the measurement hero and the detail
  * screens (client / set / item history) sit here OUTSIDE the tabs so the bottom tab bar
- * never shows while measuring or drilling in. The hero supplies its own header.
+ * never shows while measuring or drilling in. Every screen draws its own header (Back and the
+ * title, or a tab's big title), so the navigator's header stays hidden.
  */
 export default function RootNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
       <Stack.Screen name="Tabs" component={Tabs} />
-      <Stack.Screen
-        name="MeasurementEntry"
-        component={MeasurementEntryScreen}
-        options={{ animation: 'slide_from_right' }}
-      />
-      <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="ClientJobs" component={ClientJobsScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="SetDetail" component={SetDetailScreen} options={{ animation: 'slide_from_right' }} />
-      {/* These draw their own ScreenHeader (Back + title), so the native header stays hidden. */}
-      <Stack.Screen name="ShopProfile" component={ShopProfileScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="PaymentDetails" component={PaymentDetailsScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="Templates" component={TemplatesScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="TemplateEditor" component={TemplateEditorScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen
-        name="NewJob"
-        component={NewJobScreen}
-        options={{ animation: 'slide_from_right' }}
-      />
-      <Stack.Screen name="JobDetail" component={JobDetailScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="Receipt" component={ReceiptScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="Invoice" component={InvoiceScreen} options={{ ...detailHeader, title: 'Invoice' }} />
+      <Stack.Screen name="MeasurementEntry" component={MeasurementEntryScreen} />
+      <Stack.Screen name="ClientDetail" component={ClientDetailScreen} />
+      <Stack.Screen name="ClientJobs" component={ClientJobsScreen} />
+      <Stack.Screen name="SetDetail" component={SetDetailScreen} />
+      <Stack.Screen name="ShopProfile" component={ShopProfileScreen} />
+      <Stack.Screen name="PaymentDetails" component={PaymentDetailsScreen} />
+      <Stack.Screen name="Templates" component={TemplatesScreen} />
+      <Stack.Screen name="TemplateEditor" component={TemplateEditorScreen} />
+      <Stack.Screen name="NewJob" component={NewJobScreen} />
+      <Stack.Screen name="JobDetail" component={JobDetailScreen} />
+      <Stack.Screen name="Receipt" component={ReceiptScreen} />
+      <Stack.Screen name="Invoice" component={InvoiceScreen} />
     </Stack.Navigator>
   );
 }

@@ -10,6 +10,7 @@ import Animated, {
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
 import { formatInches } from '@/lib/units';
+import { Cursor } from '@/components/ui/Cursor';
 
 /**
  * One row of the measurement list: item name + value. Rows are VARIABLE height — the
@@ -25,6 +26,8 @@ import { formatInches } from '@/lib/units';
  */
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedText = Animated.Text;
+/** The active value is 34pt; the caret is about the height of its digits. */
+const CARET_H = 30;
 const TINT_RGB = '246,231,236'; // colors.accentTint as rgb, faded by alpha
 const DURATION = 120;
 
@@ -114,9 +117,12 @@ function MeasurementRowBase({
             </View>
           ) : null}
           {changed && !active && <View style={styles.dot} />}
+          {/* The caret sits before a faint placeholder and after what's being typed. */}
+          {active && activePlaceholder ? <Cursor height={CARET_H} /> : null}
           <AnimatedText style={[styles.val, { color: valColor }, valStyle]}>
             {active ? activeDisplay : formatInches(value)}
           </AnimatedText>
+          {active && !activePlaceholder ? <Cursor height={CARET_H} /> : null}
         </View>
       </View>
       {active && hint ? (

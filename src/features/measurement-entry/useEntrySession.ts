@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Alert } from '@/lib/alert';
+import { useShowSaved } from '@/components/Snackbar';
 import { database, Tables } from '@/db';
 import type MeasurementSet from '@/db/models/MeasurementSet';
 import type Template from '@/db/models/Template';
@@ -32,6 +33,7 @@ const makeTempId = () => `tmp-${Date.now().toString(36)}-${tempIdSeq++}`;
  */
 export function useEntrySession(route: Props['route'], navigation: Props['navigation']) {
   const params = route.params;
+  const showSaved = useShowSaved();
   // Re-measure: an existing set. New: a templateId (+ optional clientId for client-first).
   const existingSetId = 'setId' in params ? params.setId : undefined;
   const templateId = 'templateId' in params ? params.templateId : undefined;
@@ -146,6 +148,7 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
             label: meta.label,
             items: buildNewItems(edits),
           });
+          showSaved();
           navigation.goBack();
         } else {
           // measure-first draft: name it first — no rows are written until then
@@ -157,10 +160,11 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
         if (meta.label !== loadedLabel.current) {
           await updateSet(database, existingSetId!, { label: meta.label });
         }
+        showSaved();
         navigation.goBack();
       }
     },
-    [isNew, clientId, templateId, meta.label, existingSetId, navigation, buildNewItems],
+    [isNew, clientId, templateId, meta.label, existingSetId, navigation, buildNewItems, showSaved],
   );
 
   const onSave = useCallback(() => {
@@ -197,6 +201,7 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
           items: buildNewItems(entry.getEdits()),
         });
         setPrompt(null);
+        showSaved();
         navigation.goBack();
       } catch (e) {
         if (e instanceof DuplicateClientNameError) {
@@ -207,7 +212,7 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
         }
       }
     },
-    [templateId, meta.label, navigation, buildNewItems, entry],
+    [templateId, meta.label, navigation, buildNewItems, entry, showSaved],
   );
 
   // Create/attach the client up front (measure-first), before the measurements are saved.

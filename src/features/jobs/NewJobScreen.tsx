@@ -14,7 +14,7 @@ import { createJob, InvalidJobError } from '@/repositories/jobs';
 import { getSettings } from '@/repositories/settings';
 import { colors, fontSizes, radius, space } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
-import { BottomBar, Button, ScreenHeader, SectionLabel, TextAction } from '@/components/ui';
+import { BottomBar, Button, Cursor, ScreenHeader, SectionLabel, TextAction } from '@/components/ui';
 import { DueDateSheet, PriceDock } from '@/components/jobs';
 import PlusIcon from '@/assets/icons/plus.svg';
 import type { RootStackParamList } from '@/navigation/types';
@@ -173,6 +173,7 @@ export default function NewJobScreen({ route, navigation }: Props) {
               {on ? (
                 <View style={styles.slot}>
                   <Text style={styles.slotText}>{formatMoney(bufferToMinor(l.price), currency)}</Text>
+                  <Cursor height={20} />
                 </View>
               ) : priced ? (
                 <Pressable
@@ -293,6 +294,7 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
     borderRadius: radius.round,
     backgroundColor: colors.surface,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },

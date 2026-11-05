@@ -15,6 +15,7 @@ import { colors, fontSizes, radius, space } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
 import { BottomBar, Button, NameSheet, ScreenHeader, SectionLabel, TextAction } from '@/components/ui';
 import { ItemSheet } from '@/components/ItemSheet';
+import { useShowSaved } from '@/components/Snackbar';
 import { SetImages } from '@/components/SetImages';
 import HistoryIcon from '@/assets/icons/clock-rewind.svg';
 import type { RootStackParamList } from '@/navigation/types';
@@ -35,6 +36,7 @@ export default function SetDetailScreen({ route, navigation }: Props) {
   // Earlier values per item (current excluded), loaded with the items in one query.
   const [history, setHistory] = useState<Record<string, MeasurementValue[]>>({});
   const [openItem, setOpenItem] = useState<MeasurementItem | null>(null);
+  const showSaved = useShowSaved();
   const [editing, setEditing] = useState<Editing>(null);
 
   const load = useCallback(async () => {
@@ -57,9 +59,10 @@ export default function SetDetailScreen({ route, navigation }: Props) {
       if (!openItem) return;
       await quickEditItem(database, openItem.id, value);
       setOpenItem(null);
+      showSaved();
       load();
     },
-    [openItem, load],
+    [openItem, load, showSaved],
   );
 
   const saveText = useCallback(

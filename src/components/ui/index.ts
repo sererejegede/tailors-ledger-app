@@ -10,3 +10,5 @@ export { TextAction } from './TextAction';
 export { Field, FieldButton, fieldBox } from './Field';
 export { CheckRow, LinkRow, SwitchRow, Tag, Toggle } from './Rows';
 export { useKeyboardHeight } from './useKeyboardHeight';
+export { Cursor } from './Cursor';
+export { FadeInView } from './FadeInView';

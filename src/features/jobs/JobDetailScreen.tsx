@@ -24,7 +24,7 @@ import {
 } from '@/repositories/jobs';
 import { colors, fontSizes, radius, space } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
-import { BottomBar, Button, NameSheet, ScreenHeader, SectionLabel, TextAction } from '@/components/ui';
+import { BottomBar, Button, Cursor, NameSheet, ScreenHeader, SectionLabel, TextAction } from '@/components/ui';
 import { DueDateSheet, PriceDock, RecordPaymentSheet } from '@/components/jobs';
 import ChevronIcon from '@/assets/icons/chevron-right.svg';
 import PlusIcon from '@/assets/icons/plus.svg';
@@ -35,13 +35,15 @@ type Props = NativeStackScreenProps<RootStackParamList, 'JobDetail'>;
 type Loaded = { summary: JobSummary; clientName: string; items: JobItem[]; payments: Payment[] };
 
 /** The item being typed in the list: an existing one (its id) or a new one. */
-type Editing = { id: string | null; name: string; price: string };
+/** The item being typed. `pricing`: the pad is open on its price (only once the price is tapped). */
+type Editing = { id: string | null; name: string; price: string; pricing: boolean };
 type Sheet = 'due' | 'title' | 'pay' | null;
 
 /**
  * S9 / S9a. A job's balance, who it's for, its due date and title, its items and its
- * payments. Items are added or repriced in the list: the row opens for typing and the pad
- * takes the place of the bottom bar, with Save in the corner. *Record payment* opens the
+ * payments. Items are added or repriced in the list: a new item starts on its name (the
+ * phone keyboard), and the pad takes the place of the bottom bar only while the price is
+ * being typed, with Save in the corner. Tapping an existing item opens it on its price. *Record payment* opens the
  * amount pad (S9b), and Save opens the new receipt.
  */
 export default function JobDetailScreen({ route, navigation }: Props) {
@@ -66,8 +68,11 @@ export default function JobDetailScreen({ route, navigation }: Props) {
     }, [load]),
   );
 
-  // Back closes the item being typed before it leaves the screen.
-  usePreventRemove(editing != null, () => setEditing(null));
+  // Back closes the item being typed before it leaves the screen. On a new item it first
+  // closes the price pad, back to the name (as on New job).
+  usePreventRemove(editing != null, () =>
+    setEditing((e) => (e && e.id == null && e.pricing ? { ...e, pricing: false } : null)),
+  );
 
   const editPrice = useCallback((change: (buffer: string) => string) => {
     setEditing((e) => (e ? { ...e, price: change(e.price) } : e));
@@ -77,6 +82,13 @@ export default function JobDetailScreen({ route, navigation }: Props) {
   const onThousands = useCallback(() => editPrice(addThousands), [editPrice]);
   const onDoubleZero = useCallback(() => editPrice(addDoubleZero), [editPrice]);
   const onClear = useCallback(() => editPrice(() => ''), [editPrice]);
+
+  // The name and the price take turns: the keyboard for one, the pad for the other.
+  const openPad = useCallback(() => {
+    Keyboard.dismiss();
+    setEditing((e) => (e ? { ...e, pricing: true } : e));
+  }, []);
+  const closePad = useCallback(() => setEditing((e) => (e && e.pricing ? { ...e, pricing: false } : e)), []);
 
   const saveItem = useCallback(async () => {
     if (!editing) return;
@@ -140,7 +152,7 @@ export default function JobDetailScreen({ route, navigation }: Props) {
 
   const openItem = (item: JobItem) => {
     Keyboard.dismiss();
-    setEditing({ id: item.id, name: item.description, price: minorToBuffer(item.unitPriceMinor ?? 0) });
+    setEditing({ id: item.id, name: item.description, price: minorToBuffer(item.unitPriceMinor ?? 0), pricing: true });
   };
 
   const editingRow = (e: Editing) => (
@@ -154,12 +166,23 @@ export default function JobDetailScreen({ route, navigation }: Props) {
         placeholder="Item, e.g. Agbada"
         placeholderTextColor={colors.faint}
         autoCapitalize="sentences"
-        returnKeyType="done"
-        onSubmitEditing={Keyboard.dismiss}
+        returnKeyType="next"
+        onFocus={closePad}
+        onSubmitEditing={openPad}
         accessibilityLabel="Item name"
       />
-      <Pressable style={styles.slot} onPress={Keyboard.dismiss} accessibilityLabel="Price">
-        <Text style={styles.slotText}>{money(bufferToMinor(e.price))}</Text>
+      <Pressable
+        style={[styles.slot, !e.pricing && styles.slotIdle]}
+        onPress={openPad}
+        accessibilityRole="button"
+        accessibilityLabel={e.price ? `Price ${money(bufferToMinor(e.price))}` : 'Add price'}
+      >
+        {e.pricing || e.price ? (
+          <Text style={[styles.slotText, !e.pricing && styles.slotTextIdle]}>{money(bufferToMinor(e.price))}</Text>
+        ) : (
+          <Text style={styles.slotHint}>Add price</Text>
+        )}
+        {e.pricing ? <Cursor height={20} /> : null}
       </Pressable>
     </View>
   );
@@ -253,7 +276,7 @@ export default function JobDetailScreen({ route, navigation }: Props) {
         {newRow ? editingRow(editing) : null}
         <Pressable
           style={styles.addRow}
-          onPress={() => setEditing({ id: null, name: '', price: '' })}
+          onPress={() => setEditing({ id: null, name: '', price: '', pricing: false })}
           accessibilityRole="button"
         >
           <PlusIcon width={18} height={18} color={colors.accent} />
@@ -284,7 +307,8 @@ export default function JobDetailScreen({ route, navigation }: Props) {
         })}
       </ScrollView>
 
-      {editing ? (
+      {/* While a name is being typed the keyboard is up, so neither the pad nor the bar shows. */}
+      {editing && !editing.pricing ? null : editing ? (
         <PriceDock
           itemName={editing.name}
           onDigit={onDigit}
@@ -407,10 +431,15 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
     borderRadius: radius.round,
     backgroundColor: colors.surface,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Not being typed: a plain field, until it's tapped.
+  slotIdle: { borderColor: colors.line2 },
   slotText: { ...valueText, fontSize: fontSizes.xl, color: colors.accentInk },
+  slotTextIdle: { color: colors.text },
+  slotHint: { fontFamily: fonts.medium, fontSize: fontSizes.base, color: colors.muted },
   addRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -9,7 +9,7 @@ import { formatMoney } from '@/lib/money';
 import { nowMs } from '@/lib/time';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
-import { SectionLabel, TabTitle } from '@/components/ui';
+import { FadeInView, SectionLabel, TabTitle } from '@/components/ui';
 import type { RootStackParamList, TabsParamList } from '@/navigation/types';
 
 const FILTERS: { key: JobFilter; label: string }[] = [
@@ -87,26 +87,28 @@ export default function JobsScreen() {
       {rows == null ? (
         <ActivityIndicator color={colors.accent} style={{ marginTop: space.xl }} />
       ) : (
-        <SectionList
-          sections={sections}
-          keyExtractor={(r) => r.jobId}
-          stickySectionHeadersEnabled={false}
-          contentContainerStyle={styles.list}
-          renderSectionHeader={({ section }) => <SectionLabel title={section.title} />}
-          ListEmptyComponent={
-            <Text style={styles.empty}>
-              {rows.length ? 'No jobs here.' : 'No jobs yet. Add one from a client’s page.'}
-            </Text>
-          }
-          renderItem={({ item, index, section }) => (
-            <JobListRow
-              row={item}
-              now={now}
-              last={index === section.data.length - 1}
-              onPress={() => navigation.navigate('JobDetail', { jobId: item.jobId })}
-            />
-          )}
-        />
+        <FadeInView>
+          <SectionList
+            sections={sections}
+            keyExtractor={(r) => r.jobId}
+            stickySectionHeadersEnabled={false}
+            contentContainerStyle={styles.list}
+            renderSectionHeader={({ section }) => <SectionLabel title={section.title} />}
+            ListEmptyComponent={
+              <Text style={styles.empty}>
+                {rows.length ? 'No jobs here.' : 'No jobs yet. Add one from a client’s page.'}
+              </Text>
+            }
+            renderItem={({ item, index, section }) => (
+              <JobListRow
+                row={item}
+                now={now}
+                last={index === section.data.length - 1}
+                onPress={() => navigation.navigate('JobDetail', { jobId: item.jobId })}
+              />
+            )}
+          />
+        </FadeInView>
       )}
     </View>
   );

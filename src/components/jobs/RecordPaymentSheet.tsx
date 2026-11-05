@@ -13,6 +13,7 @@ import { confirmPayment } from '@/lib/overpayment';
 import { colors, fontSizes, radius, space } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
 import XCloseIcon from '@/assets/icons/x-close.svg';
+import { Cursor } from '@/components/ui/Cursor';
 import { AmountDock } from './AmountDock';
 import { BottomSheet } from './BottomSheet';
 
@@ -70,9 +71,12 @@ export function RecordPaymentSheet({ jobLabel, balanceMinor, currency, onSave, o
 
       <View style={styles.paying}>
         <Text style={styles.payingLabel}>Paying now</Text>
-        <Text style={styles.payingValue} numberOfLines={1}>
-          {formatMoney(amountMinor, currency)}
-        </Text>
+        <View style={styles.payingRow}>
+          <Text style={styles.payingValue} numberOfLines={1}>
+            {formatMoney(amountMinor, currency)}
+          </Text>
+          <Cursor height={28} />
+        </View>
       </View>
 
       <AmountDock
@@ -100,7 +104,7 @@ const styles = StyleSheet.create({
   error: { color: colors.danger },
   paying: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: space.md,
     backgroundColor: colors.accentTint,
@@ -109,6 +113,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   payingLabel: { fontFamily: fonts.semibold, fontSize: fontSizes.sm, color: colors.accentInk },
+  payingRow: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   payingValue: { ...valueText, flexShrink: 1, fontSize: 32, color: colors.accentInk },
   note: { fontFamily: fonts.body, fontSize: 13, lineHeight: 19, color: colors.muted, textAlign: 'center' },
 });

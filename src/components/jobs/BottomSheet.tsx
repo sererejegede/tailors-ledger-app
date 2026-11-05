@@ -1,40 +1,45 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import { BackHandler, Keyboard, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, type ReactNode } from 'react';
+import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, space } from '@/theme/tokens';
 import { Portal } from '@/components/OverlayHost';
+import { useKeyboardHeight } from '@/components/ui/useKeyboardHeight';
+
+/** How long a sheet takes to slide up: brief, so it never holds up the tailor. */
+const OPEN_MS = 200;
 
 /**
- * A sheet up from the bottom, in the thumb zone. In-tree through the Portal rather than a
- * <Modal>, for the keyboard reasons in PromptModal. Mount it to open it.
+ * A sheet up from the bottom, in the thumb zone; it slides up as it opens. In-tree through
+ * the Portal rather than a <Modal>, whose separate window eats the first tap while the
+ * keyboard is up. Mount it to open it.
  */
 type Props = { onClose: () => void; children: ReactNode };
 
 export function BottomSheet({ onClose, children }: Props) {
   const insets = useSafeAreaInsets();
-  const [kbHeight, setKbHeight] = useState(0);
+  const kbHeight = useKeyboardHeight();
 
   useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', (e) => setKbHeight(e.endCoordinates.height));
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKbHeight(0));
     const back = BackHandler.addEventListener('hardwareBackPress', () => {
       onClose();
       return true;
     });
-    return () => {
-      show.remove();
-      hide.remove();
-      back.remove();
-    };
+    return () => back.remove();
   }, [onClose]);
 
   return (
     <Portal>
       <View style={styles.overlay}>
-        <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel="Close" />
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + space.lg, marginBottom: kbHeight }]}>
+        <Animated.View style={styles.scrim} entering={FadeIn.duration(OPEN_MS)}>
+          <Pressable style={styles.fill} onPress={onClose} accessibilityLabel="Close" />
+        </Animated.View>
+        <Animated.View
+          entering={SlideInDown.duration(OPEN_MS)}
+          style={[styles.sheet, { paddingBottom: insets.bottom + space.lg, marginBottom: kbHeight }]}
+        >
           {children}
-        </View>
+        </Animated.View>
       </View>
     </Portal>
   );
@@ -59,10 +64,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: 'rgba(27,26,23,0.45)',
   },
+  fill: { flex: 1 },
   sheet: {
     backgroundColor: colors.dockBg,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
+    borderTopLeftRadius: radius.sheet,
+    borderTopRightRadius: radius.sheet,
     paddingHorizontal: space.lg,
     paddingTop: space.lg,
     gap: space.md,

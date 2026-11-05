@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { database } from '@/db';
@@ -8,10 +7,10 @@ import { Alert } from '@/lib/alert';
 import { invoiceView, type InvoiceSource } from '@/lib/invoice';
 import { shareInvoice } from '@/lib/sharePdf';
 import { invoiceSource, updateJob } from '@/repositories/jobs';
-import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { buttonLabel, fonts } from '@/theme/typography';
-import { CollectionDateSheet, InvoiceCard } from '@/components/jobs';
-import PlusIcon from '@/assets/icons/plus.svg';
+import { colors, fontSizes, radius, space } from '@/theme/tokens';
+import { fonts } from '@/theme/typography';
+import { DueDateSheet, InvoiceCard } from '@/components/jobs';
+import { BottomBar, Button, ScreenHeader, TextAction } from '@/components/ui';
 import type { RootStackParamList } from '@/navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Invoice'>;
@@ -19,12 +18,12 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Invoice'>;
 const PAPER_BORDER = 1;
 
 /**
- * The job's invoice, drawn from the job as it is now (nothing is saved). Opened from Job
- * detail; all of it works offline.
+ * The job's invoice, drawn from the job as it is now (nothing is saved), laid out like the
+ * receipt: the paper, the due date under it with *Add collection date* or *Change*, and
+ * *Share invoice* at the bottom. A date set here is saved to the job. All of it works offline.
  */
 export default function InvoiceScreen({ route }: Props) {
   const { jobId } = route.params;
-  const insets = useSafeAreaInsets();
   const [width, setWidth] = useState(0);
   const [source, setSource] = useState<InvoiceSource | null>(null);
   const [logoUri, setLogoUri] = useState<string>();
@@ -57,56 +56,49 @@ export default function InvoiceScreen({ route }: Props) {
     }
   }, [view, logoUri, sharing]);
 
-  const pickDate = async (collectOn: number | null) => {
+  const saveDate = async (collectOn: number | null) => {
     setPicking(false);
     await updateJob(database, jobId, { collectOn });
     load();
   };
 
-  if (!view) return <View style={styles.screen} />;
+  if (!view) {
+    return (
+      <View style={styles.screen}>
+        <ScreenHeader title="Invoice" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>
+      <ScreenHeader title="Invoice" />
       <ScrollView contentContainerStyle={styles.preview}>
         {/* Measured, not the window: on web the app sits in a narrower column. */}
         <View style={styles.paper} onLayout={(e) => setWidth(e.nativeEvent.layout.width - PAPER_BORDER * 2)}>
           {width > 0 ? <InvoiceCard view={view} logoUri={logoUri} width={width} /> : null}
         </View>
-      </ScrollView>
+        <Text style={styles.caption}>A5, as it will print</Text>
 
-      <View style={[styles.actions, { paddingBottom: insets.bottom + space.lg }]}>
         {/* A due date only matters while something's owed. */}
         {view.paidInFull ? null : view.collection ? (
-          <View style={styles.dated}>
-            <Text style={styles.datedText}>
-              Due on collection, <Text style={styles.datedDate}>{view.collection}</Text>
+          <View style={styles.due}>
+            <Text style={styles.dueText}>
+              Due on collection, <Text style={styles.dueDate}>{view.collection}</Text>
             </Text>
-            <Pressable onPress={() => setPicking(true)} hitSlop={space.sm} accessibilityRole="button">
-              <Text style={styles.change}>Change</Text>
-            </Pressable>
+            <TextAction label="Change" onPress={() => setPicking(true)} />
           </View>
         ) : (
-          <Pressable style={styles.addDate} onPress={() => setPicking(true)} accessibilityRole="button">
-            <PlusIcon width={18} height={18} color={colors.accent} />
-            <Text style={styles.addDateText}>Add collection date</Text>
-          </Pressable>
+          <TextAction label="Add collection date" onPress={() => setPicking(true)} style={styles.add} />
         )}
-        <Pressable
-          style={[styles.share, sharing && styles.shareBusy]}
-          onPress={share}
-          disabled={sharing}
-          accessibilityRole="button"
-        >
-          <Text style={styles.shareText}>Share</Text>
-        </Pressable>
-      </View>
+      </ScrollView>
+
+      <BottomBar>
+        <Button kind="primary" label={sharing ? 'Preparing…' : 'Share invoice'} onPress={share} disabled={sharing} />
+      </BottomBar>
 
       {picking ? (
-        <CollectionDateSheet
-          onPick={pickDate}
-          onClear={source?.collectOn != null ? () => pickDate(null) : undefined}
-          onClose={() => setPicking(false)}
-        />
+        <DueDateSheet collectOn={source?.collectOn ?? null} onSave={saveDate} onClose={() => setPicking(false)} />
       ) : null}
     </View>
   );
@@ -114,28 +106,17 @@ export default function InvoiceScreen({ route }: Props) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  preview: { paddingHorizontal: space.lg, paddingBottom: space.md },
-  paper: { borderWidth: PAPER_BORDER, borderColor: colors.line },
-  actions: { paddingHorizontal: space.lg, paddingTop: space.md, gap: space.sm },
-  addDate: { height: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xs },
-  addDateText: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes.base), color: colors.accent },
-  dated: {
-    height: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: space.xs,
+  preview: { paddingHorizontal: space.xl, paddingTop: space.xs, paddingBottom: space.lg },
+  paper: {
+    borderWidth: PAPER_BORDER,
+    borderColor: colors.line,
+    borderRadius: radius.card,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
   },
-  datedText: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.text },
-  datedDate: { fontFamily: fonts.bold },
-  change: { fontFamily: fonts.semibold, fontSize: fontSizes.sm, color: colors.accent },
-  share: {
-    height: 56,
-    borderRadius: radius.default,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  shareBusy: { opacity: 0.6 },
-  shareText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: '#fff' },
+  caption: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, textAlign: 'center', marginTop: 14 },
+  due: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.md, marginTop: space.sm },
+  dueText: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.text },
+  dueDate: { fontFamily: fonts.bold },
+  add: { alignSelf: 'center', marginTop: space.sm },
 });

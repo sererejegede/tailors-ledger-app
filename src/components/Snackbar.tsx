@@ -9,15 +9,15 @@ import {
   type ReactNode,
 } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { Portal } from '@/components/OverlayHost';
 
 /**
- * A transient bottom snackbar with an optional action — used for undo-on-delete (the swipe
- * that the template coach-mark teaches) and any brief "done, but reversible" feedback. It
- * auto-dismisses; tapping the action runs it and dismisses immediately. Provider + Portal
+ * A transient bottom snackbar with an optional action — used for undo on a deleted template
+ * item and the short "Saved" after a save. It rises into place and auto-dismisses; tapping the action runs it and dismisses immediately. Provider + Portal
  * mirror OverlayHost so a single bar renders above the navigator. Must be mounted inside
  * OverlayHostProvider (it uses Portal).
  */
@@ -34,6 +34,15 @@ type SnackApi = { showSnackbar: (opts: SnackOptions) => void };
 const SnackbarContext = createContext<SnackApi>({ showSnackbar: () => {} });
 
 export const useSnackbar = (): SnackApi => useContext(SnackbarContext);
+
+/** Long enough to read one word; short enough not to sit over the next screen's actions. */
+const SAVED_MS = 1500;
+
+/** A short "Saved" once a save has gone through (a set, a re-measure, one item). */
+export function useShowSaved(): () => void {
+  const { showSnackbar } = useSnackbar();
+  return useCallback(() => showSnackbar({ message: 'Saved', duration: SAVED_MS }), [showSnackbar]);
+}
 
 type Current = SnackOptions & { key: number };
 
@@ -79,7 +88,7 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
             style={[styles.wrap, { paddingBottom: insets.bottom + space.md }]}
             pointerEvents="box-none"
           >
-            <View style={styles.bar}>
+            <Animated.View key={current.key} entering={FadeInDown.duration(160)} style={styles.bar}>
               <Text style={styles.message} numberOfLines={2}>
                 {current.message}
               </Text>
@@ -94,7 +103,7 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
                   <Text style={styles.action}>{current.actionLabel}</Text>
                 </Pressable>
               ) : null}
-            </View>
+            </Animated.View>
           </View>
         </Portal>
       ) : null}
@@ -117,7 +126,7 @@ const styles = StyleSheet.create({
     gap: space.lg,
     alignSelf: 'stretch',
     backgroundColor: colors.text,
-    borderRadius: radius.md,
+    borderRadius: radius.card,
     paddingVertical: space.md,
     paddingHorizontal: space.lg,
     shadowColor: '#000',
