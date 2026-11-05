@@ -1,5 +1,8 @@
 import {
   dueGroup,
+  dueLabel,
+  groupByState,
+  jobMeta,
   filterJobs,
   groupJobs,
   initials,
@@ -142,5 +145,50 @@ describe('initials', () => {
     expect(initials('  mary jane  watson ')).toBe('MW');
     expect(initials('Kemi')).toBe('K');
     expect(initials('')).toBe('?');
+  });
+});
+
+describe('dueLabel', () => {
+  it('names the weekday when it is due this week', () => {
+    expect(dueLabel(day(5), NOW)).toBe('Due Thu 5 Nov');
+    expect(dueLabel(day(11), NOW)).toBe('Due Wed 11 Nov');
+  });
+
+  it('gives the day and month otherwise, this year', () => {
+    expect(dueLabel(day(12), NOW)).toBe('Due 12 Nov');
+    expect(dueLabel(new Date(2026, 7, 2).getTime(), NOW)).toBe('Due 2 Aug');
+  });
+
+  it('adds the year when it isn’t this year', () => {
+    expect(dueLabel(new Date(2025, 10, 9).getTime(), NOW)).toBe('Due 9 Nov 2025');
+    expect(dueLabel(new Date(2027, 0, 3).getTime(), NOW)).toBe('Due 3 Jan 2027');
+  });
+});
+
+describe('jobMeta', () => {
+  it('counts the items and adds the due date when there is one', () => {
+    expect(jobMeta({ itemCount: 2, collectOn: day(12) }, NOW)).toBe('2 items · Due 12 Nov');
+    expect(jobMeta({ itemCount: 1, collectOn: null }, NOW)).toBe('1 item');
+  });
+});
+
+describe('groupByState', () => {
+  it('puts Still owed first, then Paid, then No price yet, newest first in each', () => {
+    const rows = [
+      row({ jobId: 'paid-old', createdAt: 1, totalMinor: 500, paidMinor: 500, balanceMinor: 0 }),
+      row({ jobId: 'owed', createdAt: 2 }),
+      row({ jobId: 'unpriced', createdAt: 3, totalMinor: 0, paidMinor: 0, balanceMinor: 0 }),
+      row({ jobId: 'paid-new', createdAt: 4, totalMinor: 500, paidMinor: 600, balanceMinor: -100 }),
+    ];
+    expect(groupByState(rows).map((g) => [g.title, g.rows.map((r) => r.jobId)])).toEqual([
+      ['Still owed', ['owed']],
+      ['Paid', ['paid-new', 'paid-old']],
+      ['No price yet', ['unpriced']],
+    ]);
+  });
+
+  it('leaves out empty groups', () => {
+    expect(groupByState([row({})]).map((g) => g.key)).toEqual(['owed']);
+    expect(groupByState([])).toEqual([]);
   });
 });

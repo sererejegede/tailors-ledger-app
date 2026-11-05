@@ -31,7 +31,8 @@ import { assertNameAvailable } from './clients';
  * template-seeded set.
  */
 export type NewMeasurementItem = { key: string; position: number; unit?: string; value: number | null };
-export type MeasurementSetWithItemsCount = { set: MeasurementSet; itemsCount: number };
+/** `itemsCount` is how many items have a value; `totalCount` is every item in the set. */
+export type MeasurementSetWithItemsCount = { set: MeasurementSet; itemsCount: number; totalCount: number };
 export type CreateSetWithMeasurements = {
   templateId: string;
   label?: string;
@@ -117,7 +118,7 @@ export async function setsForClient(
   database: Database,
   clientId: string,
 ): Promise<MeasurementSetWithItemsCount[]> {
-  const [sets, measuredItems] = await Promise.all([
+  const [sets, items] = await Promise.all([
     database
       .get<MeasurementSet>(Tables.measurementSets)
       .query(Q.where('client_id', clientId), notDeleted, Q.sortBy('created_at', Q.desc))
@@ -127,18 +128,19 @@ export async function setsForClient(
       .query(
         Q.on(Tables.measurementSets, [Q.where('client_id', clientId), notDeleted]),
         notDeleted,
-        Q.where('current_value', Q.notEq(null)),
       )
       .fetch(),
   ]);
 
-  const itemCountsBySetId = new Map<string, number>();
-  for (const item of measuredItems) {
+  const measured = new Map<string, number>();
+  const total = new Map<string, number>();
+  for (const item of items) {
     const setId = item.set.id;
-    itemCountsBySetId.set(setId, (itemCountsBySetId.get(setId) ?? 0) + 1);
+    total.set(setId, (total.get(setId) ?? 0) + 1);
+    if (item.currentValue != null) measured.set(setId, (measured.get(setId) ?? 0) + 1);
   }
 
-  return sets.map((set) => ({ set, itemsCount: itemCountsBySetId.get(set.id) ?? 0 }));
+  return sets.map((set) => ({ set, itemsCount: measured.get(set.id) ?? 0, totalCount: total.get(set.id) ?? 0 }));
 }
 
 export type SetWithClient = { set: MeasurementSet; client: string };

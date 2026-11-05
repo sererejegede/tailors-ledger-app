@@ -19,6 +19,8 @@ export type RootStackParamList = {
   // clientId for client-first) and creates rows only on save — see createSetWithMeasurements.
   MeasurementEntry: { setId: string } | { templateId: string; clientId?: string; label?: string };
   ClientDetail: { clientId: string };
+  // All of one client's jobs (S2a).
+  ClientJobs: { clientId: string };
   SetDetail: { setId: string };
   // Opens from Settings; no longer a tab.
   Templates: undefined;

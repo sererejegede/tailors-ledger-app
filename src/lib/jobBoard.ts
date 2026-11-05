@@ -140,3 +140,48 @@ export function initials(name: string): string {
   const last = words.length > 1 ? words[words.length - 1][0] : '';
   return (first + last).toUpperCase();
 }
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/**
+ * "Due Fri 21 Nov" this week, "Due 2 Aug" otherwise, with the year when it isn't this
+ * year ("Due 9 Nov 2025"). Spelled out by hand so it reads the same on every phone.
+ */
+export function dueLabel(collectOn: number, now: number): string {
+  const d = new Date(collectOn);
+  const dayMonth = `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+  if (d.getFullYear() !== new Date(now).getFullYear()) return `Due ${dayMonth} ${d.getFullYear()}`;
+  if (dueGroup({ collectOn, totalMinor: 0, paidMinor: 0, balanceMinor: 0 }, now) === 'week') {
+    return `Due ${WEEKDAYS[d.getDay()]} ${dayMonth}`;
+  }
+  return `Due ${dayMonth}`;
+}
+
+/** A job row's second line: "2 items · Due Fri 21 Nov", or just the items with no date. */
+export function jobMeta(row: Pick<JobRow, 'itemCount' | 'collectOn'>, now: number): string {
+  const items = `${row.itemCount} ${row.itemCount === 1 ? 'item' : 'items'}`;
+  return row.collectOn != null ? `${items} · ${dueLabel(row.collectOn, now)}` : items;
+}
+
+export const JOB_STATE_TITLES: Record<JobState, string> = {
+  owed: 'Still owed',
+  paid: 'Paid',
+  unpriced: 'No price yet',
+};
+
+const STATE_ORDER: JobState[] = ['owed', 'paid', 'unpriced'];
+
+/**
+ * One client's jobs (S2a): Still owed, then Paid, then any with no price yet, leaving out
+ * empty groups. Newest first within each.
+ */
+export function groupByState<T extends JobRow>(rows: T[]): { key: JobState; title: string; rows: T[] }[] {
+  const sorted = [...rows].sort((a, b) => b.createdAt - a.createdAt);
+  return STATE_ORDER.map((key) => ({
+    key,
+    title: JOB_STATE_TITLES[key],
+    rows: sorted.filter((r) => jobState(r) === key),
+  })).filter((g) => g.rows.length > 0);
+}
+

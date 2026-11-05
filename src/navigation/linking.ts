@@ -25,6 +25,7 @@ export const linking: LinkingOptions<RootStackParamList> = {
       },
       MeasurementEntry: 'measure',
       ClientDetail: 'client/:clientId',
+      ClientJobs: 'client/:clientId/jobs',
       SetDetail: 'set/:setId',
       Templates: 'templates',
       TemplateEditor: 'template',

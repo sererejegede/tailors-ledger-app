@@ -1,34 +1,35 @@
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { formatMoney } from '@/lib/money';
-import { formatDayMonth, formatWeekday } from '@/lib/time';
-import type { JobSummary } from '@/repositories/jobs';
+import { jobMeta, jobState, JOB_STATE_TITLES, type JobRow } from '@/lib/jobBoard';
 import { colors, space, fontSizes } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
 
-type Props = { summary: JobSummary; onPress: () => void };
+type Props = { row: JobRow; now: number; last?: boolean; onPress: () => void };
 
-function ClientDetailJobRowBase({ summary, onPress }: Props) {
-  const { job, label, itemCount, balanceMinor, totalMinor } = summary;
-  const when = job.collectOn ? `Collect ${formatWeekday(job.collectOn)}` : formatDayMonth(job.createdAt.getTime());
-
+/**
+ * A job on Client detail (S2) and on all of a client's jobs (S2a): its name, "2 items ·
+ * Due Fri 21 Nov", and what's left to pay, or Paid.
+ */
+function ClientDetailJobRowBase({ row, now, last, onPress }: Props) {
+  const state = jobState(row);
+  const left = state === 'owed' ? `${formatMoney(row.balanceMinor, row.currency)} left` : null;
   return (
-    <Pressable style={styles.row} onPress={onPress} accessibilityRole="button">
+    <Pressable
+      style={({ pressed }) => [styles.row, last && styles.last, pressed && styles.pressed]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${row.label}, ${left ?? JOB_STATE_TITLES[state]}`}
+    >
       <View style={styles.text}>
-        <Text style={styles.label} numberOfLines={1}>
-          {label}
+        <Text style={styles.name} numberOfLines={1}>
+          {row.label}
         </Text>
         <Text style={styles.meta} numberOfLines={1}>
-          {itemCount} item{itemCount === 1 ? '' : 's'} • {when}
+          {jobMeta(row, now)}
         </Text>
       </View>
-      {balanceMinor > 0 ? (
-        <Text style={styles.owed}>{formatMoney(balanceMinor, job.currency)} left</Text>
-      ) : balanceMinor < 0 ? (
-        <Text style={styles.meta}>{formatMoney(-balanceMinor, job.currency)} over</Text>
-      ) : totalMinor > 0 ? (
-        <Text style={styles.meta}>Paid</Text>
-      ) : null}
+      {left ? <Text style={styles.left}>{left}</Text> : <Text style={styles.status}>{JOB_STATE_TITLES[state]}</Text>}
     </Pressable>
   );
 }
@@ -38,14 +39,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    paddingVertical: 14,
+    minHeight: 60,
+    paddingVertical: space.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
   },
+  last: { borderBottomWidth: 0 },
+  pressed: { opacity: 0.6 },
   text: { flex: 1, minWidth: 0 },
-  label: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.text },
-  meta: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
-  owed: { ...valueText, fontSize: fontSizes.sm, fontWeight: '700', color: colors.accent },
+  name: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.text },
+  meta: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted, marginTop: 2 },
+  left: { ...valueText, fontSize: fontSizes.base, fontWeight: '600', color: colors.text, textAlign: 'right' },
+  status: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
 });
 
 export const ClientDetailJobRow = memo(ClientDetailJobRowBase);

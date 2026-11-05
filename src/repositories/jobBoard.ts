@@ -15,11 +15,25 @@ import { notDeleted } from './softDelete';
  * `totalsFor`, like everywhere else.
  */
 export async function allJobRows(database: Database): Promise<JobRow[]> {
+  return jobRows(database, []);
+}
+
+/** One client's jobs, newest first, for Client detail (S2) and all their jobs (S2a). */
+export async function jobRowsForClient(database: Database, clientId: string): Promise<JobRow[]> {
+  return jobRows(database, [Q.where('client_id', clientId)], clientId);
+}
+
+async function jobRows(database: Database, jobWhere: Q.Clause[], clientId?: string): Promise<JobRow[]> {
+  // For one client, read only that client's items and payments.
+  const ofJob = clientId ? [Q.on(Tables.jobs, [Q.where('client_id', clientId), notDeleted])] : [];
   const [jobs, items, payments, clients] = await Promise.all([
-    database.get<Job>(Tables.jobs).query(notDeleted, Q.sortBy('created_at', Q.desc)).fetch(),
-    database.get<JobItem>(Tables.jobItems).query(notDeleted, Q.sortBy('position', Q.asc)).fetch(),
-    database.get<Payment>(Tables.payments).query(notDeleted).fetch(),
-    database.get<Client>(Tables.clients).query(notDeleted).fetch(),
+    database.get<Job>(Tables.jobs).query(...jobWhere, notDeleted, Q.sortBy('created_at', Q.desc)).fetch(),
+    database.get<JobItem>(Tables.jobItems).query(...ofJob, notDeleted, Q.sortBy('position', Q.asc)).fetch(),
+    database.get<Payment>(Tables.payments).query(...ofJob, notDeleted).fetch(),
+    database
+      .get<Client>(Tables.clients)
+      .query(...(clientId ? [Q.where('id', clientId)] : []), notDeleted)
+      .fetch(),
   ]);
 
   const names = new Map(clients.map((c) => [c.id, c.name]));

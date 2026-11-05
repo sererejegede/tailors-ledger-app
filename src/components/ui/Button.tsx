@@ -15,6 +15,8 @@ type Props = {
   /** Extra content after the label, e.g. a count. */
   children?: ReactNode;
   accessibilityLabel?: string;
+  /** `small` sits inline at its own width (Call, WhatsApp); the default fills its share of a bar. */
+  size?: 'regular' | 'small';
   style?: StyleProp<ViewStyle>;
 };
 
@@ -22,7 +24,18 @@ type Props = {
  * A full-height, fully round button. In a `BottomBar` each one takes an equal share of
  * the width, so two buttons sit side by side.
  */
-export function Button({ label, onPress, kind = 'plain', disabled, Icon, children, accessibilityLabel, style }: Props) {
+export function Button({
+  label,
+  onPress,
+  kind = 'plain',
+  disabled,
+  Icon,
+  children,
+  accessibilityLabel,
+  size = 'regular',
+  style,
+}: Props) {
+  const small = size === 'small';
   const tone = buttonTone(kind, disabled);
   return (
     <Pressable
@@ -33,13 +46,14 @@ export function Button({ label, onPress, kind = 'plain', disabled, Icon, childre
       accessibilityState={{ disabled: !!disabled }}
       style={({ pressed }) => [
         styles.button,
+        small ? styles.small : null,
         { backgroundColor: tone.background, borderColor: tone.border },
         pressed && !disabled ? styles.pressed : null,
         style,
       ]}
     >
-      {Icon ? <Icon width={20} height={20} color={tone.label} /> : null}
-      <Text style={[styles.label, { color: tone.label }]} numberOfLines={1}>
+      {Icon ? <Icon width={small ? 16 : 20} height={small ? 16 : 20} color={tone.label} /> : null}
+      <Text style={[styles.label, small ? styles.smallLabel : null, { color: tone.label }]} numberOfLines={1}>
         {label}
       </Text>
       {children}
@@ -59,6 +73,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: space.sm,
   },
+  small: { flex: 0, minHeight: 40, gap: 6 },
   pressed: { opacity: 0.85 },
   label: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base) },
+  smallLabel: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes.sm) },
 });

@@ -3,7 +3,7 @@ import { makeTestDatabase } from '@/db/testDatabase';
 import { ensureSeeded } from '@/db/seed';
 import { createClient, softDeleteClient } from '../clients';
 import { createJob, recordPayment, removeJobItem, jobItems, voidPayment } from '../jobs';
-import { allJobRows } from '../jobBoard';
+import { allJobRows, jobRowsForClient } from '../jobBoard';
 
 describe('allJobRows', () => {
   let db: Database;
@@ -70,5 +70,42 @@ describe('allJobRows', () => {
     await softDeleteClient(db, gone.id);
 
     expect(await allJobRows(db)).toEqual([]);
+  });
+});
+
+describe('jobRowsForClient', () => {
+  let db: Database;
+
+  beforeEach(async () => {
+    db = makeTestDatabase();
+    await ensureSeeded(db);
+  });
+
+  it('gives only that client’s jobs, with their own totals', async () => {
+    const tunde = await createClient(db, { name: 'Tunde Bello' });
+    const amaka = await createClient(db, { name: 'Amaka Okafor' });
+    await createJob(db, {
+      clientId: tunde.id,
+      title: 'Wedding outfits',
+      items: [{ description: 'Agbada', unitPriceMinor: 8500000 }],
+      amountMinor: 5000000,
+    });
+    await createJob(db, {
+      clientId: amaka.id,
+      items: [{ description: 'Iro and buba', unitPriceMinor: 4000000 }],
+      amountMinor: 1000000,
+    });
+
+    const rows = await jobRowsForClient(db, tunde.id);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      clientName: 'Tunde Bello',
+      label: 'Wedding outfits',
+      itemCount: 1,
+      totalMinor: 8500000,
+      paidMinor: 5000000,
+      balanceMinor: 3500000,
+    });
+    expect(await jobRowsForClient(db, 'no-such-client')).toEqual([]);
   });
 });

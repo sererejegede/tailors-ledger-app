@@ -1,50 +1,66 @@
-import { Pressable, View, Text, StyleSheet } from "react-native";
-import { memo } from "react";
-import type MeasurementSet from "@/db/models/MeasurementSet";
-import { getRelativeTime } from "@/lib/time";
-import { colors, space, fontSizes } from "@/theme/tokens";
+import { memo } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import type MeasurementSet from '@/db/models/MeasurementSet';
+import { getRelativeTime } from '@/lib/time';
+import { colors, space, fontSizes } from '@/theme/tokens';
+import { fonts } from '@/theme/typography';
 import ChevronIcon from '@/assets/icons/chevron-right.svg';
-import { fonts } from "@/theme/typography";
 
 type Props = {
   set: MeasurementSet;
+  /** Items with a value. */
   itemsCount: number;
+  /** Every item in the set. */
+  totalCount: number;
+  last?: boolean;
   onPress: () => void;
 };
-function ClientDetailSetRowBase({ set, itemsCount, onPress }: Props) {
+
+/** A set on Client detail (S2): its name, then "Men's · 10 of 12 · 2 weeks ago". */
+function ClientDetailSetRowBase({ set, itemsCount, totalCount, last, onPress }: Props) {
+  const name = set.label || set.templateNameSnapshot || 'Measurement set';
+  const meta = [
+    set.label ? set.templateNameSnapshot : null,
+    `${itemsCount} of ${totalCount}`,
+    getRelativeTime(set.updatedAt),
+  ]
+    .filter(Boolean)
+    .join(' · ');
   return (
     <Pressable
-      key={set.id}
-      style={styles.setRow}
+      style={({ pressed }) => [styles.row, last && styles.last, pressed && styles.pressed]}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${name}, ${itemsCount} of ${totalCount} measured`}
     >
-      <View style={{ flex: 1 }}>
-        <Text style={styles.setLabel} numberOfLines={1}>
-          {set.label || set.templateNameSnapshot || 'Measurement set'}
+      <View style={styles.text}>
+        <Text style={styles.name} numberOfLines={1}>
+          {name}
         </Text>
-        <View style={styles.setMetaContainer}>
-          <Text style={styles.setMeta}>{getRelativeTime(set.updatedAt)}</Text>
-          <Text style={styles.setMeta}>•</Text>
-          <Text style={styles.setMeta}>{itemsCount} item{itemsCount === 1 ? '' : 's'} measured</Text>
-        </View>
+        <Text style={styles.meta} numberOfLines={1}>
+          {meta}
+        </Text>
       </View>
-      <ChevronIcon width={20} height={20} color={colors.faint} />
+      <ChevronIcon width={18} height={18} color={colors.faint} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  setRow: {
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    paddingVertical: 14,
+    minHeight: 60,
+    paddingVertical: space.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
   },
-  setLabel: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.text },
-  setMetaContainer: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  setMeta: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
+  last: { borderBottomWidth: 0 },
+  pressed: { opacity: 0.6 },
+  text: { flex: 1, minWidth: 0 },
+  name: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.text },
+  meta: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted, marginTop: 2 },
 });
 
 export const ClientDetailSetRow = memo(ClientDetailSetRowBase);
