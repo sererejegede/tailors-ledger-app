@@ -7,7 +7,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { colors, space, fontSizes } from '@/theme/tokens';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
 import { formatInches } from '@/lib/units';
 
@@ -37,8 +37,13 @@ type Props = {
   activeDisplay?: string;
   /** True when the active row is showing the existing/empty value (not actively typing). */
   activePlaceholder?: boolean;
-  /** The committed value is outside the template item's expected range (soft warning). */
-  warning?: boolean;
+  /**
+   * The committed value is outside the template item's expected range (soft warning).
+   * Shown on an inactive row as a small red tag, e.g. "Check: usually 14–20″".
+   */
+  warning?: string | null;
+  /** Under the active row's value: "Usually 38–44″" (red when the value is out of range). */
+  hint?: string | null;
   onPress: () => void;
   onLayout?: (e: LayoutChangeEvent) => void;
 };
@@ -51,6 +56,7 @@ function MeasurementRowBase({
   activeDisplay,
   activePlaceholder,
   warning,
+  hint,
   onPress,
   onLayout,
 }: Props) {
@@ -92,52 +98,62 @@ function MeasurementRowBase({
       accessibilityState={{ selected: active }}
     >
       <Animated.View pointerEvents="none" style={[styles.bar, barStyle]} />
-      <AnimatedText
-        style={[styles.key, active && styles.keyActive, keyStyle]}
-        numberOfLines={1}
-      >
-        {itemKey}
-      </AnimatedText>
-      <View style={styles.right}>
-        {warning && !active && (
-          <View style={styles.warn}>
-            <Text style={styles.warnText}>!</Text>
-          </View>
-        )}
-        {changed && !active && <View style={styles.dot} />}
-        <AnimatedText style={[styles.val, { color: valColor }, valStyle]}>
-          {active ? activeDisplay : formatInches(value)}
+      <View style={styles.line}>
+        <AnimatedText
+          style={[styles.key, active && styles.keyActive, keyStyle]}
+          numberOfLines={1}
+        >
+          {itemKey}
         </AnimatedText>
+        <View style={styles.right}>
+          {warning && !active ? (
+            <View style={styles.warn}>
+              <Text style={styles.warnText} numberOfLines={1}>
+                {warning}
+              </Text>
+            </View>
+          ) : null}
+          {changed && !active && <View style={styles.dot} />}
+          <AnimatedText style={[styles.val, { color: valColor }, valStyle]}>
+            {active ? activeDisplay : formatInches(value)}
+          </AnimatedText>
+        </View>
       </View>
+      {active && hint ? (
+        <Text style={[styles.hint, warning ? styles.hintWarn : null]} numberOfLines={1}>
+          {hint}
+        </Text>
+      ) : null}
     </AnimatedPressable>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: 2,
     paddingHorizontal: space.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
     backgroundColor: 'transparent',
   },
+  line: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
   bar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: colors.accent },
   key: { fontFamily: fonts.medium, color: colors.text, flexShrink: 1 },
   keyActive: { fontFamily: fonts.semibold, color: colors.accentInk },
   right: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.accent },
   warn: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: colors.danger,
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexShrink: 1,
+    paddingHorizontal: space.sm,
+    paddingVertical: 3,
+    borderRadius: radius.round,
+    backgroundColor: colors.dangerTint,
   },
-  warnText: { fontFamily: fonts.bold, fontSize: fontSizes.xs, color: '#fff', lineHeight: 14 },
+  warnText: { fontFamily: fonts.semibold, fontSize: fontSizes.xs, color: colors.danger },
   val: { ...valueText },
+  hint: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, textAlign: 'right' },
+  hintWarn: { color: colors.danger },
 });
 
 export const MeasurementRow = memo(MeasurementRowBase);

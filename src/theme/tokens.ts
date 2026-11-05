@@ -17,6 +17,7 @@ export const colors = {
   line: '#E2DED5',
   line2: '#D2CDC2',
   danger: '#A23B2E',
+  dangerTint: '#F8E9E6', // behind a red warning tag ("Check: usually 14–20″")
 } as const;
 
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
