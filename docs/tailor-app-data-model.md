@@ -9,7 +9,7 @@
 The app must be fully usable with no connection and reconcile later, so the model follows five rules everywhere:
 
 1. **IDs are generated on the device**, not by the server. Use **UUID v7** (time-ordered, so rows also sort naturally by creation). Auto-increment integer keys are unusable offline because two devices would mint the same id.
-2. **Every syncable row carries bookkeeping**: `created_at`, `updated_at`, `deleted_at` (soft delete / tombstone), and a push/pull status. (On the actual WatermelonDB store this status is the engine's built-in `_status`/`_changed`, **not** a `sync_status` column — see §6.) Nothing is ever hard-deleted on the device — deletes are tombstones that propagate, then get purged after they've synced. The exceptions are an unused starter template that never left the device (§1b), and another account's already-synced rows when the device switches account (§1c).
+2. **Every syncable row carries bookkeeping**: `created_at`, `updated_at`, `deleted_at` (soft delete / tombstone), and a push/pull status. (On the actual WatermelonDB store this status is the engine's built-in `_status`/`_changed`, **not** a `sync_status` column — see §6.) Nothing is ever hard-deleted on the device — deletes are tombstones that propagate, then get purged after they've synced. The exceptions are an unused starter template that never left the device (§1b), another account's already-synced rows when the device switches account (§1c), and rejected rows that can never sync to this account, after the tailor confirms (§1d).
 3. **History is append-only.** Measurement values are never updated in place; a change writes a new immutable row. Append-only data effectively cannot conflict, which is exactly what you want over a flaky connection — and it's also the table that satisfies the "keep the previous sleeve length" requirement for free.
 4. **Binaries never live in a row.** Photos sit on the device filesystem; the database stores a local URI, an (eventual) remote URL, and an upload status. The image bytes sync through their own background queue, not through the row.
 5. **Conflict resolution is last-write-wins per row**, keyed on `updated_at`, with the server stamping the authoritative time at sync to absorb device-clock skew. Because the high-churn data (values) is append-only, true conflicts are rare and land only on small edits like renaming a client.
@@ -103,6 +103,28 @@ so another account's cursor would skip this account's older rows.
 - **Installs from before this was recorded** (synced, but no account stored) do the same
   full pull and removal once, on their next sync. Their unpushed rows go to the signed-in
   account, as they did before.
+
+---
+
+## 1d. Rejected rows that can never sync here
+
+The server checks a pushed row's fields, then whether another account owns its id
+(`id_conflict`), then whether its parent is on this account (`<fk>_not_found`). So
+`id_conflict` proves the row is backed up on another account, and a missing-parent rejection
+proves the row is on no account. Such rows are re-sent and rejected on every sync. Two cases
+can be removed from the device, and only after the tailor confirms:
+
+- **Another account's row** (`id_conflict`), with everything under it by the server's parent
+  links (a set's link to its template is soft, so sets made from a removed template stay).
+- **An orphan**: rejected for a missing parent that is also missing on the device.
+
+The confirm lists the data by client (or template), in two parts: what is already backed up
+on another account, and what was made or changed on this phone and will be lost (new rows
+under another account's client, edits to its rows, orphans). It shows in Settings only, once
+per set of rows after a sync, from "Review" next to the "couldn't sync" count, and when
+signing out. Removal re-checks the rows first and removes nothing if they changed since the
+confirm was shown. Field rejections and other missing-parent cases are left alone; see
+`docs/rejected-rows-plan.md` for the full fix.
 
 ---
 

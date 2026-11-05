@@ -49,7 +49,7 @@ function raw(record: Model): Record<string, unknown> {
  * cascade in memory (a row planned for deletion is treated as gone when checking its
  * children), so the counts match what `purgeOrphans` would remove.
  */
-async function findOrphans(database: Database): Promise<{ table: string; rows: Model[] }[]> {
+export async function findOrphans(database: Database): Promise<{ table: string; rows: Model[] }[]> {
   const plannedDeleted: Record<string, Set<string>> = {};
   const out: { table: string; rows: Model[] }[] = [];
 

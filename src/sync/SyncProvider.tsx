@@ -14,6 +14,7 @@ import { useAuth } from '@/auth/AuthProvider';
 import { runSync } from './client';
 import { getLastSyncedAt } from './cursor';
 import { backUpBeforeSignOut } from './account';
+import { applyRejectedCleanup, planRejectedCleanup, type CleanupPlan } from './cleanup';
 import type { RejectedRow, SyncResult } from './types';
 
 /**
@@ -42,7 +43,16 @@ type SyncApi = {
   syncNow: () => void;
   /** Back up this account's un-synced changes before signing out (a switch starts there).
    * Resolves with what's still not backed up, so the caller can warn first. */
-  backUpBeforeSignOut: () => Promise<{ unsynced: number; error: string | null }>;
+  backUpBeforeSignOut: () => Promise<{
+    unsynced: number;
+    error: string | null;
+    cleanup: CleanupPlan | null;
+  }>;
+  /** Rejected rows that can never sync to this account (another account's data, or orphans)
+   * and can be removed from this phone after a confirm (data model §1d). */
+  cleanup: CleanupPlan | null;
+  /** Remove the confirmed clean-up from this phone, then sync. */
+  removeCleanup: (plan: CleanupPlan) => Promise<{ removed: number; stale: boolean }>;
 };
 
 const SyncContext = createContext<SyncApi>({
@@ -52,7 +62,9 @@ const SyncContext = createContext<SyncApi>({
   rejected: [],
   blockedBy: null,
   syncNow: () => {},
-  backUpBeforeSignOut: async () => ({ unsynced: 0, error: null }),
+  backUpBeforeSignOut: async () => ({ unsynced: 0, error: null, cleanup: null }),
+  cleanup: null,
+  removeCleanup: async () => ({ removed: 0, stale: true }),
 });
 
 export const useSync = (): SyncApi => useContext(SyncContext);
@@ -64,6 +76,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   const [lastError, setLastError] = useState<string | null>(null);
   const [rejected, setRejected] = useState<RejectedRow[]>([]);
   const [blockedBy, setBlockedBy] = useState<SyncApi['blockedBy']>(null);
+  const [cleanup, setCleanup] = useState<CleanupPlan | null>(null);
+  const cleanupRef = useRef<{ plan: CleanupPlan; rejected: RejectedRow[] } | null>(null);
   const lastRunRef = useRef(0);
   const inFlightRef = useRef<Promise<SyncResult> | null>(null);
   // Keyed on the user, not just "signed in", so switching accounts triggers a sync.
@@ -95,6 +109,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         setRejected(result.rejected);
         setLastError(null);
         setBlockedBy(null);
+        const plan = await planRejectedCleanup(database, result.rejected).catch(() => null);
+        cleanupRef.current = plan ? { plan, rejected: result.rejected } : null;
+        setCleanup(plan);
       } else if ('error' in result) {
         setLastError(result.error);
       } else if (result.skipped === 'other-account') {
@@ -109,6 +126,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   // Sign-in (or app start while already signed in) → an immediate catch-up sync.
   useEffect(() => {
     setBlockedBy(null);
+    cleanupRef.current = null;
+    setCleanup(null);
     if (signedIn) run(true);
   }, [signedIn, run]);
 
@@ -131,11 +150,26 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
   const backUp = useCallback(async () => {
     if (inFlightRef.current) await inFlightRef.current; // let a background run finish first
-    return backUpBeforeSignOut(
+    const outcome = await backUpBeforeSignOut(
       database,
       async () => (await run(true)) ?? { ok: false, skipped: 'signed-out' },
     );
+    return { ...outcome, cleanup: outcome.unsynced > 0 ? (cleanupRef.current?.plan ?? null) : null };
   }, [run]);
+
+  const removeCleanup = useCallback(
+    async (plan: CleanupPlan) => {
+      const current = cleanupRef.current;
+      if (!current || current.plan.signature !== plan.signature) return { removed: 0, stale: true };
+      if (inFlightRef.current) await inFlightRef.current;
+      const outcome = await applyRejectedCleanup(database, current.rejected, plan.signature);
+      cleanupRef.current = null;
+      setCleanup(null);
+      await run(true); // confirm the rest syncs, and refresh the rejected count
+      return outcome;
+    },
+    [run],
+  );
 
   const syncNow = useCallback(() => {
     run(true);
@@ -151,6 +185,8 @@ export function SyncProvider({ children }: { children: ReactNode }) {
         blockedBy,
         syncNow,
         backUpBeforeSignOut: backUp,
+        cleanup,
+        removeCleanup,
       }}
     >
       {children}
