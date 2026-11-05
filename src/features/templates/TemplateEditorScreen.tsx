@@ -1,22 +1,38 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { colors, radius, space, fontSizes } from '@/theme/tokens';
+import { colors, fontSizes, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { DraggableTemplateItems, TemplateItemEditor } from '@/components/templates';
+import {
+  BottomBar,
+  Button,
+  CheckRow,
+  Field,
+  ScreenHeader,
+  SectionLabel,
+  Tag,
+  TextAction,
+  useKeyboardHeight,
+} from '@/components/ui';
 import type { RootStackParamList } from '@/navigation/types';
+import PlusIcon from '@/assets/icons/plus.svg';
 import { useTemplateEditor } from './useTemplateEditor';
-import { FloatingActionButton } from '@/components/FloatingActionButton';
-import { CoachMark, useCoachMark } from '@/components/CoachMark';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'TemplateEditor'>;
 
+/**
+ * S13. The template's name, "Use as default?" (or a DEFAULT tag once it is), then every
+ * item with a ⋮⋮ handle to drag it to a new place and "+ Add item" last. Tapping an item
+ * opens it in a sheet (rename, range, delete). A saved template changes as you go; a new
+ * one is held in memory until *Save template* (lazy create).
+ */
 export default function TemplateEditorScreen({ route, navigation }: Props) {
   const s = useTemplateEditor(route, navigation);
-  // Defer mounting the rows' gesture handlers until the open animation finishes, so the
-  // screen transition doesn't stutter while Swipeable/drag set up native handlers.
-  // `transitionEnd` is the reliable signal (InteractionManager is deprecated in RN 0.85
-  // and resolves too early); a timeout covers the case where the event is missed.
+  const keyboard = useKeyboardHeight();
+  // Defer mounting the rows' drag handlers until the open animation finishes, so the screen
+  // transition doesn't stutter. `transitionEnd` is the reliable signal (InteractionManager
+  // is deprecated in RN 0.85); a timeout covers the case where the event is missed.
   const [interactive, setInteractive] = useState(false);
   useEffect(() => {
     const unsub = navigation.addListener('transitionEnd', (e) => {
@@ -29,137 +45,109 @@ export default function TemplateEditorScreen({ route, navigation }: Props) {
     };
   }, [navigation]);
 
-  // First visit (once the rows are interactive and there's something to act on): teach the
-  // hidden swipe/drag gestures and nudge the top row's swipe action open.
-  const coach = useCoachMark('tpl-editor-gestures', interactive && s.items.length > 0);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: s.isNew ? 'New template' : 'Edit template',
-      headerRight: s.isNew
-        ? () => (
-            <Pressable onPress={s.saveNewTemplate} hitSlop={8}>
-              <Text style={styles.headerSave}>Save</Text>
-            </Pressable>
-          )
-        : undefined,
-    });
-  }, [navigation, s.isNew, s.saveNewTemplate]);
-
-  if (!s.ready) return <View style={styles.screen} />;
+  const title = s.isNew ? s.name.trim() || 'New template' : s.name.trim() || 'Template';
+  const count = s.items.length;
+  // A saved default shows a DEFAULT tag where the checkbox would be, so nothing shifts when
+  // it's ticked. One template is always the default, so it stops being one only when another
+  // is chosen. A new template keeps its checkbox until it's saved, so the choice can be undone.
+  const savedDefault = s.isDefault && !s.isNew;
 
   return (
-    <View style={styles.screen}>
-      <ScrollView>
-        <View style={styles.defaultRow}>
-          <Text style={styles.fieldLabel}>Name</Text>
-          {s.isDefault ? <Text style={styles.defaultBadge}>DEFAULT</Text> : <Pressable style={styles.makeDefault} onPress={s.makeDefault}>
-            <Text style={styles.makeDefaultText}>Set as default</Text>
-          </Pressable>}
-        </View>
-        
-        <TextInput
-          style={styles.nameInput}
-          value={s.name}
-          onChangeText={s.setName}
-          onBlur={s.saveName}
-          placeholder="Template name"
-          placeholderTextColor={colors.faint}
-        />
+    <View style={[styles.screen, s.isNew ? { paddingBottom: keyboard } : null]}>
+      <ScreenHeader title={title} />
+      {s.ready ? (
+        <ScrollView
+          contentContainerStyle={[styles.content, s.isNew ? null : { paddingBottom: keyboard + space.xxl }]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.nameField}>
+            <Field
+              label="Name"
+              value={s.name}
+              onChangeText={s.setName}
+              onBlur={s.saveName}
+              placeholder="e.g. Men's"
+              autoCapitalize="words"
+              returnKeyType="done"
+            />
+          </View>
+          {savedDefault ? (
+            <View style={styles.defaultRow}>
+              <Tag label="Default" />
+            </View>
+          ) : (
+            <CheckRow title="Use as default?" checked={s.isDefault} onChange={s.setDefault} />
+          )}
 
-        {s.items.length === 0 ? (
-          <Text style={styles.empty}>No items yet — add at least one to save this template.</Text>
-        ) : (
-          <DraggableTemplateItems
-            items={s.items}
-            onReorder={s.reorder}
-            onEdit={s.openEditItem}
-            onRemove={s.removeItem}
-            interactive={interactive}
-            nudgeFirst={coach.visible}
-          />
-        )}
-
-        {s.isNew ? null : (
-          <Pressable style={styles.deleteTemplate} onPress={s.removeTemplate}>
-            <Text style={styles.deleteText}>Delete template</Text>
+          <SectionLabel title={`Items · ${count}`} aside={count > 1 ? 'Drag ⋮⋮ to reorder' : undefined} />
+          {count > 0 ? (
+            <DraggableTemplateItems
+              items={s.items}
+              onReorder={s.reorder}
+              onEdit={s.openEditItem}
+              interactive={interactive}
+            />
+          ) : null}
+          <Pressable
+            style={({ pressed }) => [styles.add, pressed && styles.pressed]}
+            onPress={s.openAddItem}
+            accessibilityRole="button"
+          >
+            <PlusIcon width={18} height={18} color={colors.accent} />
+            <Text style={styles.addText}>Add item</Text>
           </Pressable>
-        )}
-      </ScrollView>
-      
-      <FloatingActionButton
-        onPress={s.openAddItem}
-        accessibilityLabel="Add item"
-      />
+
+          <Text style={styles.note}>
+            {count === 0
+              ? 'Add the measurements a new set starts with, in the order you take them.'
+              : `Every item is shown, so you can drag any of them to a new place.${
+                  s.isNew ? '' : ' Changes save as you go.'
+                } Tap an item to rename it, set its range or delete it.`}
+          </Text>
+
+          {s.isNew ? null : <TextAction label="Delete this template" danger onPress={s.removeTemplate} />}
+        </ScrollView>
+      ) : null}
+
+      {s.isNew ? (
+        <BottomBar>
+          <Button kind="primary" label="Save template" onPress={s.saveNewTemplate} />
+        </BottomBar>
+      ) : null}
 
       <TemplateItemEditor
         draft={s.draft}
         onChange={s.updateDraft}
         onCancel={s.closeDraft}
         onSave={s.saveDraft}
-      />
-
-      <CoachMark
-        visible={coach.visible}
-        onDismiss={coach.dismiss}
-        placement="center"
-        title="Manage template items"
-        lines={[
-          'Swipe a row left to delete it.',
-          'Drag the ☰ handle to reorder.',
-          'Tap a row to edit its name or range.',
-        ]}
+        onDelete={s.deleteDraftItem}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg, paddingHorizontal: space.lg },
-  fieldLabel: {
-    fontFamily: fonts.medium,
-    fontSize: fontSizes.sm,
-    color: colors.muted,
-    marginBlock: space.sm
-  },
-  nameInput: {
-    borderWidth: 1,
-    borderColor: colors.line2,
-    borderRadius: radius.md,
-    paddingHorizontal: space.md,
-    paddingVertical: space.md,
-    fontFamily: fonts.semibold,
-    fontSize: fontSizes.lg,
-    color: colors.text,
-    backgroundColor: colors.surface,
-    marginBlockEnd: space.xxl,
-  },
-  headerSave: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: colors.accent },
+  screen: { flex: 1, backgroundColor: colors.bg },
+  content: { paddingHorizontal: space.lg, paddingBottom: space.xxl },
+  nameField: { marginTop: -14 },
+  // Same height and line as the "Use as default?" row it takes the place of.
   defaultRow: {
+    minHeight: 52,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
+  },
+  add: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 6,
+    minHeight: 52,
+    paddingLeft: 42,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
   },
-  defaultBadge: {
-    fontFamily: fonts.bold,
-    fontSize: fontSizes.xxs,
-    letterSpacing: 0.5,
-    color: colors.accent,
-    backgroundColor: colors.accentTint,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: radius.sm,
-    overflow: 'hidden',
-  },
-  makeDefault: { flexDirection: 'row', flex: 1, justifyContent: 'flex-end', paddingVertical: space.sm },
-  makeDefaultText: {
-    fontFamily: fonts.semibold,
-    fontSize: fontSizes.sm,
-    color: colors.accent,
-  },
-  section: { fontFamily: fonts.titleSemi, fontSize: fontSizes.lg, color: colors.text },
-  add: { fontFamily: fonts.semibold, fontSize: fontSizes.sm, color: colors.accent },
-  empty: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted, paddingVertical: space.sm },
-  deleteTemplate: { alignSelf: 'center', paddingTop: space.lg, marginBlockEnd: 96, marginBlockStart: 'auto' },
-  deleteText: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.danger },
+  pressed: { opacity: 0.6 },
+  addText: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.accent },
+  note: { fontFamily: fonts.body, fontSize: 13, lineHeight: 19, color: colors.muted, marginTop: space.sm },
 });

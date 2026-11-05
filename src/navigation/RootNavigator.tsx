@@ -49,7 +49,7 @@ export default function RootNavigator() {
       <Stack.Screen name="ShopProfile" component={ShopProfileScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="PaymentDetails" component={PaymentDetailsScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="Templates" component={TemplatesScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="TemplateEditor" component={TemplateEditorScreen} options={detailHeader} />
+      <Stack.Screen name="TemplateEditor" component={TemplateEditorScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen
         name="NewJob"
         component={NewJobScreen}

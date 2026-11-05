@@ -5,11 +5,11 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { database } from '@/db';
 import type Template from '@/db/models/Template';
 import { listTemplates, templateItems } from '@/repositories/templates';
-import { colors, radius, space, fontSizes } from '@/theme/tokens';
+import { colors, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import ChevronIcon from '@/assets/icons/chevron-right.svg';
 import type { RootStackParamList } from '@/navigation/types';
-import { BottomBar, Button, ScreenHeader } from '@/components/ui';
+import { BottomBar, Button, ScreenHeader, Tag } from '@/components/ui';
 
 /** How many item names a row previews before "…". */
 const PREVIEW = 3;
@@ -62,7 +62,7 @@ export default function TemplatesScreen() {
                 <Text style={styles.name} numberOfLines={1}>
                   {template.name}
                 </Text>
-                {template.isDefault ? <Text style={styles.badge}>DEFAULT</Text> : null}
+                {template.isDefault ? <Tag label="Default" /> : null}
               </View>
               <Text style={styles.meta} numberOfLines={1}>
                 {count} {count === 1 ? 'item' : 'items'}
@@ -98,16 +98,5 @@ const styles = StyleSheet.create({
   main: { flex: 1, minWidth: 0 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   name: { flexShrink: 1, fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.text },
-  badge: {
-    fontFamily: fonts.bold,
-    fontSize: 11,
-    letterSpacing: 0.6,
-    color: colors.text,
-    backgroundColor: '#EFEBE3',
-    paddingHorizontal: space.sm,
-    paddingVertical: 3,
-    borderRadius: radius.round,
-    overflow: 'hidden',
-  },
   meta: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted, marginTop: 2 },
 });
