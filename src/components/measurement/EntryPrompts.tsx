@@ -1,56 +1,75 @@
-import { PromptModal } from '@/components/PromptModal';
+import { NameSheet } from '@/components/ui';
 import type { Prompt } from '@/features/measurement-entry/useEntrySession';
 
 /**
- * The hero's three single-field prompts: name-on-save, add ad-hoc item, and create the
- * client up front. Exactly one shows at a time, driven by `prompt.mode`.
+ * The hero's one-field sheets, from the bottom (rule 5): name the client on save, add an
+ * ad-hoc item, add the client up front, and label the set. One shows at a time, driven by
+ * `prompt.mode`.
  */
 type Props = {
   prompt: Prompt | null;
+  label?: string;
   onCancel: () => void;
   onSubmitName: (value: string) => void;
   onSubmitAddItem: (value: string) => void;
   onSubmitCreateClient: (value: string) => void;
+  onSubmitLabel: (value: string) => void;
 };
 
 export function EntryPrompts({
   prompt,
+  label,
   onCancel,
   onSubmitName,
   onSubmitAddItem,
   onSubmitCreateClient,
+  onSubmitLabel,
 }: Props) {
-  return (
-    <>
-      <PromptModal
-        visible={prompt?.mode === 'name'}
-        title="Name this client"
-        message="Save the set against a client."
-        placeholder="Client name"
-        submitLabel="Save set"
-        error={prompt?.mode === 'name' ? prompt.error : undefined}
-        onCancel={onCancel}
-        onSubmit={onSubmitName}
-      />
-      <PromptModal
-        visible={prompt?.mode === 'addItem'}
-        title="Add a measurement"
-        message="Adds an item to this set only."
-        placeholder="e.g. Cap circumference"
-        submitLabel="Add item"
-        onCancel={onCancel}
-        onSubmit={onSubmitAddItem}
-      />
-      <PromptModal
-        visible={prompt?.mode === 'createClient'}
-        title="Add client"
-        message="Create the client now; keep measuring and save when you're ready."
-        placeholder="Client name"
-        submitLabel="Add client"
-        error={prompt?.mode === 'createClient' ? prompt.error : undefined}
-        onCancel={onCancel}
-        onSubmit={onSubmitCreateClient}
-      />
-    </>
-  );
+  switch (prompt?.mode) {
+    case 'name':
+      return (
+        <NameSheet
+          title="Who is this for?"
+          placeholder="Client name"
+          submitLabel="Save set"
+          error={prompt.error}
+          onClose={onCancel}
+          onSubmit={onSubmitName}
+        />
+      );
+    case 'addItem':
+      return (
+        <NameSheet
+          title="Add an item"
+          placeholder="e.g. Cap circumference"
+          submitLabel="Add item"
+          onClose={onCancel}
+          onSubmit={onSubmitAddItem}
+        />
+      );
+    case 'createClient':
+      return (
+        <NameSheet
+          title="Add client"
+          placeholder="Client name"
+          submitLabel="Add client"
+          error={prompt.error}
+          onClose={onCancel}
+          onSubmit={onSubmitCreateClient}
+        />
+      );
+    case 'label':
+      return (
+        <NameSheet
+          title={label ? 'Change label' : 'Add label'}
+          placeholder="e.g. Wedding agbada"
+          initialValue={label}
+          submitLabel="Save label"
+          onClose={onCancel}
+          onSubmit={onSubmitLabel}
+        />
+      );
+    default:
+      return null;
+  }
 }

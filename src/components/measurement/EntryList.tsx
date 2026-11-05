@@ -4,6 +4,7 @@ import { colors, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import { MeasurementRow } from '@/components/measurement/MeasurementRow';
 import PlusIcon from '@/assets/icons/plus.svg';
+import { checkHint, usuallyHint } from '@/lib/measureHints';
 import type { EntryRow } from '@/features/measurement-entry/useMeasurementEntry';
 
 /**
@@ -71,7 +72,8 @@ export function EntryList({ rows, active, dockDisplay, dockPlaceholder, onTapRow
             value={r.value}
             active={i === active}
             changed={r.changed}
-            warning={r.warning != null}
+            warning={r.warning ? checkHint(r.range?.min, r.range?.max) : null}
+            hint={r.range ? usuallyHint(r.range.min, r.range.max) : null}
             activeDisplay={dockDisplay}
             activePlaceholder={dockPlaceholder}
             onPress={() => onTapRow(i)}
@@ -92,8 +94,8 @@ const styles = StyleSheet.create({
   addRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.xs,
-    paddingVertical: space.md,
+    gap: 6,
+    minHeight: 52,
     paddingHorizontal: space.lg,
   },
   addText: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.accent },

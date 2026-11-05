@@ -6,7 +6,7 @@ import { buttonLabel, fonts } from '@/theme/typography';
 /**
  * The fraction row: three chips ¼ ½ ¾ (NO clear chip — clearing is a re-tap of the
  * active chip or the delete key; PROGRESS.md brand decision). The active fraction is
- * highlighted with the accent.
+ * outlined in the accent.
  */
 export type Frac = 0 | 0.25 | 0.5 | 0.75;
 const CHIPS: { value: Exclude<Frac, 0>; label: string }[] = [
@@ -45,16 +45,17 @@ const styles = StyleSheet.create({
   chip: {
     flex: 1,
     height: 44,
-    borderRadius: radius.default,
+    borderRadius: radius.round,
     borderWidth: 1,
     borderColor: colors.line2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surface,
   },
-  chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  // The chosen chip has focus: a 1px maroon border (the redesign's button kinds).
+  chipActive: { borderColor: colors.accent },
   label: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes['2xl']), color: colors.text },
-  labelActive: { color: '#fff' },
+  labelActive: { color: colors.accent },
 });
 
 export const FracChips = memo(FracChipsBase);

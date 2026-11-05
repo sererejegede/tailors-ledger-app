@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Swipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Animated, {
   runOnJS,
   useAnimatedStyle,
@@ -9,14 +8,15 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { fonts } from '@/theme/typography';
+import { colors, fontSizes, radius, space } from '@/theme/tokens';
+import { fonts, valueText } from '@/theme/typography';
 import type { EditItem } from '@/features/templates/useTemplateEditor';
-import MenuIcon from '@/assets/icons/menu-01.svg';
-import TrashIcon from '@/assets/icons/trash-01.svg';
+import GripIcon from '@/assets/icons/dots-grip.svg';
+import ChevronIcon from '@/assets/icons/chevron-right.svg';
 
 /**
- * Template item list with drag-to-reorder by the ☰ handle and swipe-to-delete.
+ * S13's item list: every item shown, a visible ⋮⋮ handle at the left of each row to drag
+ * it to a new place, and a tap on the row to rename it, set its range or delete it.
  *
  * Position is driven by an `order` shared value (ids in display order) owned entirely on
  * the UI thread — NOT by the React array index. Rows are rendered in a stable order and
@@ -25,36 +25,26 @@ import TrashIcon from '@/assets/icons/trash-01.svg';
  * never depends on the array index, the data reorder can't race the animation (the cause
  * of the post-drop flicker).
  */
-const ROW_H = 64;
+const ROW_H = 52;
 
-function rangeLabel(it: EditItem): string {
+/** "14–18″", "≥ 14″", or "No range". */
+export function rangeLabel(it: Pick<EditItem, 'minRange' | 'maxRange'>): string {
   if (it.minRange != null && it.maxRange != null) return `${it.minRange}–${it.maxRange}″`;
   if (it.minRange != null) return `≥ ${it.minRange}″`;
   if (it.maxRange != null) return `≤ ${it.maxRange}″`;
-  return '';
+  return 'No range';
 }
 
 type Props = {
   items: EditItem[];
   onReorder: (from: number, to: number) => void;
   onEdit: (item: EditItem) => void;
-  onRemove: (item: EditItem) => void;
-  // Mount the per-row gesture handlers only once true — gating until the screen's open
+  // Mount the per-row drag handlers only once true — gating until the screen's open
   // animation settles avoids the mount stutter on first paint.
   interactive?: boolean;
-  // One-time affordance: briefly open+close the top row's swipe action so the otherwise
-  // invisible swipe-to-delete gesture is discoverable (paired with the editor coach-mark).
-  nudgeFirst?: boolean;
 };
 
-export function DraggableTemplateItems({
-  items,
-  onReorder,
-  onEdit,
-  onRemove,
-  interactive = true,
-  nudgeFirst = false,
-}: Props) {
+export function DraggableTemplateItems({ items, onReorder, onEdit, interactive = true }: Props) {
   const order = useSharedValue<string[]>(items.map((i) => i.id));
   const activeId = useSharedValue<string | null>(null);
   const startSlot = useSharedValue(0);
@@ -70,48 +60,28 @@ export function DraggableTemplateItems({
       order.value = order.value.filter((id) => present.has(id));
       return;
     }
-    // Otherwise mirror the data order exactly. (Appending unknown ids at the bottom — the
-    // old behavior — sent a RESTORED undo item to the end even though its DB position is
-    // correct; a fresh drop is already reflected in both `order` and `items`, so this stays
-    // a no-op there.)
+    // Otherwise mirror the data order exactly (a restored item lands back in its place).
     order.value = ids;
   }, [items, order, activeId]);
 
-  const stableItems = useMemo(
-    () => [...items].sort((a, b) => (a.id < b.id ? -1 : 1)),
-    [items],
-  );
-
-  // Accent-tinted marker at the slot the dragged row will land in (the gap), shown only
-  // while dragging. Snaps to each slot as the drag crosses boundaries.
-  const dropStyle = useAnimatedStyle(() => {
-    const dragging = activeId.value !== null;
-    if (!dragging) return { opacity: 0 };
-    const slot = order.value.indexOf(activeId.value as string);
-    return { opacity: 1, transform: [{ translateY: slot * ROW_H }] };
-  });
+  const stableItems = useMemo(() => [...items].sort((a, b) => (a.id < b.id ? -1 : 1)), [items]);
 
   return (
-    <View style={styles.card}>
-      <View style={{ height: items.length * ROW_H }}>
-        <Animated.View pointerEvents="none" style={[styles.dropZone, dropStyle]} />
-        {stableItems.map((item) => (
-          <Row
-            key={item.id}
-            item={item}
-            count={items.length}
-            order={order}
-            activeId={activeId}
-            startSlot={startSlot}
-            dragY={dragY}
-            interactive={interactive}
-            nudge={nudgeFirst && item.id === items[0]?.id}
-            onReorder={onReorder}
-            onEdit={() => onEdit(item)}
-            onRemove={() => onRemove(item)}
-          />
-        ))}
-      </View>
+    <View style={{ height: items.length * ROW_H }}>
+      {stableItems.map((item) => (
+        <Row
+          key={item.id}
+          item={item}
+          count={items.length}
+          order={order}
+          activeId={activeId}
+          startSlot={startSlot}
+          dragY={dragY}
+          interactive={interactive}
+          onReorder={onReorder}
+          onEdit={() => onEdit(item)}
+        />
+      ))}
     </View>
   );
 }
@@ -124,29 +94,13 @@ type RowProps = {
   startSlot: SharedValue<number>;
   dragY: SharedValue<number>;
   interactive: boolean;
-  nudge: boolean;
   onReorder: (from: number, to: number) => void;
   onEdit: () => void;
-  onRemove: () => void;
 };
 
-function Row({ item, count, order, activeId, startSlot, dragY, interactive, nudge, onReorder, onEdit, onRemove }: RowProps) {
+function Row({ item, count, order, activeId, startSlot, dragY, interactive, onReorder, onEdit }: RowProps) {
   const id = item.id;
   const started = useSharedValue(false);
-  const swipeRef = useRef<SwipeableMethods>(null);
-  const nudged = useRef(false);
-
-  // Fire the swipe-affordance peek once, after the row is interactive (Swipeable mounted).
-  useEffect(() => {
-    if (!nudge || !interactive || nudged.current) return;
-    nudged.current = true;
-    const open = setTimeout(() => swipeRef.current?.openRight(), 450);
-    const close = setTimeout(() => swipeRef.current?.close(), 1350);
-    return () => {
-      clearTimeout(open);
-      clearTimeout(close);
-    };
-  }, [nudge, interactive]);
 
   const pan = Gesture.Pan()
     .onStart(() => {
@@ -175,108 +129,74 @@ function Row({ item, count, order, activeId, startSlot, dragY, interactive, nudg
       dragY.value = 0;
     });
 
+  // The row being dragged lifts: white, rounded, with a soft shadow, and no line under it.
   const aStyle = useAnimatedStyle(() => {
     const active = activeId.value === id;
     const slot = order.value.indexOf(id);
     if (active) {
       return {
-        transform: [{ translateY: startSlot.value * ROW_H + dragY.value }, { rotate: '1deg' }],
+        transform: [{ translateY: startSlot.value * ROW_H + dragY.value - 2 }],
         zIndex: 50,
-        elevation: 12,
-        shadowColor: '#000',
-        shadowOpacity: 0.18,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 5 },
+        elevation: 8,
+        shadowOpacity: 0.12,
+        backgroundColor: colors.surface,
+        borderRadius: radius.card,
+        borderBottomWidth: 0,
       };
     }
     const y = slot * ROW_H;
+    const base = { zIndex: 0, elevation: 0, shadowOpacity: 0, backgroundColor: colors.bg, borderRadius: 0, borderBottomWidth: 1 };
     if (!started.value) {
       started.value = true;
-      return { transform: [{ translateY: y }, { scale: 1 }], zIndex: 0, elevation: 0, shadowOpacity: 0 };
+      return { ...base, transform: [{ translateY: y }] };
     }
-    return {
-      transform: [{ translateY: withTiming(y, { duration: 160 }) }, { scale: 1 }],
-      zIndex: 0,
-      elevation: 0,
-      shadowOpacity: 0,
-    };
+    return { ...base, transform: [{ translateY: withTiming(y, { duration: 160 }) }] };
   });
 
-  const inner = (
-    <View style={styles.rowInner}>
-      <Pressable style={styles.content} onPress={onEdit}>
-        <Text style={styles.key} numberOfLines={1}>
-          {item.key}
-        </Text>
-        <Text style={styles.range}>{rangeLabel(item)}</Text>
-      </Pressable>
-      {interactive ? (
-        <GestureDetector gesture={pan}>
-          <MenuIcon width={20} height={20} color={colors.faint} style={styles.handle} />
-        </GestureDetector>
-      ) : (
-        <MenuIcon width={20} height={20} color={colors.faint} style={styles.handle} />
-      )}
+  const grip = (
+    <View style={styles.grip} accessibilityRole="adjustable" accessibilityLabel={`Reorder ${item.key}`}>
+      <GripIcon width={18} height={18} color={colors.muted} />
     </View>
   );
 
+  const range = rangeLabel(item);
   return (
-    <Animated.View style={[styles.rowAbs, aStyle]}>
-      {interactive ? (
-        <Swipeable
-          ref={swipeRef}
-          renderRightActions={() => (
-            <Pressable style={styles.remove} onPress={onRemove}>
-              <TrashIcon width={20} height={20} color="#fff" />
-            </Pressable>
-          )}
-          overshootRight={false}
-        >
-          {inner}
-        </Swipeable>
-      ) : (
-        inner
-      )}
+    <Animated.View style={[styles.row, aStyle]}>
+      {interactive ? <GestureDetector gesture={pan}>{grip}</GestureDetector> : grip}
+      <Pressable
+        style={({ pressed }) => [styles.body, pressed && styles.pressed]}
+        onPress={onEdit}
+        accessibilityRole="button"
+        accessibilityLabel={`${item.key}, ${range}`}
+      >
+        <Text style={styles.key} numberOfLines={1}>
+          {item.key}
+        </Text>
+        <Text style={[styles.range, range !== 'No range' && styles.mono]}>{range}</Text>
+        <ChevronIcon width={18} height={18} color={colors.faint} />
+      </Pressable>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.line,
-    overflow: 'hidden',
-  },
-  rowAbs: { position: 'absolute', left: 0, right: 0, height: ROW_H },
-  dropZone: {
+  row: {
     position: 'absolute',
     left: 0,
     right: 0,
-    top: space.xs,
-    height: ROW_H,
-    backgroundColor: colors.accentTint,
-  },
-  rowInner: {
     height: ROW_H,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.md,
-    paddingHorizontal: space.md,
-    borderBottomWidth: 1,
+    gap: 6,
     borderBottomColor: colors.line,
-    backgroundColor: colors.surface,
+    shadowColor: '#14120F',
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
   },
-  content: { flex: 1 },
-  key: { fontFamily: fonts.medium, fontSize: fontSizes.base, color: colors.text },
-  range: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted, marginTop: 2 },
-  remove: {
-    height: '100%',
-    backgroundColor: colors.danger,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: space.lg,
-  },
-  handle: { padding: space.md },
+  grip: { width: 36, height: 44, alignItems: 'center', justifyContent: 'center' },
+  body: { flex: 1, height: ROW_H, flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingRight: space.xs },
+  pressed: { opacity: 0.6 },
+  key: { flex: 1, fontFamily: fonts.medium, fontSize: fontSizes.base, color: colors.text },
+  range: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+  mono: valueText,
 });

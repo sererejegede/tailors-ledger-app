@@ -8,9 +8,9 @@ import DeleteIcon from '@/assets/icons/delete.svg';
 /**
  * The whole-number pad: 1–9, delete, 0, and a prominent action in the bottom-right cell
  * (wireframe layout). Everything sits in the thumb zone; entering a value is a few taps.
- * The action is **Next** while items remain to fill, and flips to **Save** once every
- * item has a value (and nothing is mid-entry) so finishing is one tap, not a hunt for the
- * top-bar Save.
+ * On the measuring screen the action is **Next**, with a 1px maroon border (it has focus);
+ * Save set lives on the dock's top line. Sheets that save a single value (an amount, a
+ * quick edit) pass `saveMode`, and the corner becomes a solid **Save**.
  */
 type Props = {
   onPress: (digit: string) => void;
@@ -52,13 +52,17 @@ function NumberPadBase({ onPress, onDelete, onNext, saveMode = false }: Props) {
         <Text style={styles.keyText}>0</Text>
       </Pressable>
       <Pressable
-        style={({ pressed }) => [styles.key, styles.next, pressed && styles.nextPressed]}
+        style={({ pressed }) => [
+          styles.key,
+          saveMode ? styles.save : styles.next,
+          pressed && (saveMode ? styles.savePressed : styles.nextPressed),
+        ]}
         onPress={onNext}
         accessibilityRole="button"
         accessibilityLabel={saveMode ? 'Save' : 'Next'}
       >
-        <Text style={styles.nextText}>{saveMode ? 'Save' : 'Next'}</Text>
-        {saveMode ? null : <ArrowRightIcon color="#fff" />}
+        <Text style={[styles.nextText, saveMode ? styles.saveText : null]}>{saveMode ? 'Save' : 'Next'}</Text>
+        {saveMode ? null : <ArrowRightIcon width={20} height={20} color={colors.accent} />}
       </Pressable>
     </View>
   );
@@ -74,7 +78,7 @@ const styles = StyleSheet.create({
     // 3 per row accounting for the row gap
     width: '31.7%',
     height: 56,
-    borderRadius: radius.default,
+    borderRadius: radius.round,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.line2,
@@ -83,16 +87,12 @@ const styles = StyleSheet.create({
   },
   keyPressed: { backgroundColor: colors.line },
   keyText: { ...valueText, fontSize: fontSizes['2xl'], includeFontPadding: false, color: colors.text },
-  next: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: space.sm,
-  },
-  nextPressed: { backgroundColor: colors.accentInk },
-  nextText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.lg), color: '#fff', lineHeight: 18 },
+  next: { borderColor: colors.accent, flexDirection: 'row', gap: 6 },
+  nextPressed: { backgroundColor: colors.accentTint },
+  save: { backgroundColor: colors.accent, borderColor: colors.accent },
+  savePressed: { backgroundColor: colors.accentInk },
+  nextText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.lg), color: colors.accent, lineHeight: 18 },
+  saveText: { color: '#fff' },
 });
 
 export const NumberPad = memo(NumberPadBase);

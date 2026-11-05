@@ -15,7 +15,7 @@ import { notDeleted, softDeleteById } from './softDelete';
  * towards them. Every payment is one receipt (data-model §3).
  *
  * Totals and balances are always calculated here, never stored. A job is written whole on
- * save, like a set (lazy create, §1a), so backing out of Record payment leaves nothing.
+ * save, like a set (lazy create, §1a), so backing out of New job leaves nothing.
  */
 
 export class InvalidJobError extends Error {
@@ -308,7 +308,7 @@ export async function jobSummary(database: Database, jobId: string): Promise<Job
 }
 
 /** What a job is called: its title, or its first item. */
-function jobLabel(job: Job, items: JobItem[]): string {
+export function jobLabel(job: Job, items: JobItem[]): string {
   if (job.title) return job.title;
   const [first, ...rest] = items;
   if (!first) return 'Job';

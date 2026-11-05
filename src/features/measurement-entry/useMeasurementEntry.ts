@@ -23,6 +23,8 @@ export type EntryRow = {
   value: number | null;
   changed: boolean;
   warning: RangeWarning | null;
+  /** The template item's usual range, for "Usually 38–44″"; null with none or with range warnings off. */
+  range: { min?: number | null; max?: number | null } | null;
 };
 export type Edit = { itemId: string; value: number };
 
@@ -127,6 +129,7 @@ export function useMeasurementEntry(seed: EntrySeed[], rangeWarnings = true): Me
       value: v,
       changed: v != null && v !== initialMap[s.itemId],
       warning: rangeWarnings ? rangeWarning(v, s.min, s.max) : null,
+      range: rangeWarnings && (s.min != null || s.max != null) ? { min: s.min, max: s.max } : null,
     };
   });
 

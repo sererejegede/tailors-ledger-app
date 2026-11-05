@@ -3,7 +3,7 @@
 > Read this first when continuing on another machine. Full plan in [build-plan.md](build-plan.md);
 > source-of-truth docs: spec, data-model, sync-contract (this folder) + `CLAUDE-app.md` (root).
 
-_Last updated: 2026-06-26._
+_Last updated: 2026-11-05._
 
 ## Confirmed decisions
 - **Framework:** React Native (Expo SDK 56 / RN 0.85 / React 19 / TypeScript).
@@ -31,8 +31,33 @@ _Last updated: 2026-06-26._
   NetInfo/foreground trigger + "Sync now"); **device sync verification pending** (needs the
   live backend at `backendBaseUrl`).
 
-Tests/typecheck: `npm test` → 13 suites / 63 tests (was 10/46; +3 sync suites / 17 tests);
+- **UX redesign — BUILT (`feat/ux-redesign`, ships as 1.1.0).** Every screen redone from the
+  canvas in [ux-redesign-plan.md](ux-redesign-plan.md); details below. No schema change (still
+  v3). Device check of the whole branch pending.
+
+Tests/typecheck (as of Phase 4 Stage D): `npm test` → 13 suites / 63 tests (was 10/46; +3 sync suites / 17 tests);
 `npm run typecheck` clean; `npx expo export --platform android` bundles clean.
+
+## UX redesign (2026-11-05) — `feat/ux-redesign`
+Plan and canvas: [ux-redesign-plan.md](ux-redesign-plan.md). The screen rules live in
+`CLAUDE-app.md`. Built in nine plan commits (ten git commits; 8 was split in two):
+- **Shared pieces** (`src/components/ui`): `ScreenHeader` / `TabTitle`, `BottomBar`, `Button`
+  (primary · focus · plain), `TextAction`, `SectionLabel`, `NameSheet`, `PlusMenu`, `Field`,
+  `LinkRow` / `SwitchRow` / `CheckRow` / `Tag`, `Cursor`, `FadeInView`, `useKeyboardHeight`.
+  Sheets are `components/jobs/BottomSheet` (mount to open; slides up). Tokens add `radius.round
+  / card / sheet`, `dangerTint`, `ok`, `warn`.
+- **Tabs:** Clients · Jobs · Settings. Templates opens from Settings. Every stack screen draws
+  its own header, so the navigator's header is off everywhere.
+- **Screens:** Clients home (+ menu), Jobs, Client detail and a client's jobs, the measuring
+  screen (dock: filled count, Save set, pad with Next), set detail + one-item sheet, New job
+  (price pad), Job detail (items typed in the list, Record payment sheet), Receipt, Invoice,
+  Settings (backup card), Shop profile, Payment details, Templates, template editor.
+- **Motion:** sheets slide up, lists fade in once, the filled count ticks up, a blinking caret
+  wherever the number pad types, and a short "Saved" after a set, a re-measure or one item.
+- **Removed:** the tip pop-ups (`CoachMark`, `seenTips`), the floating + buttons, `PromptModal`,
+  the old job sheets (`RecordPaymentScreen`, `JobDetailsSheet`, `JobItemSheet`,
+  `CollectionDateSheet`), the old Settings rows, swipe-to-delete on template items, and the
+  Text size row (the stored setting is left alone).
 
 ## Phase 4 — sync (in progress)
 Staged: **A) Supabase auth ✅ · B) hand-rolled sync loop · C) image upload queue · D) NetInfo +
@@ -98,7 +123,7 @@ Hand-rolled loop (not WatermelonDB `synchronize()`) so it speaks the contract's
 - `SyncProvider.tsx` — triggers `runSync` on sign-in / foreground (AppState) / regained
   connectivity (NetInfo), throttled 15 s; `useSync()` exposes `syncing`/`lastSyncedAt`/
   `rejected`/`syncNow`. Mounted in `App.tsx` under `AuthProvider`; surfaced in
-  `settings/AccountSection.tsx` (last-synced + "Sync now").
+  `settings/BackupCard.tsx` (last backup time; tapping the card backs up now).
 
 Tests (`src/sync/__tests__/`): `contractMock.ts` = in-memory reference server (per-user
 `server_seq`, LWW by `updated_at`, values union by id, blank-name reject). Covered: dirty

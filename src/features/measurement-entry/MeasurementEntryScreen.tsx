@@ -3,24 +3,24 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { colors } from '@/theme/tokens';
 import { Dock } from '@/components/Dock';
-import { EntryTopBar, EntryHeader, EntryList, EntryPrompts } from '@/components/measurement';
+import { ScreenHeader } from '@/components/ui';
+import { EntryContext, EntryList, EntryPrompts } from '@/components/measurement';
 import { ItemPickerSheet } from '@/components/templates';
-import { CoachMark, useCoachMark } from '@/components/CoachMark';
 import type { RootStackParamList } from '@/navigation/types';
 import { useEntrySession } from './useEntrySession';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MeasurementEntry'>;
 
 /**
- * The hero. Mirrors the paper card: scrollable item list + docked thumb-zone input.
- * No note/photo controls here, no bottom tabs (it's a stack route outside the tabs).
- * Data + persistence live in `useEntrySession`; the pieces are presentational components.
+ * The hero (S5). Mirrors the paper card: Back and the title on top; the client, template
+ * and label buttons under it; the scrollable item list; and the docked thumb-zone input,
+ * whose top line holds the filled count and Save set. No note/photo controls here, no
+ * bottom tabs (it's a stack route outside the tabs). Data + persistence live in
+ * `useEntrySession`; the pieces are presentational components.
  */
 export default function MeasurementEntryScreen({ route, navigation }: Props) {
   const insets = useSafeAreaInsets();
   const s = useEntrySession(route, navigation);
-  // Shown once, after the list loads: the core measuring gestures aren't self-evident.
-  const coach = useCoachMark('entry-basics', !s.loading);
 
   if (s.loading) {
     return (
@@ -32,22 +32,17 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
 
   return (
     <View style={styles.screen}>
-      <EntryTopBar
-        isNew={s.isNew}
-        templateName={s.meta.templateName}
-        onBack={s.onBack}
-        onSave={s.onSave}
-        onSwapTemplate={s.openTemplatePicker}
-        topInset={insets.top}
-      />
+      <ScreenHeader title={s.isNew ? 'New measurement' : 'Re-measure'} onBack={s.onBack} />
 
-      <EntryHeader
+      <EntryContext
         isDraft={s.isDraft}
         clientName={s.meta.clientName}
+        canSwapTemplate={s.isNew}
+        templateName={s.meta.templateName}
         label={s.meta.label}
-        filled={s.entry.filled}
-        total={s.entry.total}
         onAddClient={s.openCreateClient}
+        onSwapTemplate={s.openTemplatePicker}
+        onLabel={s.openLabel}
       />
 
       <EntryList
@@ -59,47 +54,38 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
         onAddItem={s.openAddItem}
       />
 
-      {/* docked input — the bottom-right action becomes Save once every item is filled
-          and nothing is mid-entry (typing a value keeps it Next so the buffer commits). */}
       <View style={{ backgroundColor: colors.dockBg }}>
         <Dock
           frac={s.entry.dock.frac}
+          filled={s.entry.filled}
+          total={s.entry.total}
           onFrac={s.entry.setFrac}
           onDigit={s.entry.press}
           onDelete={s.entry.del}
-          onNext={s.saveMode ? s.onSave : s.entry.commitNext}
-          saveMode={s.saveMode}
+          onNext={s.entry.commitNext}
+          onSave={s.onSave}
         />
         <View style={{ height: insets.bottom }} />
       </View>
 
       <EntryPrompts
         prompt={s.prompt}
+        label={s.meta.label}
         onCancel={s.closePrompt}
         onSubmitName={s.submitName}
         onSubmitAddItem={s.submitAddItem}
         onSubmitCreateClient={s.submitCreateClient}
+        onSubmitLabel={s.submitLabel}
       />
 
       <ItemPickerSheet
         visible={s.templatePicker}
+        title="Template"
         options={s.templates.map((t) => ({ id: t.id, name: t.name }))}
         currentId={s.templateId}
         onSelect={s.switchTemplate}
         onClose={s.closeTemplatePicker}
         bottomInset={insets.bottom}
-      />
-
-      <CoachMark
-        visible={coach.visible}
-        onDismiss={coach.dismiss}
-        placement="center"
-        title="Measuring, the fast way"
-        lines={[
-          'Tap any row to jump straight to it — fill in any order.',
-          'Type inches → tap ¼ ½ ¾ → Next. It auto-advances to the next empty row.',
-          'No client yet? Just measure and add the name when you Save.',
-        ]}
       />
     </View>
   );

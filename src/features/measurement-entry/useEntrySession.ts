@@ -1,21 +1,23 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Alert } from '@/lib/alert';
+import { useShowSaved } from '@/components/Snackbar';
 import { database, Tables } from '@/db';
 import type MeasurementSet from '@/db/models/MeasurementSet';
 import type Template from '@/db/models/Template';
 import type TemplateItem from '@/db/models/TemplateItem';
-import { setItems, createSetWithMeasurements, type NewMeasurementItem } from '@/repositories/sets';
+import { setItems, createSetWithMeasurements, updateSet, type NewMeasurementItem } from '@/repositories/sets';
 import { saveMeasurements, addAdHocItem } from '@/repositories/items';
 import { templateItems, listTemplates } from '@/repositories/templates';
 import { getClient, createClient, DuplicateClientNameError } from '@/repositories/clients';
 import { getSettings } from '@/repositories/settings';
+import { emptyItemsPrompt } from '@/lib/measureHints';
 import type { RootStackParamList } from '@/navigation/types';
 import { useMeasurementEntry, type EntrySeed, type Edit } from './useMeasurementEntry';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MeasurementEntry'>;
 export type Meta = { templateName?: string; clientName: string; label?: string };
-export type Prompt = { mode: 'name' | 'addItem' | 'createClient'; error?: string };
+export type Prompt = { mode: 'name' | 'addItem' | 'createClient' | 'label'; error?: string };
 // In a NEW (not-yet-saved) set the rows are in-memory only: `tempId` is a client-side key
 // used by the entry hook and to map entered values back to items at create time.
 type NewItemDesc = { tempId: string; key: string; position: number; unit: string };
@@ -31,6 +33,7 @@ const makeTempId = () => `tmp-${Date.now().toString(36)}-${tempIdSeq++}`;
  */
 export function useEntrySession(route: Props['route'], navigation: Props['navigation']) {
   const params = route.params;
+  const showSaved = useShowSaved();
   // Re-measure: an existing set. New: a templateId (+ optional clientId for client-first).
   const existingSetId = 'setId' in params ? params.setId : undefined;
   const templateId = 'templateId' in params ? params.templateId : undefined;
@@ -51,6 +54,8 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
   const [templatePicker, setTemplatePicker] = useState(false);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [rangeWarnings, setRangeWarnings] = useState(true);
+  // A re-measure writes the label only when the tailor changed it.
+  const loadedLabel = useRef<string | undefined>(undefined);
 
   const load = useCallback(async () => {
     const settings = await getSettings(database);
@@ -84,6 +89,7 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
         clientName: client.name,
         label: set.label ?? undefined,
       });
+      loadedLabel.current = set.label ?? undefined;
     } else if (templateId) {
       // New: seed the list from the template in memory — nothing is written yet.
       const template = await database.get<Template>(Tables.templates).find(templateId);
@@ -116,9 +122,6 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
 
   const entry = useMeasurementEntry(seed, rangeWarnings);
   const isDraft = meta.clientName.trim() === '';
-  // Every item filled and nothing mid-entry (dock.placeholder = not typing) → the dock's
-  // Next becomes Save. While typing, stay Next so the buffer commits first.
-  const saveMode = entry.total > 0 && entry.filled === entry.total && entry.dock.placeholder;
 
   // Map the entry hook's edits (keyed by temp id) onto items to create for a new set.
   const buildNewItems = useCallback(
@@ -142,30 +145,35 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
           await createSetWithMeasurements(database, {
             templateId: templateId!,
             clientId,
-            label: labelParam,
+            label: meta.label,
             items: buildNewItems(edits),
           });
+          showSaved();
           navigation.goBack();
         } else {
           // measure-first draft: name it first — no rows are written until then
           setPrompt({ mode: 'name' });
         }
       } else {
-        // re-measure: write history for changed items, then leave
+        // re-measure: write history for changed items (and a changed label), then leave
         await saveMeasurements(database, existingSetId!, edits);
+        if (meta.label !== loadedLabel.current) {
+          await updateSet(database, existingSetId!, { label: meta.label });
+        }
+        showSaved();
         navigation.goBack();
       }
     },
-    [isNew, clientId, templateId, labelParam, existingSetId, navigation, buildNewItems],
+    [isNew, clientId, templateId, meta.label, existingSetId, navigation, buildNewItems, showSaved],
   );
 
   const onSave = useCallback(() => {
     const edits = entry.getEdits();
-    const empty = entry.total - entry.filled;
-    if (empty > 0) {
+    const ask = emptyItemsPrompt(entry.filled, entry.total);
+    if (ask) {
       Alert.alert(
-        'Save measurements',
-        `${empty} item${empty === 1 ? '' : 's'} still empty — save anyway?`,
+        'Save set',
+        ask,
         [
           { text: 'Keep measuring', style: 'cancel' },
           { text: 'Save anyway', onPress: () => persist(edits) },
@@ -189,10 +197,11 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
         await createSetWithMeasurements(database, {
           templateId: templateId!,
           clientName: trimmed,
-          label: labelParam,
+          label: meta.label,
           items: buildNewItems(entry.getEdits()),
         });
         setPrompt(null);
+        showSaved();
         navigation.goBack();
       } catch (e) {
         if (e instanceof DuplicateClientNameError) {
@@ -203,7 +212,7 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
         }
       }
     },
-    [templateId, labelParam, navigation, buildNewItems, entry],
+    [templateId, meta.label, navigation, buildNewItems, entry, showSaved],
   );
 
   // Create/attach the client up front (measure-first), before the measurements are saved.
@@ -228,6 +237,13 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
         Alert.alert('Could not create client', e instanceof Error ? e.message : String(e));
       }
     }
+  }, []);
+
+  // The set's label ("Wedding agbada"), held in memory and written with the set on save.
+  const submitLabel = useCallback((value: string) => {
+    const trimmed = value.trim();
+    setPrompt(null);
+    if (trimmed) setMeta((m) => ({ ...m, label: trimmed }));
   }, []);
 
   const submitAddItem = useCallback(
@@ -264,7 +280,7 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
         navigation.replace('MeasurementEntry', {
           templateId: id,
           clientId, // carry a client created/chosen this session across the remount
-          label: labelParam,
+          label: meta.label,
         });
       if (entry.filled > 0) {
         Alert.alert('Switch template?', "This clears the measurements you've entered so far.", [
@@ -275,12 +291,13 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
         go();
       }
     },
-    [templateId, clientId, labelParam, navigation, entry],
+    [templateId, clientId, meta.label, navigation, entry],
   );
 
   const onBack = useCallback(() => navigation.goBack(), [navigation]);
   const openCreateClient = useCallback(() => setPrompt({ mode: 'createClient' }), []);
   const openAddItem = useCallback(() => setPrompt({ mode: 'addItem' }), []);
+  const openLabel = useCallback(() => setPrompt({ mode: 'label' }), []);
   const closePrompt = useCallback(() => setPrompt(null), []);
   const closeTemplatePicker = useCallback(() => setTemplatePicker(false), []);
 
@@ -289,7 +306,6 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
     isNew,
     isDraft,
     meta,
-    saveMode,
     entry,
     templateId,
     templates,
@@ -299,9 +315,11 @@ export function useEntrySession(route: Props['route'], navigation: Props['naviga
     onSave,
     openCreateClient,
     openAddItem,
+    openLabel,
     closePrompt,
     submitName,
     submitAddItem,
+    submitLabel,
     submitCreateClient,
     openTemplatePicker,
     switchTemplate,

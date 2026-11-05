@@ -1,147 +1,108 @@
-import { useEffect, useRef, useState } from 'react';
-import {
-  BackHandler,
-  Keyboard,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { buttonLabel, fonts } from '@/theme/typography';
-import { Portal } from '@/components/OverlayHost';
+import { useRef } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { colors, fontSizes, radius, space } from '@/theme/tokens';
+import { fonts, valueText } from '@/theme/typography';
+import { BottomSheet } from '@/components/jobs/BottomSheet';
+import { Button, TextAction } from '@/components/ui';
+import XCloseIcon from '@/assets/icons/x-close.svg';
 import type { ItemDraft } from '@/features/templates/useTemplateEditor';
 
 /**
- * Add/edit a template item (key + optional min/max range). Rendered through the app-root
- * Portal rather than a native Modal — the same reasons as PromptModal: a Modal's Dialog
- * window eats the first tap while the keyboard is up, and an in-tree overlay doesn't.
+ * Add or edit one template item, in a sheet from the bottom: its name, an optional usual
+ * range (the soft "Usually …" check while measuring) and Save. An item already on the
+ * template can be deleted from here too. Renders nothing while `draft` is null.
  */
 type Props = {
   draft: ItemDraft | null;
   onChange: (patch: Partial<ItemDraft>) => void;
   onCancel: () => void;
   onSave: () => void;
+  /** Existing items only. */
+  onDelete?: () => void;
 };
 
-export function TemplateItemEditor({ draft, onChange, onCancel, onSave }: Props) {
-  const visible = draft != null;
-  const [kbHeight, setKbHeight] = useState(0);
-  const inputRef = useRef<TextInput>(null);
-
-  useEffect(() => {
-    if (!visible) return;
-    const show = Keyboard.addListener('keyboardDidShow', (e) => setKbHeight(e.endCoordinates.height));
-    const hide = Keyboard.addListener('keyboardDidHide', () => setKbHeight(0));
-    const t = setTimeout(() => inputRef.current?.focus(), 60);
-    const back = BackHandler.addEventListener('hardwareBackPress', () => {
-      onCancel();
-      return true;
-    });
-    return () => {
-      show.remove();
-      hide.remove();
-      back.remove();
-      clearTimeout(t);
-    };
-  }, [visible, onCancel]);
-
+export function TemplateItemEditor({ draft, onChange, onCancel, onSave, onDelete }: Props) {
+  const maxRef = useRef<TextInput>(null);
   if (!draft) return null;
-
-  // Closing always dismisses the keyboard too (the Name field behind the overlay can
-  // otherwise re-grab focus and keep it up). Tapping the backdrop closes, same as Cancel.
-  const close = () => {
-    Keyboard.dismiss();
-    onCancel();
-  };
+  const ready = draft.key.trim().length > 0;
 
   return (
-    <Portal>
-      <View style={styles.overlay}>
-        <ScrollView
-          style={styles.flex}
-          contentContainerStyle={[styles.scroll, { paddingBottom: kbHeight }]}
-          keyboardShouldPersistTaps="always"
-        >
-          <Pressable style={styles.backdropFill} onPress={close} />
-          <View style={styles.card}>
-            <Text style={styles.title}>{draft.id ? 'Edit item' : 'Add item'}</Text>
-            <TextInput
-              ref={inputRef}
-              style={styles.input}
-              value={draft.key}
-              onChangeText={(t) => onChange({ key: t })}
-              placeholder="Item name (e.g. Sleeve length)"
-              placeholderTextColor={colors.faint}
-              autoCorrect={false}
-            />
-            <View style={styles.rangeInputs}>
-              <TextInput
-                style={[styles.input, styles.rangeInput]}
-                value={draft.min}
-                onChangeText={(t) => onChange({ min: t })}
-                placeholder="min"
-                placeholderTextColor={colors.faint}
-                keyboardType="decimal-pad"
-              />
-              <Text style={styles.dash}>–</Text>
-              <TextInput
-                style={[styles.input, styles.rangeInput]}
-                value={draft.max}
-                onChangeText={(t) => onChange({ max: t })}
-                placeholder="max"
-                placeholderTextColor={colors.faint}
-                keyboardType="decimal-pad"
-              />
-            </View>
-            <View style={styles.btns}>
-              <Pressable style={[styles.btn, styles.cancel]} onPress={close}>
-                <Text style={styles.cancelText}>Cancel</Text>
-              </Pressable>
-              <Pressable style={[styles.btn, styles.go]} onPress={onSave}>
-                <Text style={styles.goText}>Save</Text>
-              </Pressable>
-            </View>
-          </View>
-        </ScrollView>
+    <BottomSheet onClose={onCancel}>
+      <View style={styles.head}>
+        <Text style={styles.title} accessibilityRole="header">
+          {draft.id ? 'Edit item' : 'Add item'}
+        </Text>
+        <Pressable onPress={onCancel} style={styles.close} accessibilityRole="button" accessibilityLabel="Close">
+          <XCloseIcon width={22} height={22} color={colors.text} />
+        </Pressable>
       </View>
-    </Portal>
+      <TextInput
+        style={styles.input}
+        value={draft.key}
+        onChangeText={(t) => onChange({ key: t })}
+        placeholder="Item name, e.g. Sleeve length"
+        placeholderTextColor={colors.faint}
+        autoFocus
+        autoCapitalize="sentences"
+        autoCorrect={false}
+        accessibilityLabel="Item name"
+      />
+      <View>
+        <Text style={styles.label}>Usual range in inches (optional)</Text>
+        <View style={styles.range}>
+          <TextInput
+            style={[styles.input, styles.rangeInput]}
+            value={draft.min}
+            onChangeText={(t) => onChange({ min: t })}
+            placeholder="From"
+            placeholderTextColor={colors.faint}
+            keyboardType="decimal-pad"
+            returnKeyType="next"
+            onSubmitEditing={() => maxRef.current?.focus()}
+            accessibilityLabel="Range from"
+          />
+          <Text style={styles.dash}>–</Text>
+          <TextInput
+            ref={maxRef}
+            style={[styles.input, styles.rangeInput]}
+            value={draft.max}
+            onChangeText={(t) => onChange({ max: t })}
+            placeholder="To"
+            placeholderTextColor={colors.faint}
+            keyboardType="decimal-pad"
+            accessibilityLabel="Range to"
+          />
+        </View>
+      </View>
+      <View style={styles.actions}>
+        <Button kind="primary" label="Save" onPress={onSave} disabled={!ready} />
+      </View>
+      {draft.id && onDelete ? (
+        <TextAction label="Delete item" danger onPress={onDelete} style={styles.delete} />
+      ) : null}
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, elevation: 1000 },
-  flex: { flex: 1 },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: space.xl },
-  backdropFill: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(27,26,23,0.45)',
-  },
-  card: { backgroundColor: colors.surface, borderRadius: radius.default, padding: space.lg, gap: space.sm },
-  title: { fontFamily: fonts.title, fontSize: fontSizes.xl, color: colors.text },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: -space.sm },
+  title: { fontFamily: fonts.titleSemi, fontSize: 22, color: colors.text },
+  close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -10 },
+  label: { fontFamily: fonts.semibold, fontSize: 13, color: colors.muted, marginBottom: 6 },
   input: {
+    minHeight: 48,
+    paddingHorizontal: space.lg,
     borderWidth: 1,
     borderColor: colors.line2,
-    borderRadius: radius.default,
-    paddingHorizontal: space.md,
-    paddingVertical: space.md,
-    fontFamily: fonts.body,
+    borderRadius: radius.round,
+    backgroundColor: colors.surface,
+    fontFamily: fonts.medium,
     fontSize: fontSizes.base,
     color: colors.text,
   },
-  rangeInputs: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  rangeInput: { flex: 1 },
+  range: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  rangeInput: { flex: 1, ...valueText, fontSize: fontSizes.base },
   dash: { fontFamily: fonts.body, fontSize: fontSizes.lg, color: colors.muted },
-  btns: { flexDirection: 'row', justifyContent: 'flex-end', gap: space.sm, marginTop: space.sm },
-  btn: { paddingHorizontal: space.lg, paddingVertical: space.md, borderRadius: radius.default },
-  cancel: { backgroundColor: colors.bg },
-  cancelText: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes.sm), color: colors.muted },
-  go: { backgroundColor: colors.accent },
-  goText: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes.sm), color: '#fff' },
+  actions: { flexDirection: 'row', marginTop: space.xs },
+  delete: { alignSelf: 'center', marginTop: -space.xs },
 });

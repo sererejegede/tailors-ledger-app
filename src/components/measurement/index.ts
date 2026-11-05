@@ -1,7 +1,6 @@
 import { MeasurementRow } from './MeasurementRow';
-import { EntryHeader } from './EntryHeader';
+import { EntryContext } from './EntryContext';
 import { EntryList } from './EntryList';
 import { EntryPrompts } from './EntryPrompts';
-import { EntryTopBar } from './EntryTopBar';
 
-export { MeasurementRow, EntryHeader, EntryList, EntryPrompts, EntryTopBar };
+export { MeasurementRow, EntryContext, EntryList, EntryPrompts };

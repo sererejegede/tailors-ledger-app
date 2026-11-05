@@ -1,9 +1,11 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
+import type { JobFilter } from '@/lib/jobBoard';
 
 /** Bottom tabs — top-level screens only (the tab bar never shows while measuring). */
 export type TabsParamList = {
   Clients: undefined;
-  Templates: undefined;
+  // The home tiles open it already filtered.
+  Jobs: { filter?: JobFilter } | undefined;
   Settings: undefined;
 };
 
@@ -17,10 +19,16 @@ export type RootStackParamList = {
   // clientId for client-first) and creates rows only on save — see createSetWithMeasurements.
   MeasurementEntry: { setId: string } | { templateId: string; clientId?: string; label?: string };
   ClientDetail: { clientId: string };
+  // All of one client's jobs (S2a).
+  ClientJobs: { clientId: string };
   SetDetail: { setId: string };
+  // These open from Settings; Templates is no longer a tab.
+  ShopProfile: undefined;
+  PaymentDetails: undefined;
+  Templates: undefined;
   TemplateEditor: { templateId?: string };
   // Starts a job; the next payment on a job is a sheet on JobDetail.
-  RecordPayment: { clientId: string };
+  NewJob: { clientId: string };
   JobDetail: { jobId: string };
   Receipt: { paymentId: string };
   // Drawn from the job each time; nothing about an invoice is saved.

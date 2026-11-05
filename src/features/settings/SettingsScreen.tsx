@@ -1,47 +1,71 @@
-import { Fragment, useCallback, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '@/navigation/types';
 import { database } from '@/db';
 import type AppSettings from '@/db/models/AppSettings';
 import type Template from '@/db/models/Template';
-import { getSettings, updateSettings } from '@/repositories/settings';
-import { listTemplates, setDefaultTemplate } from '@/repositories/templates';
+import { getSettings, updateSettings, type SettingsPatch } from '@/repositories/settings';
+import { listTemplates } from '@/repositories/templates';
 import { countOrphans, purgeOrphans } from '@/repositories/maintenance';
-import { peekNextReceiptNumber } from '@/repositories/jobs';
-import { resetTips } from '@/lib/seenTips';
 import { Alert } from '@/lib/alert';
 import { canUseAppLock } from '@/lib/appLock';
-import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { buttonLabel, fonts } from '@/theme/typography';
-import { useFontScale } from '@/theme/textScale';
-import { AccountSection } from './AccountSection';
-import { ShopProfileSection } from './ShopProfileSection';
-import { SettingsHeading } from '@/components/SettingsHeading';
-import { SettingsRow } from '@/components/SettingsRow';
+import {
+  FRACTION_STEPS,
+  fractionLabel,
+  paymentSummary,
+  shopSummary,
+  templatesSummary,
+} from '@/lib/settingsSummary';
+import { colors, space } from '@/theme/tokens';
 import { AppLogo } from '@/components/AppLogo';
 import { ItemPickerSheet } from '@/components/templates';
-import { Divider } from '@/components/Divider';
+import { LinkRow, SectionLabel, SwitchRow, TabTitle } from '@/components/ui';
+import { BackupCard } from './BackupCard';
 
-// Rows before this index in `allSettings` sit under Measurement, the rest under App.
-const FIRST_APP_ROW = 3;
-
+/**
+ * S11. The backup card, then short groups: Shop (profile, payment details), Measuring
+ * (templates, fraction steps, range warnings) and App (lock). Shop profile, Payment
+ * details and Templates open their own screens.
+ */
 export default function SettingsScreen() {
-  const insets = useSafeAreaInsets();
-  const { setLarge } = useFontScale();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [orphanCount, setOrphanCount] = useState(0);
-  const [nextReceipt, setNextReceipt] = useState(1);
-  const [activeSetting, setActiveSetting] = useState<(typeof allSettings)[number] | null>(null);
-
+  const [pickingFraction, setPickingFraction] = useState(false);
 
   const load = useCallback(async () => {
     setSettings(await getSettings(database));
     setTemplates(await listTemplates(database));
     setOrphanCount((await countOrphans(database)).total);
-    setNextReceipt(await peekNextReceiptNumber(database));
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
+
+  const patch = useCallback(
+    async (p: SettingsPatch) => {
+      await updateSettings(database, p);
+      load();
+    },
+    [load],
+  );
+
+  const toggleAppLock = useCallback(
+    async (enabled: boolean) => {
+      if (enabled && !(await canUseAppLock())) {
+        Alert.alert('App lock unavailable', 'Set up a screen lock (PIN, pattern, or biometrics) on your phone first.');
+        return;
+      }
+      await patch({ appLockEnabled: enabled });
+    },
+    [patch],
+  );
 
   // One-time repair: remove orphaned, never-synced rows (leftovers from old empty drafts /
   // manual cleanup) that reference deleted parents and so can never sync. Confirmed first.
@@ -66,188 +90,75 @@ export default function SettingsScreen() {
     );
   }, [orphanCount, load]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
-
-  const patch = useCallback(
-    async (p: Parameters<typeof updateSettings>[1]) => {
-      await updateSettings(database, p);
-      load();
-    },
-    [load],
-  );
-
-  const chooseDefault = useCallback(
-    async (templateId: string) => {
-      await setDefaultTemplate(database, templateId);
-      await patch({ defaultTemplateId: templateId });
-    },
-    [patch],
-  );
-
-  const chooseTextSize = useCallback(
-    async (size: 'normal' | 'large') => {
-      setLarge(size === 'large'); // apply immediately app-wide
-      await patch({ textSize: size });
-    },
-    [patch, setLarge],
-  );
-
-  const toggleAppLock = useCallback(
-    async (enabled: boolean) => {
-      if (enabled && !(await canUseAppLock())) {
-        Alert.alert(
-          'App lock unavailable',
-          'Set up a screen lock (PIN, pattern, or biometrics) on your device first.',
-        );
-        return;
-      }
-      await patch({ appLockEnabled: enabled });
-    },
-    [patch],
-  );
-
-  const replayTips = useCallback(async () => {
-    await resetTips();
-    Alert.alert('How to use', 'Tips will show again the next time you open each screen.');
-  }, []);
-
-  const fractionSteps = [
-    { id: 'quarters', name: '¼ steps' },
-    { id: 'eighths', name: '⅛ steps' },
-  ];
-  const textSizes = [
-    { id: 'normal', name: 'Normal' },
-    { id: 'large', name: 'Large' },
-  ];
-
-  const allSettings = useMemo(() => {
-    return [
-      { key: 'default_template', title: 'Default template', options: templates, onSave: chooseDefault, value: settings?.defaultTemplateId },
-      { key: 'fraction_granularity', title: 'Fraction steps', options: fractionSteps, onSave: (id: string) => patch({ fractionGranularity: id }), value: settings?.fractionGranularity },
-      { key: 'range_warnings', title: 'Range warnings', options: [], onSave: null, value: settings?.rangeWarningsEnabled },
-      { key: 'text_size', title: 'Text size', options: textSizes, onSave: (id: string) => chooseTextSize(id as 'normal' | 'large'), value: settings?.textSize },
-      { key: 'app_lock', title: 'App lock', options: [], onSave: null, value: settings?.appLockEnabled },
-    ]
-  }, [templates, patch]);
-
-  const itemPickerVisible = useMemo(() => {
-    return activeSetting ? ['default_template', 'fraction_granularity', 'text_size'].includes(activeSetting?.key) : false;
-  }, [activeSetting]);
-
-  if (!settings) return <View style={styles.screen} />;
-
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md }]}>
-      <Text style={styles.h1}>Settings</Text>
+    <View style={styles.screen}>
+      <TabTitle title="Settings" />
+      {settings ? (
+        <ScrollView contentContainerStyle={styles.content}>
+          <BackupCard />
 
-      <AccountSection />
+          <SectionLabel title="Shop" />
+          <LinkRow
+            title="Shop profile"
+            value={shopSummary(settings.shopName)}
+            onPress={() => navigation.navigate('ShopProfile')}
+          />
+          <LinkRow
+            title="Payment details"
+            value={paymentSummary(settings.bankName, settings.bankAccountNumber)}
+            onPress={() => navigation.navigate('PaymentDetails')}
+            last
+          />
 
-      <Divider color={colors.bg} />
+          <SectionLabel title="Measuring" />
+          <LinkRow
+            title="Templates"
+            value={templatesSummary(templates)}
+            onPress={() => navigation.navigate('Templates')}
+          />
+          <LinkRow
+            title="Fraction steps"
+            value={fractionLabel(settings.fractionGranularity)}
+            onPress={() => setPickingFraction(true)}
+          />
+          <SwitchRow
+            title="Warn when a value looks off"
+            value={settings.rangeWarningsEnabled}
+            onChange={(on) => patch({ rangeWarningsEnabled: on })}
+            last
+          />
 
-      <ShopProfileSection settings={settings} nextReceiptNumber={nextReceipt} onPatch={patch} />
+          <SectionLabel title="App" />
+          <SwitchRow
+            title="Lock the app"
+            value={settings.appLockEnabled}
+            onChange={toggleAppLock}
+            last={orphanCount === 0}
+          />
+          {orphanCount > 0 ? (
+            <LinkRow title="Clean up un-syncable data" value={`${orphanCount} found`} onPress={repairData} last />
+          ) : null}
 
-      <SettingsHeading title="Measurement" />
-
-      {
-        allSettings.map((s, index) => {
-          const value = s.value;
-          const valueDisplay = (s?.options?.find((o) => o.id === value)?.name || value) ?? "";
-          const handlePress = () => {
-            if (s.key === "app_lock") {
-              toggleAppLock(!value);
-            } else if (s.key === "range_warnings") {
-              patch({ rangeWarningsEnabled: !value });
-            } else {
-              setActiveSetting(s);
-            }
-          }
-          return (
-            <Fragment key={s.key}>
-              {index === FIRST_APP_ROW ? <SettingsHeading title="App" /> : null}
-              <SettingsRow
-                title={s.title}
-                value={valueDisplay}
-                disabled={s.key === "text_size"}
-                onPress={handlePress}
-              />
-            </Fragment>
-          )
-        })
-      }
-
-      <SettingsRow title="Show tips again" value="" onPress={replayTips} />
-
-      {orphanCount > 0 ? (
-        <SettingsRow
-          title="Clean up un-syncable data"
-          value={`${orphanCount} found`}
-          onPress={repairData}
-        />
+          <AppLogo />
+        </ScrollView>
       ) : null}
 
-      <AppLogo />
-
       <ItemPickerSheet
-        visible={itemPickerVisible}
-        options={activeSetting?.options ?? []}
-        currentId={activeSetting?.value as string}
+        visible={pickingFraction}
+        title="Fraction steps"
+        options={FRACTION_STEPS.map((f) => ({ id: f.id, name: `${f.name} inch` }))}
+        currentId={settings?.fractionGranularity}
         onSelect={(id) => {
-          activeSetting?.onSave?.(id);
-          setActiveSetting(null);
+          setPickingFraction(false);
+          patch({ fractionGranularity: id });
         }}
-        onClose={() => setActiveSetting(null)}
-        bottomInset={insets.bottom}
+        onClose={() => setPickingFraction(false)}
       />
-    </ScrollView>
-
-    
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: {  paddingBottom: space.xl },
-  h1: { paddingHorizontal: space.lg, fontFamily: fonts.title, fontSize: fontSizes['3xl'], color: colors.text, marginBottom: space.sm },
-  section: { paddingHorizontal: space.lg,fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.text, marginTop: space.md },
-  hint: { paddingHorizontal: space.lg,fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
-  optionText: { fontFamily: fonts.medium, fontSize: fontSizes.base, color: colors.text },
-  radio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: colors.line2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioOn: { borderColor: colors.accent },
-  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent },
-  segment: {
-    flexDirection: 'row',
-    gap: space.sm,
-    marginTop: space.xs,
-  },
-  segItem: {
-    flex: 1,
-    paddingVertical: space.md,
-    borderRadius: radius.default,
-    borderWidth: 1,
-    borderColor: colors.line2,
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-  },
-  segItemOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-  segText: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes.base), color: colors.text },
-  segTextOn: { color: '#fff' },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    marginTop: space.lg,
-  },
-  toggleTitle: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.text },
+  content: { paddingHorizontal: space.lg, paddingTop: space.xs },
 });

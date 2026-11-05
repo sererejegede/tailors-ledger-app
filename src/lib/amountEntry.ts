@@ -38,3 +38,10 @@ export function minorToBuffer(minor: number): string {
 export function halfOf(minor: number): string {
   return minorToBuffer(minor / 2);
 }
+
+/** The `00` chip: 45 becomes 4500. */
+export function addDoubleZero(buffer: string): string {
+  if (!buffer) return buffer;
+  const next = `${buffer}00`;
+  return next.length > MAX_DIGITS ? buffer : next;
+}

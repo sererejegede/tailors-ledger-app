@@ -10,6 +10,8 @@ import { getItemHistory } from '../items';
 import {
   createSetWithMeasurements,
   setItems,
+  setsForClient,
+  softDeleteSet,
   type NewMeasurementItem,
 } from '../sets';
 
@@ -100,5 +102,25 @@ describe('createSetWithMeasurements (lazy create — no empty drafts)', () => {
     // The name check runs before the write, so no set is created.
     const setsAfter = await db.get(Tables.measurementSets).query().fetch();
     expect(setsAfter.length).toBe(setsBefore.length);
+  });
+});
+
+describe('setsForClient', () => {
+  it('counts the measured items and every item in each set, leaving out deleted sets', async () => {
+    const db = makeTestDatabase();
+    await ensureSeeded(db);
+    const template = await defaultTemplate(db);
+    const client = await createClient(db, { name: 'Tunde' });
+    const items: NewMeasurementItem[] = [
+      { key: 'Neck', position: 0, value: 16.5 },
+      { key: 'Chest', position: 1, value: 42 },
+      { key: 'Sleeve', position: 2, value: null },
+    ];
+    const kept = await createSetWithMeasurements(db, { templateId: template.id, clientId: client.id, items });
+    const gone = await createSetWithMeasurements(db, { templateId: template.id, clientId: client.id, items });
+    await softDeleteSet(db, gone.id);
+
+    const sets = await setsForClient(db, client.id);
+    expect(sets.map((s) => [s.set.id, s.itemsCount, s.totalCount])).toEqual([[kept.id, 2, 3]]);
   });
 });

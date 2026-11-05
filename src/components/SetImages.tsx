@@ -15,6 +15,7 @@ import { captureFromCamera, pickManyFromGallery } from '@/lib/images';
 import { useImageSrc } from '@/lib/imageSrc';
 import { ImageViewer } from '@/components/ImageViewer';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
+import { SectionLabel } from '@/components/ui';
 import { fonts } from '@/theme/typography';
 import PlusIcon from '@/assets/icons/plus.svg';
 import XCloseIcon from '@/assets/icons/x-close.svg';
@@ -115,15 +116,7 @@ export function SetImages({ setId }: { setId: string }) {
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.label}>
-        Photos
-        {images.length > 0 ? (
-          <Text style={styles.count}>
-            {'  '}
-            {images.length}/{MAX_IMAGES_PER_SET}
-          </Text>
-        ) : null}
-      </Text>
+      <SectionLabel title="Photos" aside={images.length > 0 ? `${images.length} of ${MAX_IMAGES_PER_SET}` : undefined} />
       <View style={styles.grid}>
         {images.map((img, i) => (
           <Thumbnail
@@ -136,8 +129,8 @@ export function SetImages({ setId }: { setId: string }) {
         {/* Hide the add tile once the set is full; the picker is also capped defensively. */}
         {atLimit ? null : (
           <Pressable style={styles.addTile} onPress={onAdd}>
-            <PlusIcon width={20} height={20} color={colors.accent} />
-            <Text style={styles.addLabel}>Add photo</Text>
+            <PlusIcon width={20} height={20} color={colors.text} />
+            <Text style={styles.addLabel}>Add</Text>
           </Pressable>
         )}
       </View>
@@ -204,13 +197,11 @@ function Thumbnail({
 const THUMB = 84;
 
 const styles = StyleSheet.create({
-  wrap: { gap: space.md },
-  label: { fontFamily: fonts.medium, fontSize: fontSizes.base, color: colors.muted },
-  count: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.faint },
-  limitHint: { fontFamily: fonts.body, fontSize: fontSizes.xs, color: colors.faint, paddingInline: space.md },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, paddingInline: space.md },
+  wrap: {},
+  limitHint: { fontFamily: fonts.body, fontSize: fontSizes.xs, color: colors.muted, marginTop: space.sm },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   thumbWrap: { width: THUMB, height: THUMB },
-  thumb: { width: THUMB, height: THUMB, borderRadius: radius.md, backgroundColor: colors.line },
+  thumb: { width: THUMB, height: THUMB, borderRadius: radius.card, backgroundColor: colors.line },
   removeBtn: {
     position: 'absolute',
     top: -6,
@@ -226,16 +217,16 @@ const styles = StyleSheet.create({
   addTile: {
     width: THUMB,
     height: THUMB,
-    borderRadius: radius.md,
+    borderRadius: radius.card,
     borderWidth: 1,
-    borderColor: colors.line2,
+    borderColor: colors.faint,
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
   },
   addPlus: { fontFamily: fonts.bold, fontSize: fontSizes['2xl'], color: colors.accent },
-  addLabel: { fontFamily: fonts.body, fontSize: fontSizes.xs, color: colors.muted },
+  addLabel: { fontFamily: fonts.semibold, fontSize: 13, color: colors.text },
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.35)',

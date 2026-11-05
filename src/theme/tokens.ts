@@ -11,18 +11,23 @@ export const colors = {
   bg: '#FAF9F6', // body background (paper)
   surface: '#FFFFFF',
   dockBg: '#FBF8F1', // docked input background (wireframe)
-  text: '#444748', // primary text
-  muted: '#8C887E',
+  text: '#2F3132', // ink: primary text
+  muted: '#6F6B62', // grey: secondary text, dark enough to read
   faint: '#B6B1A6',
   line: '#E2DED5',
   line2: '#D2CDC2',
   danger: '#A23B2E',
+  dangerTint: '#F8E9E6', // behind a red warning tag ("Check: usually 14–20″")
+  ok: '#3F7A4E', // the backup card's dot once a backup has gone through
+  warn: '#B7791F', // the backup card's dot when a backup is stuck
 } as const;
 
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
-// 32px is the default corner radius across interactive surfaces (pads, chips, buttons,
-// inputs, cards); `sm`/`md` are for tighter spots, `pill` for fully-rounded.
-export const radius = { sm: 8, md: 16, lg: 24, default: 32, pill: 999 } as const;
+// The redesign uses three corner sizes (CLAUDE-app.md "Screen rules"):
+// `round` for anything tapped on one line (buttons, chips, keys, fields), `card` for
+// cards, notes, photos and receipts, and `sheet` for the top corners of sheets.
+// `sm`/`lg`/`default`/`pill` are the old sizes; they go once every screen has moved over.
+export const radius = { sm: 8, md: 16, lg: 24, default: 32, pill: 999, round: 999, card: 16, sheet: 24 } as const;
 
 // Type scale — Tailwind's font sizes (px). `xxs` (10) is a local extension below Tailwind's
 // smallest step (`xs` 12) for tiny badges/labels. Use these instead of literal fontSizes so

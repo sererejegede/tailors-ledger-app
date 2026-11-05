@@ -19,15 +19,19 @@ export const linking: LinkingOptions<RootStackParamList> = {
       Tabs: {
         screens: {
           Clients: '', // index — back here exits the app
-          Templates: 'templates',
+          Jobs: 'jobs',
           Settings: 'settings',
         },
       },
       MeasurementEntry: 'measure',
       ClientDetail: 'client/:clientId',
+      ClientJobs: 'client/:clientId/jobs',
       SetDetail: 'set/:setId',
+      ShopProfile: 'settings/shop',
+      PaymentDetails: 'settings/payment',
+      Templates: 'templates',
       TemplateEditor: 'template',
-      RecordPayment: 'record-payment/:clientId',
+      NewJob: 'client/:clientId/new-job',
       JobDetail: 'job/:jobId',
       Receipt: 'receipt/:paymentId',
       Invoice: 'invoice/:jobId',

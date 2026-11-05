@@ -5,8 +5,9 @@ import { buttonLabel, fonts } from '@/theme/typography';
 import { NumberPad } from '@/components/NumberPad';
 
 /**
- * The money pad: the measuring pad, with ,000 / Half / All where ¼ ½ ¾ sit. A price is
- * two taps (45 then ,000). Save lives in the pad's bottom-right cell.
+ * The payment pad (S9b): the measuring pad, with ,000 / Half / All where ¼ ½ ¾ sit. An
+ * amount is two taps (45 then ,000). The chosen chip gets the 1px maroon border, and Save
+ * lives in the pad's bottom-right cell.
  */
 type Props = {
   onDigit: (digit: string) => void;
@@ -14,7 +15,7 @@ type Props = {
   onThousands: () => void;
   onHalf: () => void;
   onAll: () => void;
-  /** "All" on a new job, "Balance" on an existing one. */
+  /** The chip that fills in everything left, "All". */
   allLabel: string;
   /** Lit while the amount is exactly what the chip gives, so the tailor sees which they picked. */
   halfActive?: boolean;
@@ -64,16 +65,16 @@ const styles = StyleSheet.create({
   chip: {
     flex: 1,
     height: 44,
-    borderRadius: radius.default,
+    borderRadius: radius.round,
     borderWidth: 1,
     borderColor: colors.line2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surface,
   },
-  chipActive: { backgroundColor: colors.accentTint, borderColor: colors.accent },
-  chipLabel: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: colors.text },
-  chipLabelActive: { color: colors.accentInk },
+  chipActive: { borderColor: colors.accent },
+  chipLabel: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes.base), color: colors.text },
+  chipLabelActive: { color: colors.accent },
 });
 
 export const AmountDock = memo(AmountDockBase);

@@ -50,6 +50,17 @@ export type InvoiceView = {
 
 export const PRICE_TO_FOLLOW = 'Price to follow';
 
+/** The invoice's "Pay by bank transfer" lines, only the ones filled in. S11b previews them. */
+export function bankLines(bank: InvoiceSource['bank']): BankLineView[] {
+  return [
+    { label: 'Bank', value: bank.name, number: false },
+    { label: 'Account name', value: bank.accountName, number: false },
+    { label: 'Account number', value: bank.accountNumber, number: true },
+  ]
+    .map((line) => ({ ...line, value: line.value.trim() }))
+    .filter((line) => line.value);
+}
+
 export function invoiceView(source: InvoiceSource): InvoiceView {
   const money = (minor: number) => formatMoney(minor, source.currency);
   const { totalMinor, paidMinor, balanceMinor } = totalsFor(source.items, source.payments);
@@ -57,13 +68,7 @@ export function invoiceView(source: InvoiceSource): InvoiceView {
   // An unpriced item is still to pay for, so the job isn't settled while one is left.
   const paidInFull = unpricedCount === 0 && totalMinor > 0 && balanceMinor <= 0;
 
-  const bank: BankLineView[] = [
-    { label: 'Bank', value: source.bank.name, number: false },
-    { label: 'Account name', value: source.bank.accountName, number: false },
-    { label: 'Account number', value: source.bank.accountNumber, number: true },
-  ]
-    .map((line) => ({ ...line, value: line.value.trim() }))
-    .filter((line) => line.value);
+  const bank = bankLines(source.bank);
 
   return {
     date: formatDate(source.date),

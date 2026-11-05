@@ -110,14 +110,20 @@ export function useTemplateEditor(route: Props['route'], navigation: Props['navi
     }
   }, [isNew, name, template?.name, templateId]);
 
-  const makeDefault = useCallback(async () => {
-    if (isNew) {
-      setIsDefaultLocal(true);
-      return;
-    }
-    await setDefaultTemplate(database, templateId);
-    load();
-  }, [isNew, templateId, load]);
+  // "Use as default?". One template is always the default, so a saved default stops being
+  // one only when another is chosen.
+  const setDefault = useCallback(
+    async (on: boolean) => {
+      if (isNew) {
+        setIsDefaultLocal(on);
+        return;
+      }
+      if (!on) return;
+      await setDefaultTemplate(database, templateId);
+      load();
+    },
+    [isNew, templateId, load],
+  );
 
   // Move item from one index to another (drag-reorder). Adjacent moves are just a swap.
   const reorder = useCallback(
@@ -203,6 +209,13 @@ export function useTemplateEditor(route: Props['route'], navigation: Props['navi
     ]);
   }, [template?.name, templateId, navigation]);
 
+  // "Delete item" in the item sheet. It can be undone from the snackbar.
+  const deleteDraftItem = useCallback(() => {
+    const item = items.find((it) => it.id === draft?.id);
+    setDraft(null);
+    if (item) removeItem(item);
+  }, [items, draft?.id, removeItem]);
+
   const openAddItem = useCallback(() => setDraft({ key: '', min: '', max: '' }), []);
   const openEditItem = useCallback(
     (it: EditItem) =>
@@ -224,10 +237,10 @@ export function useTemplateEditor(route: Props['route'], navigation: Props['navi
     isDefault,
     draft,
     saveName,
-    makeDefault,
+    setDefault,
     reorder,
     saveDraft,
-    removeItem,
+    deleteDraftItem,
     removeTemplate,
     saveNewTemplate,
     openAddItem,

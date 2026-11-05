@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { database } from '@/db';
 import type Payment from '@/db/models/Payment';
@@ -9,19 +8,23 @@ import { receiptView } from '@/lib/receipt';
 import { shareReceipt } from '@/lib/sharePdf';
 import { getPayment, voidPayment } from '@/repositories/jobs';
 import { getSettings } from '@/repositories/settings';
-import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { buttonLabel, fonts } from '@/theme/typography';
+import { colors, radius, space } from '@/theme/tokens';
+import { fonts } from '@/theme/typography';
 import { ReceiptCard } from '@/components/jobs';
+import { BottomBar, Button, ScreenHeader, TextAction } from '@/components/ui';
 import type { RootStackParamList } from '@/navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Receipt'>;
 
 const PAPER_BORDER = 1;
 
-/** Opens straight after Save. All of it works offline. */
-export default function ReceiptScreen({ route, navigation }: Props) {
+/**
+ * S10. The receipt as it will print, opened straight after a payment's Save. *Share receipt*
+ * is the main action; *Void this receipt…* is a red link under the paper, away from it.
+ * All of it works offline.
+ */
+export default function ReceiptScreen({ route }: Props) {
   const { paymentId } = route.params;
-  const insets = useSafeAreaInsets();
   const [width, setWidth] = useState(0);
   const [payment, setPayment] = useState<Payment | null>(null);
   const [voidedAt, setVoidedAt] = useState<number | null>(null);
@@ -49,10 +52,6 @@ export default function ReceiptScreen({ route, navigation }: Props) {
       }),
     [payment, voidedAt],
   );
-
-  useEffect(() => {
-    if (view) navigation.setOptions({ title: `Receipt ${view.number}` });
-  }, [navigation, view]);
 
   const share = useCallback(async () => {
     if (!view || sharing) return;
@@ -89,46 +88,35 @@ export default function ReceiptScreen({ route, navigation }: Props) {
 
   return (
     <View style={styles.screen}>
+      <ScreenHeader title={`Receipt ${view.number}`} />
       <ScrollView contentContainerStyle={styles.preview}>
         {/* Measured, not the window: on web the app sits in a narrower column. */}
         <View style={styles.paper} onLayout={(e) => setWidth(e.nativeEvent.layout.width - PAPER_BORDER * 2)}>
           {width > 0 ? <ReceiptCard view={view} logoUri={logoUri} width={width} /> : null}
         </View>
+        <Text style={styles.caption}>A5, as it will print</Text>
+        {view.voided ? null : (
+          <TextAction label="Void this receipt…" danger onPress={confirmVoid} style={styles.void} />
+        )}
       </ScrollView>
 
-      <View style={[styles.actions, { paddingBottom: insets.bottom + space.lg }]}>
-        <Pressable
-          style={[styles.share, sharing && styles.shareBusy]}
-          onPress={share}
-          disabled={sharing}
-          accessibilityRole="button"
-        >
-          <Text style={styles.shareText}>Share</Text>
-        </Pressable>
-        {view.voided ? null : (
-          <Pressable style={styles.void} onPress={confirmVoid} accessibilityRole="button">
-            <Text style={styles.voidText}>Void receipt</Text>
-          </Pressable>
-        )}
-      </View>
+      <BottomBar>
+        <Button kind="primary" label={sharing ? 'Preparing…' : 'Share receipt'} onPress={share} disabled={sharing} />
+      </BottomBar>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  preview: { paddingHorizontal: space.lg, paddingBottom: space.md },
-  paper: { borderWidth: PAPER_BORDER, borderColor: colors.line },
-  actions: { paddingHorizontal: space.lg, paddingTop: space.md, gap: space.sm },
-  share: {
-    height: 56,
-    borderRadius: radius.default,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
+  preview: { paddingHorizontal: space.xl, paddingTop: space.xs, paddingBottom: space.lg },
+  paper: {
+    borderWidth: PAPER_BORDER,
+    borderColor: colors.line,
+    borderRadius: radius.card,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
   },
-  shareBusy: { opacity: 0.6 },
-  shareText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: '#fff' },
-  void: { height: 44, alignItems: 'center', justifyContent: 'center' },
-  voidText: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes.sm), color: colors.danger },
+  caption: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, textAlign: 'center', marginTop: 14 },
+  void: { alignSelf: 'center', marginTop: space.md },
 });

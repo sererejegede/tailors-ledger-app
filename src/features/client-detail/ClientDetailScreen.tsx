@@ -1,47 +1,57 @@
-import { useCallback, useLayoutEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { database } from '@/db';
 import type Client from '@/db/models/Client';
-import { getClient, updateClient } from '@/repositories/clients';
-import { jobsForClient, totalOwedMinor, type JobSummary } from '@/repositories/jobs';
+import { DuplicateClientNameError, getClient, updateClient } from '@/repositories/clients';
+import { jobRowsForClient } from '@/repositories/jobBoard';
+import { totalOwedMinor } from '@/repositories/jobs';
 import { setsForClient, type MeasurementSetWithItemsCount } from '@/repositories/sets';
 import { getDefaultTemplateId } from '@/repositories/templates';
-import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { buttonLabel, fonts } from '@/theme/typography';
-import { PromptModal } from '@/components/PromptModal';
-import EditIcon from '@/assets/icons/edit-02.svg';
-import RulerIcon from '@/assets/icons/ruler.svg';
-import type { RootStackParamList } from '@/navigation/types';
-import { FloatingActionButton } from '@/components/FloatingActionButton';
-import { formatPhone } from '@/lib/utils';
+import type { JobRow } from '@/lib/jobBoard';
 import { formatMoney } from '@/lib/money';
-import PhoneIcon from '@/assets/icons/phone.svg';
+import { nowMs } from '@/lib/time';
+import { formatPhone } from '@/lib/utils';
+import { whatsappLink } from '@/lib/whatsapp';
+import { colors, fontSizes, radius, space } from '@/theme/tokens';
+import { fonts, valueText } from '@/theme/typography';
+import { BottomBar, Button, ScreenHeader, SectionLabel, TextAction } from '@/components/ui';
 import { ClientDetailSetRow } from '@/components/ClientDetailSetRow';
 import { ClientDetailJobRow } from '@/components/ClientDetailJobRow';
+import EditIcon from '@/assets/icons/edit-02.svg';
+import PhoneIcon from '@/assets/icons/phone.svg';
+import ChatIcon from '@/assets/icons/message-circle-02.svg';
+import type { RootStackParamList } from '@/navigation/types';
+import { ClientEditSheet, type ClientField } from './ClientEditSheet';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ClientDetail'>;
-type Edit = { field: 'name' | 'phone' | 'comment'; value: string; error?: string } | null;
+type Editing = 'identity' | 'comment' | null;
 
-const FIELD_META = {
-  name: { title: 'Client name', placeholder: 'Name' },
-  phone: { title: 'Phone', placeholder: 'Phone number' },
-  comment: { title: 'General preferences', placeholder: 'e.g. prefers a relaxed fit, no tight collars' },
-} as const;
+/** Client detail shows the newest jobs; the rest are one tap away (S2a). */
+const LATEST_JOBS = 3;
 
+/**
+ * S2. The client's phone with Call and WhatsApp, their preferences, their sets and their
+ * latest jobs. Add job and New measurement sit at the bottom.
+ */
 export default function ClientDetailScreen({ route, navigation }: Props) {
   const { clientId } = route.params;
   const [client, setClient] = useState<Client | null>(null);
   const [sets, setSets] = useState<MeasurementSetWithItemsCount[]>([]);
-  const [jobs, setJobs] = useState<JobSummary[]>([]);
-  const [edit, setEdit] = useState<Edit>(null);
+  const [jobs, setJobs] = useState<JobRow[]>([]);
+  const [editing, setEditing] = useState<Editing>(null);
+  const [editError, setEditError] = useState<string | undefined>();
 
   const load = useCallback(async () => {
-    const c = await getClient(database, clientId);
+    const [c, s, j] = await Promise.all([
+      getClient(database, clientId),
+      setsForClient(database, clientId),
+      jobRowsForClient(database, clientId),
+    ]);
     setClient(c);
-    setSets(await setsForClient(database, clientId));
-    setJobs(await jobsForClient(database, clientId));
+    setSets(s);
+    setJobs(j);
   }, [clientId]);
 
   useFocusEffect(
@@ -50,244 +60,169 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
     }, [load]),
   );
 
-  // Body shows the big centered name, so keep the native header to just the back arrow.
-  useLayoutEffect(() => {
-    navigation.setOptions({ title: '' });
-  }, [navigation]);
+  const openEdit = (what: Editing) => {
+    setEditError(undefined);
+    setEditing(what);
+  };
 
-  const submitEdit = useCallback(
-    async (value: string) => {
-      if (!edit) return;
-      const trimmed = value.trim();
-      if (edit.field === 'name' && !trimmed) {
-        setEdit({ ...edit, error: 'Name is required.' });
-        return;
-      }
-      try {
-        await updateClient(database, clientId, { [edit.field]: trimmed });
-        setEdit(null);
-        load();
-      } catch (e) {
-        setEdit({ ...edit, error: e instanceof Error ? e.message : String(e) });
-      }
-    },
-    [edit, clientId, load],
-  );
+  const save = async (values: Partial<Record<ClientField['key'], string>>) => {
+    try {
+      await updateClient(database, clientId, values);
+      setEditing(null);
+      load();
+    } catch (e) {
+      if (e instanceof DuplicateClientNameError) setEditError(`There's already a client called ${e.clientName}.`);
+      else setEditError(e instanceof Error ? e.message : String(e));
+    }
+  };
 
-  // Client-first: open the hero with template + client; the set is created only on save
-  // (createSetWithMeasurements), so backing out leaves no empty set behind.
-  const newSet = useCallback(async () => {
+  // Client-first: the set is created only on save (createSetWithMeasurements), so backing
+  // out of the hero leaves no empty set behind.
+  const newMeasurement = useCallback(async () => {
     const templateId = await getDefaultTemplateId(database);
     navigation.navigate('MeasurementEntry', { templateId, clientId });
   }, [clientId, navigation]);
 
+  const addJob = () => navigation.navigate('NewJob', { clientId });
+
   if (!client) return <View style={styles.screen} />;
 
-  const owedMinor = totalOwedMinor(jobs);
+  const phone = client.phone?.trim() ?? '';
+  const chat = whatsappLink(phone);
+  const owed = totalOwedMinor(jobs);
+  const now = nowMs();
+  const latest = jobs.slice(0, LATEST_JOBS);
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      {/* identity */}
-      <Pressable onPress={() => setEdit({ field: 'name', value: client.name })}>
-        <Text style={styles.name}>{client.name || 'Unnamed'}</Text>
-      </Pressable>
-      <Pressable
-        style={styles.phoneRow}
-        onPress={() => setEdit({ field: 'phone', value: client.phone ?? '' })}
-      >
-        <PhoneIcon width={16} height={16} color={colors.text} />
-        <Text style={[styles.phone, !client.phone && styles.placeholder]}>
-          {formatPhone(client.phone ?? '') || 'Add phone number'}
-        </Text>
-      </Pressable>
+    <View style={styles.screen}>
+      <ScreenHeader title={client.name || 'Unnamed'} />
+      <ScrollView contentContainerStyle={styles.content}>
+        {phone ? (
+          <View style={styles.phoneRow}>
+            <Text style={styles.phone} numberOfLines={1} selectable>
+              {formatPhone(phone)}
+            </Text>
+            <Button size="small" label="Call" Icon={PhoneIcon} onPress={() => Linking.openURL(`tel:${phone}`)} />
+            {chat ? (
+              <Button size="small" label="WhatsApp" Icon={ChatIcon} onPress={() => Linking.openURL(chat)} />
+            ) : null}
+          </View>
+        ) : null}
 
-      {/* general preferences */}
-      <View
-        style={styles.sectionHeader}
-      >
-        <Text style={styles.sectionTitle}>Customer preferences</Text>
-        <Pressable style={styles.edit} onPress={() => setEdit({ field: 'comment', value: client.comment ?? '' })}>
-          <Text style={styles.editText}>Edit</Text>
-          <EditIcon width={17} height={17} color={colors.accent} />
+        <SectionLabel title="Preferences" />
+        <Pressable
+          style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+          onPress={() => openEdit('comment')}
+          accessibilityRole="button"
+          accessibilityLabel={client.comment ? `Preferences: ${client.comment}. Edit` : 'Add preferences'}
+        >
+          <Text style={[styles.cardText, !client.comment && styles.placeholder]}>
+            {client.comment || 'Add general preferences: fit, fabric, anything.'}
+          </Text>
+          <EditIcon width={18} height={18} color={colors.muted} style={styles.cardIcon} />
         </Pressable>
-      </View>
-      <View style={styles.noteCard}>
-        <Text style={[client.comment ? styles.noteText : styles.notePlaceholder]} numberOfLines={3}>
-          {client.comment || 'Add general preferences — fit, fabric, anything.'}
-        </Text>
-      </View>
+        <TextAction
+          label={phone ? 'Edit name or phone' : 'Edit name or add phone'}
+          onPress={() => openEdit('identity')}
+        />
 
-      {/* Divider */}
-      <View style={styles.divider} />
-
-      {/* measurement sets */}
-      <View style={styles.sectionHeader}>
-        <RulerIcon width={18} height={18} color={colors.text} />
-        <Text style={styles.sectionTitle}>Measurement sets</Text>
-        <Text style={styles.count}>{sets.length} Total</Text>
-      </View>
-
-      {sets.length === 0 ? (
-        <Text style={styles.empty}>No sets yet — start a new measurement set.</Text>
-      ) : (
-        <View>
-          {sets.map(({ set, itemsCount }) => (
+        <SectionLabel title="Measurement sets" aside={String(sets.length)} />
+        {sets.length === 0 ? (
+          <Text style={styles.empty}>No sets yet.</Text>
+        ) : (
+          sets.map(({ set, itemsCount, totalCount }, i) => (
             <ClientDetailSetRow
               key={set.id}
               set={set}
               itemsCount={itemsCount}
+              totalCount={totalCount}
+              last={i === sets.length - 1}
               onPress={() => navigation.navigate('SetDetail', { setId: set.id })}
             />
-          ))}
-        </View>
-      )}
+          ))
+        )}
 
-      {/* jobs */}
-      {jobs.length ? (
-        <>
-          <View style={styles.jobsHeader}>
-            <Text style={styles.jobsTitle}>Jobs</Text>
-            <Text style={styles.owed}>
-              {owedMinor ? `${formatMoney(owedMinor, jobs[0].job.currency)} owed` : 'Nothing owed'}
-            </Text>
-          </View>
-          <View style={styles.jobs}>
-            {jobs.map((summary) => (
-              <ClientDetailJobRow
-                key={summary.job.id}
-                summary={summary}
-                onPress={() => navigation.navigate('JobDetail', { jobId: summary.job.id })}
-              />
-            ))}
-          </View>
-        </>
+        <SectionLabel
+          title="Jobs"
+          aside={owed > 0 ? `${formatMoney(owed, jobs[0].currency)} owed` : undefined}
+          asideIsNumber
+        />
+        {jobs.length === 0 ? (
+          <Text style={styles.empty}>No jobs yet.</Text>
+        ) : (
+          latest.map((row, i) => (
+            <ClientDetailJobRow
+              key={row.jobId}
+              row={row}
+              now={now}
+              last={i === latest.length - 1}
+              onPress={() => navigation.navigate('JobDetail', { jobId: row.jobId })}
+            />
+          ))
+        )}
+        {jobs.length > LATEST_JOBS ? (
+          <TextAction
+            label={`View all ${jobs.length} jobs`}
+            onPress={() => navigation.navigate('ClientJobs', { clientId })}
+          />
+        ) : null}
+      </ScrollView>
+
+      <BottomBar>
+        <Button label="Add job" onPress={addJob} />
+        <Button kind="primary" label="New measurement" onPress={newMeasurement} />
+      </BottomBar>
+
+      {editing === 'identity' ? (
+        <ClientEditSheet
+          title="Edit client"
+          fields={[
+            { key: 'name', label: 'Name', value: client.name, placeholder: 'Name', required: true },
+            { key: 'phone', label: 'Phone', value: client.phone ?? '', placeholder: 'Phone number' },
+          ]}
+          error={editError}
+          onClose={() => setEditing(null)}
+          onSave={save}
+        />
       ) : null}
-
-      <Pressable
-        style={styles.recordPayment}
-        onPress={() => navigation.navigate('RecordPayment', { clientId })}
-        accessibilityRole="button"
-      >
-        <Text style={styles.recordPaymentText}>Record payment</Text>
-      </Pressable>
-
-      <FloatingActionButton
-        onPress={newSet}
-        accessibilityLabel="New measurement"
-      />
-
-      <PromptModal
-        visible={edit != null}
-        title={edit ? FIELD_META[edit.field].title : ''}
-        placeholder={edit ? FIELD_META[edit.field].placeholder : ''}
-        initialValue={edit?.value ?? ''}
-        submitLabel="Save"
-        error={edit?.error}
-        multilineInput={edit?.field === 'comment'}
-        inputMode={edit?.field === 'phone' ? 'tel' : 'text'}
-        keyboardType={edit?.field === 'phone' ? 'phone-pad' : 'default'}
-        onCancel={() => setEdit(null)}
-        onSubmit={submitEdit}
-      />
-    </ScrollView>
+      {editing === 'comment' ? (
+        <ClientEditSheet
+          title="Preferences"
+          fields={[
+            {
+              key: 'comment',
+              label: 'Preferences',
+              value: client.comment ?? '',
+              placeholder: 'e.g. prefers a relaxed fit, no tight collars',
+            },
+          ]}
+          error={editError}
+          onClose={() => setEditing(null)}
+          onSave={save}
+        />
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: space.lg, paddingTop: space.sm, gap: space.md, minHeight: '100%' },
-  name: { fontFamily: fonts.title, fontSize: fontSizes['3xl'], color: colors.text, textAlign: 'center' },
-  phoneRow: {
+  content: { paddingHorizontal: space.lg, paddingBottom: space.xl },
+  phoneRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: space.xs },
+  phone: { ...valueText, flex: 1, fontSize: fontSizes.base, color: colors.text },
+  card: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: -space.xs,
-  },
-  phoneGlyph: { fontSize: fontSizes.sm, color: colors.muted },
-  phone: { fontFamily: fonts.body, fontSize: fontSizes.base },
-  placeholder: { color: colors.faint },
-  // section headers
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    marginTop: space.md,
-  },
-  sectionTitle: {
-    fontFamily: fonts.bold,
-    fontSize: fontSizes.sm,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: colors.text,
-  },
-  count: { marginLeft: 'auto', fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
-  noteCard: {
-    backgroundColor: colors.accentTint,
-    borderLeftWidth: 2,
-    borderColor: colors.accent,
-    padding: space.lg,
-    paddingInlineStart: space.xxl,
-    borderRadius: radius.default,
-    overflow: 'hidden',
-  },
-  noteText: {
-    fontFamily: fonts.italic,
-    fontStyle: 'italic',
-    fontSize: fontSizes.base,
-    lineHeight: 24,
-    color: colors.text,
-    paddingRight: space.xl,
-  },
-  notePlaceholder: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.faint, lineHeight: 22 },
-  newSet: {
-    borderWidth: 1,
-    borderColor: colors.accent,
-    borderRadius: radius.default,
+    gap: 10,
     paddingVertical: space.md,
-    alignItems: 'center',
-  },
-  newSetText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: colors.accent },
-  empty: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.muted, paddingVertical: space.md },
-  divider: { height: 2, backgroundColor: colors.accent, marginVertical: space.lg },
-  edit: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.sm,
-    marginLeft: 'auto',
-  },
-  editText: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.accent },
-  jobsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    // More room above the bar than below it, so it reads as the heading of the jobs under it.
-    marginTop: space.xl,
-    marginHorizontal: -space.sm,
-    padding: space.sm,
-    borderRadius: radius.sm,
-    backgroundColor: colors.accentTint,
-  },
-  jobsTitle: {
-    fontFamily: fonts.bold,
-    fontSize: fontSizes.sm,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: colors.accentInk,
-  },
-  owed: { fontFamily: fonts.bold, fontSize: fontSizes.sm, color: colors.accent },
-  // Each row has its own 14px top padding, so pull the list up under the bar.
-  jobs: { marginTop: -space.sm },
-  // The bottom margin keeps the full-width button clear of the floating +.
-  recordPayment: {
-    height: 48,
-    marginTop: space.xs,
-    marginBottom: 96,
+    paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: colors.accent,
-    borderRadius: radius.default,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: colors.line,
+    borderRadius: radius.card,
+    backgroundColor: colors.surface,
   },
-  recordPaymentText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: colors.accent },
+  pressed: { opacity: 0.6 },
+  cardText: { flex: 1, fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: colors.text },
+  placeholder: { color: colors.muted },
+  cardIcon: { marginTop: 2 },
+  empty: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted, paddingVertical: space.sm },
 });
