@@ -18,6 +18,8 @@ export const colors = {
   line2: '#D2CDC2',
   danger: '#A23B2E',
   dangerTint: '#F8E9E6', // behind a red warning tag ("Check: usually 14–20″")
+  ok: '#3F7A4E', // the backup card's dot once a backup has gone through
+  warn: '#B7791F', // the backup card's dot when a backup is stuck
 } as const;
 
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;

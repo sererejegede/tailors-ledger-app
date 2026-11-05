@@ -27,6 +27,8 @@ export const linking: LinkingOptions<RootStackParamList> = {
       ClientDetail: 'client/:clientId',
       ClientJobs: 'client/:clientId/jobs',
       SetDetail: 'set/:setId',
+      ShopProfile: 'settings/shop',
+      PaymentDetails: 'settings/payment',
       Templates: 'templates',
       TemplateEditor: 'template',
       NewJob: 'client/:clientId/new-job',

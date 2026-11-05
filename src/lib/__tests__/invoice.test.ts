@@ -1,4 +1,4 @@
-import { invoiceView, PRICE_TO_FOLLOW, type InvoiceSource } from '../invoice';
+import { bankLines, invoiceView, PRICE_TO_FOLLOW, type InvoiceSource } from '../invoice';
 import { invoiceHtml } from '../invoiceHtml';
 
 const source: InvoiceSource = {
@@ -125,5 +125,15 @@ describe('invoiceHtml', () => {
     expect(page).toContain('&lt;b&gt;Ade &amp; Sons&lt;/b&gt;');
     expect(page).toContain('A&amp;B');
     expect(page).not.toContain('<b>Ade');
+  });
+});
+
+describe('bankLines', () => {
+  it('keeps only the lines filled in, with the number in the number font', () => {
+    expect(bankLines({ name: ' GTBank ', accountName: '', accountNumber: '0123456789' })).toEqual([
+      { label: 'Bank', value: 'GTBank', number: false },
+      { label: 'Account number', value: '0123456789', number: true },
+    ]);
+    expect(bankLines({ name: '', accountName: ' ', accountNumber: '' })).toEqual([]);
   });
 });

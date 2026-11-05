@@ -6,6 +6,8 @@ import MeasurementEntryScreen from '@/features/measurement-entry/MeasurementEntr
 import ClientDetailScreen from '@/features/client-detail/ClientDetailScreen';
 import ClientJobsScreen from '@/features/client-detail/ClientJobsScreen';
 import SetDetailScreen from '@/features/set-detail/SetDetailScreen';
+import ShopProfileScreen from '@/features/settings/ShopProfileScreen';
+import PaymentDetailsScreen from '@/features/settings/PaymentDetailsScreen';
 import TemplatesScreen from '@/features/templates/TemplatesScreen';
 import TemplateEditorScreen from '@/features/templates/TemplateEditorScreen';
 import NewJobScreen from '@/features/jobs/NewJobScreen';
@@ -43,7 +45,9 @@ export default function RootNavigator() {
       <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="ClientJobs" component={ClientJobsScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="SetDetail" component={SetDetailScreen} options={{ animation: 'slide_from_right' }} />
-      {/* Draws its own ScreenHeader (Back + title), so the native header stays hidden. */}
+      {/* These draw their own ScreenHeader (Back + title), so the native header stays hidden. */}
+      <Stack.Screen name="ShopProfile" component={ShopProfileScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="PaymentDetails" component={PaymentDetailsScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="Templates" component={TemplatesScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="TemplateEditor" component={TemplateEditorScreen} options={detailHeader} />
       <Stack.Screen

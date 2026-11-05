@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radius, space, fontSizes } from '@/theme/tokens';
+import { colors, fontSizes, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
-import { Portal } from '@/components/OverlayHost';
+import { BottomSheet } from '@/components/jobs/BottomSheet';
 import CheckIcon from '@/assets/icons/check.svg';
 
 type Option = {
@@ -11,69 +11,57 @@ type Option = {
 
 type Props = {
   visible: boolean;
+  /** The sheet's title, e.g. "Fraction steps". */
+  title?: string;
   options: Option[];
   currentId?: string;
   onSelect: (id: string) => void;
   onClose: () => void;
-  bottomInset: number;
+  /** Unused: the sheet adds the safe area itself. Kept so callers don't change. */
+  bottomInset?: number;
 };
 
-export function ItemPickerSheet({ visible, options, currentId, onSelect, onClose, bottomInset }: Props) {
+/** Pick one from a short list, in a sheet from the bottom. The chosen one has a check. */
+export function ItemPickerSheet({ visible, title = 'Choose', options, currentId, onSelect, onClose }: Props) {
   if (!visible) return null;
   return (
-    <Portal>
-      <View style={styles.pickerOverlay}>
-        <Pressable style={styles.pickerScrim} onPress={onClose} />
-        <View style={[styles.sheet, { paddingBottom: bottomInset + space.lg }]}>
-          <Text style={styles.sheetTitle}>Choose</Text>
-          {options.map((o) => {
-            const current = o.id === currentId;
-            return (
-              <Pressable key={o.id} style={styles.option} onPress={() => onSelect(o.id)}>
-                <Text style={[styles.optionText, current && styles.optionCurrent]}>{o.name}</Text>
-                {current ? <CheckIcon width={18} height={18} color={colors.accent} /> : null}
-              </Pressable>
-            );
-          })}
-        </View>
+    <BottomSheet onClose={onClose}>
+      <Text style={styles.title} accessibilityRole="header">
+        {title}
+      </Text>
+      <View>
+      {options.map((o, i) => {
+        const current = o.id === currentId;
+        return (
+          <Pressable
+            key={o.id}
+            style={({ pressed }) => [styles.option, i === options.length - 1 && styles.last, pressed && styles.pressed]}
+            onPress={() => onSelect(o.id)}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: current }}
+          >
+            <Text style={[styles.optionText, current && styles.optionCurrent]}>{o.name}</Text>
+            {current ? <CheckIcon width={18} height={18} color={colors.accent} /> : null}
+          </Pressable>
+        );
+      })}
       </View>
-    </Portal>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  pickerOverlay: { flex: 1, justifyContent: 'flex-end' },
-  pickerScrim: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(27,26,23,0.45)',
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
-    paddingHorizontal: space.lg,
-    paddingTop: space.lg,
-    paddingBottom: space.xxl,
-    gap: space.xs,
-  },
-  sheetTitle: {
-    fontFamily: fonts.titleSemi,
-    fontSize: fontSizes.base,
-    color: colors.text,
-    marginBottom: space.sm,
-  },
+  title: { fontFamily: fonts.titleSemi, fontSize: 22, color: colors.text },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: space.md,
+    minHeight: 52,
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
   },
+  last: { borderBottomWidth: 0 },
+  pressed: { opacity: 0.6 },
   optionText: { fontFamily: fonts.medium, fontSize: fontSizes.base, color: colors.text },
   optionCurrent: { color: colors.accent, fontFamily: fonts.semibold },
 });

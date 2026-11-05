@@ -80,6 +80,7 @@ export default function MeasurementEntryScreen({ route, navigation }: Props) {
 
       <ItemPickerSheet
         visible={s.templatePicker}
+        title="Template"
         options={s.templates.map((t) => ({ id: t.id, name: t.name }))}
         currentId={s.templateId}
         onSelect={s.switchTemplate}

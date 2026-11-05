@@ -22,7 +22,9 @@ export type RootStackParamList = {
   // All of one client's jobs (S2a).
   ClientJobs: { clientId: string };
   SetDetail: { setId: string };
-  // Opens from Settings; no longer a tab.
+  // These open from Settings; Templates is no longer a tab.
+  ShopProfile: undefined;
+  PaymentDetails: undefined;
   Templates: undefined;
   TemplateEditor: { templateId?: string };
   // Starts a job; the next payment on a job is a sheet on JobDetail.
