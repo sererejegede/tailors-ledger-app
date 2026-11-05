@@ -51,8 +51,8 @@ export default function RootNavigator() {
         component={NewJobScreen}
         options={{ animation: 'slide_from_right' }}
       />
-      <Stack.Screen name="JobDetail" component={JobDetailScreen} options={detailHeader} />
-      <Stack.Screen name="Receipt" component={ReceiptScreen} options={detailHeader} />
+      <Stack.Screen name="JobDetail" component={JobDetailScreen} options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="Receipt" component={ReceiptScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="Invoice" component={InvoiceScreen} options={{ ...detailHeader, title: 'Invoice' }} />
     </Stack.Navigator>
   );

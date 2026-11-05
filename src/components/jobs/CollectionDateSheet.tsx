@@ -3,11 +3,11 @@ import { addDays, nowMs } from '@/lib/time';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { buttonLabel, fonts } from '@/theme/typography';
 import { BottomSheet } from './BottomSheet';
-import { QUICK_PICKS } from './JobDetailsSheet';
+import { QUICK_PICKS } from './DueDateSheet';
 
 /**
  * Set a job's collection date while sending its invoice: one tap on a quick pick saves it.
- * Once there is a date it can be cleared here too. Job details has the ± fine-tuning.
+ * Once there is a date it can be cleared here too. Job detail's Change has the ± fine-tuning.
  */
 
 type Props = {
@@ -33,7 +33,7 @@ export function CollectionDateSheet({ onPick, onClear, onClose }: Props) {
           </Pressable>
         ))}
       </View>
-      <Text style={styles.hint}>Saved to the job. Job details fine-tunes it by the day.</Text>
+      <Text style={styles.hint}>Saved to the job. Change on Job detail moves it by the day.</Text>
       {onClear ? (
         <Pressable style={styles.clear} onPress={onClear} accessibilityRole="button">
           <Text style={styles.clearText}>Clear date</Text>

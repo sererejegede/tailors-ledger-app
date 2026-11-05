@@ -7,7 +7,14 @@ import { Button, TextAction } from '@/components/ui';
 import MinusIcon from '@/assets/icons/minus.svg';
 import PlusIcon from '@/assets/icons/plus.svg';
 import { BottomSheet } from './BottomSheet';
-import { QUICK_PICKS } from './JobDetailsSheet';
+
+/** The due-date quick picks, shared with the invoice's collection-date sheet. */
+export const QUICK_PICKS = [
+  { label: '1 week', days: 7 },
+  { label: '2 weeks', days: 14 },
+  { label: '3 weeks', days: 21 },
+  { label: '1 month', days: 30 },
+];
 
 /**
  * A job's due (collection) date: quick picks for most jobs and ± to move it by a day, so

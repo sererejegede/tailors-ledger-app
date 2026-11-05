@@ -1,13 +1,14 @@
-import { useCallback, useLayoutEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
+import { Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useFocusEffect, usePreventRemove } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { database } from '@/db';
 import type JobItem from '@/db/models/JobItem';
 import type Payment from '@/db/models/Payment';
-import { formatMoney, formatReceiptNumber, lineTotalMinor } from '@/lib/money';
-import { UNPRICED } from '@/lib/receipt';
+import { Alert } from '@/lib/alert';
+import { addDoubleZero, addThousands, bufferToMinor, deleteDigit, minorToBuffer, pressDigit } from '@/lib/amountEntry';
+import { itemEdit, itemPrice, paidShare } from '@/lib/jobDetail';
+import { formatMoney, formatReceiptNumber } from '@/lib/money';
 import { formatDayMonth, formatWeekday } from '@/lib/time';
 import { getClient } from '@/repositories/clients';
 import {
@@ -21,51 +22,42 @@ import {
   updateJobItem,
   type JobSummary,
 } from '@/repositories/jobs';
-import { setsForClient } from '@/repositories/sets';
-import { colors, radius, space, fontSizes } from '@/theme/tokens';
-import { buttonLabel, fonts, valueText } from '@/theme/typography';
-import { JobDetailsSheet, JobItemSheet, RecordPaymentSheet, type JobItemDraft } from '@/components/jobs';
-import EditIcon from '@/assets/icons/edit-02.svg';
+import { colors, fontSizes, radius, space } from '@/theme/tokens';
+import { fonts, valueText } from '@/theme/typography';
+import { BottomBar, Button, NameSheet, ScreenHeader, SectionLabel, TextAction } from '@/components/ui';
+import { DueDateSheet, PriceDock, RecordPaymentSheet } from '@/components/jobs';
+import ChevronIcon from '@/assets/icons/chevron-right.svg';
 import PlusIcon from '@/assets/icons/plus.svg';
 import type { RootStackParamList } from '@/navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'JobDetail'>;
 
-type Loaded = {
-  summary: JobSummary;
-  clientName: string;
-  items: JobItem[];
-  payments: Payment[];
-  sets: { id: string; name: string }[];
-};
+type Loaded = { summary: JobSummary; clientName: string; items: JobItem[]; payments: Payment[] };
 
-/** The home of a job: what's owed, what's being made, what's been paid. */
+/** The item being typed in the list: an existing one (its id) or a new one. */
+type Editing = { id: string | null; name: string; price: string };
+type Sheet = 'due' | 'title' | 'pay' | null;
+
+/**
+ * S9 / S9a. A job's balance, who it's for, its due date and title, its items and its
+ * payments. Items are added or repriced in the list: the row opens for typing and the pad
+ * takes the place of the bottom bar, with Save in the corner. *Record payment* opens the
+ * amount pad (S9b), and Save opens the new receipt.
+ */
 export default function JobDetailScreen({ route, navigation }: Props) {
   const { jobId } = route.params;
-  const insets = useSafeAreaInsets();
   const [data, setData] = useState<Loaded | null>(null);
-  const [itemSheet, setItemSheet] = useState<{ item?: JobItem } | null>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
-  const [paying, setPaying] = useState(false);
+  const [editing, setEditing] = useState<Editing | null>(null);
+  const [sheet, setSheet] = useState<Sheet>(null);
 
   const load = useCallback(async () => {
     const summary = await jobSummary(database, jobId);
-    const client = await getClient(database, summary.job.client.id);
-    const [items, payments, clientSets] = await Promise.all([
+    const [client, items, payments] = await Promise.all([
+      getClient(database, summary.job.client.id),
       jobItems(database, jobId),
       jobPayments(database, jobId),
-      setsForClient(database, summary.job.client.id),
     ]);
-    setData({
-      summary,
-      clientName: client?.name ?? '',
-      items,
-      payments,
-      sets: clientSets.map(({ set }) => ({
-        id: set.id,
-        name: set.label || set.templateNameSnapshot || 'Measurement set',
-      })),
-    });
+    setData({ summary, clientName: client?.name ?? '', items, payments });
   }, [jobId]);
 
   useFocusEffect(
@@ -74,193 +66,263 @@ export default function JobDetailScreen({ route, navigation }: Props) {
     }, [load]),
   );
 
-  useLayoutEffect(() => {
-    navigation.setOptions({ title: '' });
-  }, [navigation]);
+  // Back closes the item being typed before it leaves the screen.
+  usePreventRemove(editing != null, () => setEditing(null));
 
-  const saveItem = async (draft: JobItemDraft) => {
-    const editing = itemSheet?.item;
-    setItemSheet(null);
-    if (editing) await updateJobItem(database, editing.id, draft);
-    else await addJobItem(database, jobId, draft);
+  const editPrice = useCallback((change: (buffer: string) => string) => {
+    setEditing((e) => (e ? { ...e, price: change(e.price) } : e));
+  }, []);
+  const onDigit = useCallback((d: string) => editPrice((b) => pressDigit(b, d)), [editPrice]);
+  const onDelete = useCallback(() => editPrice(deleteDigit), [editPrice]);
+  const onThousands = useCallback(() => editPrice(addThousands), [editPrice]);
+  const onDoubleZero = useCallback(() => editPrice(addDoubleZero), [editPrice]);
+  const onClear = useCallback(() => editPrice(() => ''), [editPrice]);
+
+  const saveItem = useCallback(async () => {
+    if (!editing) return;
+    const edit = itemEdit(editing.name, editing.price);
+    if ('error' in edit) {
+      Alert.alert('Not saved yet', edit.error);
+      return;
+    }
+    setEditing(null);
+    if (editing.id) await updateJobItem(database, editing.id, edit);
+    else await addJobItem(database, jobId, { ...edit, quantity: 1 });
+    load();
+  }, [editing, jobId, load]);
+
+  const removeItem = useCallback(() => {
+    const id = editing?.id;
+    if (!id) {
+      setEditing(null);
+      return;
+    }
+    Alert.alert('Remove this item?', 'It comes off the job and its total.', [
+      { text: 'Keep it', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          setEditing(null);
+          await removeJobItem(database, id);
+          load();
+        },
+      },
+    ]);
+  }, [editing, load]);
+
+  const saveDue = async (collectOn: number | null) => {
+    setSheet(null);
+    await updateJob(database, jobId, { collectOn });
     load();
   };
 
-  const removeItem = async () => {
-    const editing = itemSheet?.item;
-    setItemSheet(null);
-    if (editing) await removeJobItem(database, editing.id);
-    load();
-  };
-
-  const saveDetails = async (details: { title: string; collectOn: number | null }) => {
-    setDetailsOpen(false);
-    await updateJob(database, jobId, details);
+  const saveTitle = async (title: string) => {
+    setSheet(null);
+    await updateJob(database, jobId, { title: title.trim() });
     load();
   };
 
   const savePayment = async (amountMinor: number) => {
-    setPaying(false);
+    setSheet(null);
     const payment = await recordPayment(database, jobId, amountMinor);
     navigation.navigate('Receipt', { paymentId: payment.id });
   };
 
+  const closeSheet = useCallback(() => setSheet(null), []);
+
   if (!data) return <View style={styles.screen} />;
 
-  const { summary, clientName, items, payments, sets } = data;
+  const { summary, clientName, items, payments } = data;
   const { job, label, totalMinor, paidMinor, balanceMinor } = summary;
   const money = (minor: number) => formatMoney(minor, job.currency);
-  const setName = (id?: string | null) => sets.find((s) => s.id === id)?.name;
-  const editing = itemSheet?.item;
+  const newRow = editing && editing.id == null;
+
+  const openItem = (item: JobItem) => {
+    Keyboard.dismiss();
+    setEditing({ id: item.id, name: item.description, price: minorToBuffer(item.unitPriceMinor ?? 0) });
+  };
+
+  const editingRow = (e: Editing) => (
+    <View style={styles.itemOn}>
+      <View style={styles.bar} />
+      <TextInput
+        style={styles.nameField}
+        value={e.name}
+        onChangeText={(name) => setEditing((cur) => (cur ? { ...cur, name } : cur))}
+        autoFocus={e.id == null}
+        placeholder="Item, e.g. Agbada"
+        placeholderTextColor={colors.faint}
+        autoCapitalize="sentences"
+        returnKeyType="done"
+        onSubmitEditing={Keyboard.dismiss}
+        accessibilityLabel="Item name"
+      />
+      <Pressable style={styles.slot} onPress={Keyboard.dismiss} accessibilityLabel="Price">
+        <Text style={styles.slotText}>{money(bufferToMinor(e.price))}</Text>
+      </Pressable>
+    </View>
+  );
 
   return (
     <View style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Pressable onPress={() => setDetailsOpen(true)} accessibilityRole="button" accessibilityLabel="Edit job details">
-          <Text style={styles.title}>{label}</Text>
-          <Text style={styles.subtitle}>{clientName}</Text>
-        </Pressable>
+      <ScreenHeader title={label} />
 
-        <View style={styles.balanceCard}>
-          <View style={styles.balanceRow}>
-            <Text style={styles.balanceLabel}>Balance</Text>
-            <Text style={styles.balanceValue}>{money(balanceMinor)}</Text>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Balance</Text>
+          <Text style={styles.balance} numberOfLines={1}>
+            {money(balanceMinor)}
+          </Text>
+          <View style={styles.track}>
+            <View style={[styles.fill, { width: `${paidShare(paidMinor, totalMinor) * 100}%` }]} />
           </View>
-          <View style={styles.balanceRow}>
-            <Text style={styles.balanceMeta}>Total {money(totalMinor)}</Text>
-            <Text style={styles.balanceMeta}>Paid {money(paidMinor)}</Text>
+          <View style={styles.cardFoot}>
+            <Text style={styles.cardMeta}>
+              Paid <Text style={styles.cardNum}>{money(paidMinor)}</Text>
+            </Text>
+            <Text style={styles.cardMeta}>
+              Total <Text style={styles.cardNum}>{money(totalMinor)}</Text>
+            </Text>
           </View>
         </View>
 
-        {/* Its own row, so it's plain the date can be set and changed here. */}
         <Pressable
-          style={styles.dateRow}
-          onPress={() => setDetailsOpen(true)}
+          style={({ pressed }) => [styles.row, styles.first, pressed && styles.pressed]}
+          onPress={() => navigation.popTo('ClientDetail', { clientId: job.client.id })}
           accessibilityRole="button"
-          accessibilityLabel={job.collectOn ? 'Change collection date' : 'Add collection date'}
+          accessibilityLabel={`Client ${clientName}`}
         >
           <View style={styles.rowText}>
-            <Text style={styles.rowName}>Collection date</Text>
-            <Text style={styles.rowMeta}>{job.collectOn ? formatWeekday(job.collectOn) : 'Not set'}</Text>
+            <Text style={styles.rowLabel}>Client</Text>
+            <Text style={styles.rowName}>{clientName}</Text>
           </View>
-          <View style={styles.dateAction}>
-            {job.collectOn ? (
-              <EditIcon width={16} height={16} color={colors.accent} />
-            ) : (
-              <PlusIcon width={16} height={16} color={colors.accent} />
-            )}
-            <Text style={styles.add}>{job.collectOn ? 'Change' : 'Add'}</Text>
-          </View>
+          <ChevronIcon width={18} height={18} color={colors.faint} />
         </Pressable>
-
-        <View>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>ITEMS</Text>
-            <Pressable style={styles.addButton} onPress={() => setItemSheet({})} hitSlop={space.sm} accessibilityRole="button">
-              <PlusIcon width={16} height={16} color={colors.accent} />
-              <Text style={styles.add}>Add item</Text>
-            </Pressable>
+        <View style={styles.row}>
+          <View style={styles.rowText}>
+            <Text style={styles.rowLabel}>Due</Text>
+            <Text style={[styles.rowName, !job.collectOn && styles.muted]}>
+              {job.collectOn ? formatWeekday(job.collectOn) : 'No date yet'}
+            </Text>
           </View>
-          {items.map((item) => {
-            const priced = item.unitPriceMinor != null;
-            const parts = [
-              item.quantity > 1 && priced ? `${item.quantity} × ${money(item.unitPriceMinor!)}` : null,
-              item.quantity > 1 && !priced ? `× ${item.quantity}` : null,
-              setName(item.setId) ?? 'No measurements',
-            ];
-            return (
-              <Pressable key={item.id} style={styles.row} onPress={() => setItemSheet({ item })} accessibilityRole="button">
-                <View style={styles.rowText}>
-                  <Text style={styles.rowName} numberOfLines={1}>
-                    {item.description}
-                  </Text>
-                  <Text style={styles.rowMeta} numberOfLines={1}>
-                    {parts.filter(Boolean).join(' • ')}
-                  </Text>
-                </View>
-                <Text style={styles.rowValue}>
-                  {priced ? money(lineTotalMinor(item.quantity, item.unitPriceMinor)) : UNPRICED}
+          <TextAction
+            label={job.collectOn ? 'Change' : 'Add'}
+            accessibilityLabel={job.collectOn ? 'Change due date' : 'Add due date'}
+            onPress={() => setSheet('due')}
+          />
+        </View>
+        <View style={styles.row}>
+          <View style={styles.rowText}>
+            <Text style={styles.rowLabel}>Title</Text>
+            <Text style={[styles.rowName, !job.title && styles.muted]}>{job.title || 'No title'}</Text>
+          </View>
+          <TextAction
+            label={job.title ? 'Rename' : 'Add'}
+            accessibilityLabel={job.title ? 'Rename job' : 'Add a title'}
+            onPress={() => setSheet('title')}
+          />
+        </View>
+
+        <SectionLabel title="Items" aside={money(totalMinor)} asideIsNumber />
+        {items.map((item) => {
+          if (editing?.id === item.id) return <View key={item.id}>{editingRow(editing)}</View>;
+          const price = itemPrice(item.quantity, item.unitPriceMinor, job.currency);
+          return (
+            <Pressable
+              key={item.id}
+              style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+              onPress={() => openItem(item)}
+              accessibilityRole="button"
+              accessibilityLabel={`${item.description}, ${price ? price.amount : 'no price yet'}`}
+            >
+              <View style={styles.rowText}>
+                <Text style={styles.rowName} numberOfLines={1}>
+                  {item.description}
                 </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <View style={styles.payments}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>PAYMENTS</Text>
-          </View>
-          {payments.length === 0 ? <Text style={styles.empty}>No payments yet.</Text> : null}
-          {payments.map((payment) => {
-            const voided = payment.voidedAt != null;
-            return (
-              <Pressable
-                key={payment.id}
-                style={styles.row}
-                onPress={() => navigation.navigate('Receipt', { paymentId: payment.id })}
-                accessibilityRole="button"
-              >
-                <View style={styles.rowText}>
-                  <Text style={[styles.rowName, voided && styles.voided]}>
-                    {voided ? 'Voided' : payment.receipt.kind}
-                  </Text>
-                  <Text style={styles.rowMeta}>
-                    {formatReceiptNumber(payment.receiptNumber)} • {formatDayMonth(payment.paidAt)}
-                  </Text>
-                </View>
-                <Text style={[styles.rowValue, voided && styles.struck]}>{money(payment.amountMinor)}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </ScrollView>
-
-      <View style={[styles.footer, { paddingBottom: insets.bottom + space.lg }]}>
+                {price?.times ? <Text style={styles.rowLabel}>{price.times}</Text> : null}
+              </View>
+              {price ? (
+                <Text style={styles.amount}>{price.amount}</Text>
+              ) : (
+                <Text style={styles.addPrice}>Add price</Text>
+              )}
+            </Pressable>
+          );
+        })}
+        {newRow ? editingRow(editing) : null}
         <Pressable
-          style={styles.invoice}
-          onPress={() => navigation.navigate('Invoice', { jobId })}
+          style={styles.addRow}
+          onPress={() => setEditing({ id: null, name: '', price: '' })}
           accessibilityRole="button"
         >
-          <Text style={styles.invoiceText}>Send invoice</Text>
+          <PlusIcon width={18} height={18} color={colors.accent} />
+          <Text style={styles.addText}>Add item</Text>
         </Pressable>
-        <Pressable style={styles.record} onPress={() => setPaying(true)} accessibilityRole="button">
-          <Text style={styles.recordText}>Record payment</Text>
-        </Pressable>
-      </View>
 
-      {itemSheet ? (
-        <JobItemSheet
-          initial={
-            editing && {
-              description: editing.description,
-              quantity: editing.quantity,
-              unitPriceMinor: editing.unitPriceMinor ?? null,
-              setId: editing.setId ?? null,
-            }
-          }
-          sets={sets}
-          withPrice
+        <SectionLabel title="Payments" aside={payments.length ? 'Tap one to see its receipt' : undefined} />
+        {payments.length === 0 ? <Text style={styles.empty}>No payments yet.</Text> : null}
+        {payments.map((payment, i) => {
+          const voided = payment.voidedAt != null;
+          return (
+            <Pressable
+              key={payment.id}
+              style={({ pressed }) => [styles.row, i === payments.length - 1 && styles.last, pressed && styles.pressed]}
+              onPress={() => navigation.navigate('Receipt', { paymentId: payment.id })}
+              accessibilityRole="button"
+            >
+              <View style={styles.rowText}>
+                <Text style={[styles.rowName, voided && styles.voided]}>{voided ? 'Voided' : payment.receipt.kind}</Text>
+                <Text style={styles.rowLabel}>
+                  {formatReceiptNumber(payment.receiptNumber)} · {formatDayMonth(payment.paidAt)}
+                </Text>
+              </View>
+              <Text style={[styles.amount, voided && styles.struck]}>{money(payment.amountMinor)}</Text>
+              <ChevronIcon width={18} height={18} color={colors.faint} />
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {editing ? (
+        <PriceDock
+          itemName={editing.name}
+          onDigit={onDigit}
+          onDelete={onDelete}
+          onThousands={onThousands}
+          onDoubleZero={onDoubleZero}
+          onClear={onClear}
           onSave={saveItem}
-          onRemove={editing ? removeItem : undefined}
-          onClose={() => setItemSheet(null)}
+          onRemove={removeItem}
+        />
+      ) : (
+        <BottomBar>
+          <Button label="Send invoice" onPress={() => navigation.navigate('Invoice', { jobId })} />
+          <Button kind="primary" label="Record payment" onPress={() => setSheet('pay')} />
+        </BottomBar>
+      )}
+
+      {sheet === 'due' ? (
+        <DueDateSheet collectOn={job.collectOn ?? null} onSave={saveDue} onClose={closeSheet} />
+      ) : null}
+      {sheet === 'title' ? (
+        <NameSheet
+          title={job.title ? 'Rename job' : 'Add a title'}
+          placeholder="e.g. Wedding outfits"
+          initialValue={job.title ?? ''}
+          submitLabel="Save"
+          optional
+          onClose={closeSheet}
+          onSubmit={saveTitle}
         />
       ) : null}
-
-      {detailsOpen ? (
-        <JobDetailsSheet
-          title={job.title ?? ''}
-          collectOn={job.collectOn ?? null}
-          onSave={saveDetails}
-          onClose={() => setDetailsOpen(false)}
-        />
-      ) : null}
-
-      {paying ? (
+      {sheet === 'pay' ? (
         <RecordPaymentSheet
+          jobLabel={label}
           balanceMinor={balanceMinor}
           currency={job.currency}
           onSave={savePayment}
-          onClose={() => setPaying(false)}
+          onClose={closeSheet}
         />
       ) : null}
     </View>
@@ -269,78 +331,93 @@ export default function JobDetailScreen({ route, navigation }: Props) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: space.lg, paddingTop: space.sm, gap: space.lg },
-  title: { fontFamily: fonts.titleSemi, fontSize: fontSizes.xl, color: colors.text },
-  subtitle: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
-  balanceCard: {
-    backgroundColor: colors.accentTint,
-    borderRadius: radius.md,
-    paddingVertical: space.md,
-    paddingHorizontal: space.lg,
-    gap: space.xs,
-  },
-  balanceRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.md },
-  balanceLabel: { fontFamily: fonts.bold, fontSize: fontSizes.base, color: colors.accentInk },
-  balanceValue: { ...valueText, flexShrink: 1, fontSize: fontSizes['3xl'], fontWeight: '700', color: colors.accentInk },
-  balanceMeta: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.accentInk },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: space.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.line2,
-  },
-  sectionTitle: { fontFamily: fonts.bold, fontSize: fontSizes.sm, letterSpacing: 1, color: colors.text },
-  addButton: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    paddingVertical: space.sm,
-    paddingHorizontal: space.md,
-    borderWidth: 1,
-    borderColor: colors.line2,
-    borderRadius: radius.md,
+  content: { paddingHorizontal: space.lg, paddingBottom: space.xl },
+  card: {
     backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.card,
+    paddingHorizontal: space.lg,
+    paddingVertical: 14,
   },
-  dateAction: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
-  payments: { marginTop: space.xxl },
-  add: { fontFamily: fonts.semibold, fontSize: fontSizes.sm, color: colors.accent },
+  cardLabel: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
+  balance: { ...valueText, fontSize: 34, color: colors.text, marginTop: 2, marginBottom: 10 },
+  track: { height: 6, borderRadius: radius.round, backgroundColor: colors.line, overflow: 'hidden' },
+  fill: { height: 6, borderRadius: radius.round, backgroundColor: colors.text },
+  cardFoot: { flexDirection: 'row', justifyContent: 'space-between', marginTop: space.sm },
+  cardMeta: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+  cardNum: { ...valueText, color: colors.text },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
-    paddingVertical: space.md,
+    minHeight: 56,
+    paddingVertical: space.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
   },
+  first: { marginTop: 6 },
+  last: { borderBottomWidth: 0 },
+  pressed: { opacity: 0.7 },
   rowText: { flex: 1, minWidth: 0 },
+  rowLabel: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
   rowName: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.text },
-  rowMeta: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
-  rowValue: { ...valueText, fontSize: fontSizes.base, color: colors.text },
+  muted: { color: colors.muted },
+  amount: { ...valueText, fontSize: fontSizes.base, color: colors.text },
+  addPrice: {
+    fontFamily: fonts.semibold,
+    fontSize: fontSizes.sm,
+    color: colors.muted,
+    textDecorationLine: 'underline',
+  },
   voided: { color: colors.danger },
   struck: { color: colors.muted, textDecorationLine: 'line-through' },
   empty: { fontFamily: fonts.body, fontSize: fontSizes.base, color: colors.muted, paddingVertical: space.md },
-  footer: { flexDirection: 'row', gap: space.sm, paddingHorizontal: space.lg, paddingTop: space.md },
-  invoice: {
+  itemOn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minHeight: 72,
+    marginHorizontal: -space.lg,
+    paddingLeft: space.lg + 3,
+    paddingRight: space.lg,
+    paddingVertical: space.sm,
+    backgroundColor: colors.accentTint,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
+  },
+  bar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: colors.accent },
+  nameField: {
     flex: 1,
-    height: 56,
-    borderRadius: radius.default,
-    borderWidth: 2,
+    minHeight: 44,
+    paddingHorizontal: space.lg,
+    borderWidth: 1,
+    borderColor: colors.line2,
+    borderRadius: radius.round,
+    backgroundColor: colors.surface,
+    fontFamily: fonts.medium,
+    fontSize: fontSizes.base,
+    color: colors.text,
+  },
+  slot: {
+    minWidth: 116,
+    height: 44,
+    paddingHorizontal: 14,
+    borderWidth: 1,
     borderColor: colors.accent,
+    borderRadius: radius.round,
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  invoiceText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: colors.accent },
-  record: {
-    flex: 1,
-    height: 56,
-    borderRadius: radius.default,
-    backgroundColor: colors.accent,
+  slotText: { ...valueText, fontSize: fontSizes.xl, color: colors.accentInk },
+  addRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 6,
+    minHeight: 52,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
   },
-  recordText: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base), color: '#fff' },
+  addText: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.accent },
 });

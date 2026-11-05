@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fontSizes, radius, space } from '@/theme/tokens';
 import { buttonLabel, fonts } from '@/theme/typography';
 import { NumberPad } from '@/components/NumberPad';
+import { TextAction } from '@/components/ui';
 
 /**
  * The pad for one item's price (S8a): "Price of Iro and buba", then `,000`, `00` and Clear
@@ -18,9 +19,11 @@ type Props = {
   onDoubleZero: () => void;
   onClear: () => void;
   onSave: () => void;
+  /** Job detail only: take the item off the job. Shown as a red link on the top line. */
+  onRemove?: () => void;
 };
 
-function PriceDockBase({ itemName, onDigit, onDelete, onThousands, onDoubleZero, onClear, onSave }: Props) {
+function PriceDockBase({ itemName, onDigit, onDelete, onThousands, onDoubleZero, onClear, onSave, onRemove }: Props) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.dock, { paddingBottom: insets.bottom + 20 }]}>
@@ -28,6 +31,7 @@ function PriceDockBase({ itemName, onDigit, onDelete, onThousands, onDoubleZero,
         <Text style={styles.label} numberOfLines={1}>
           Price of <Text style={styles.name}>{itemName.trim() || 'this item'}</Text>
         </Text>
+        {onRemove ? <TextAction label="Remove item" danger onPress={onRemove} /> : null}
       </View>
       <View style={styles.chips}>
         <Chip label=",000" onPress={onThousands} />
@@ -59,8 +63,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     paddingTop: space.sm,
   },
-  top: { height: 48, justifyContent: 'center', marginBottom: space.xs },
-  label: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
+  top: { height: 48, flexDirection: 'row', alignItems: 'center', gap: space.md, marginBottom: space.xs },
+  label: { flex: 1, fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
   name: { fontFamily: fonts.bold, color: colors.text },
   chips: { flexDirection: 'row', gap: space.sm, marginBottom: space.sm },
   chip: {
