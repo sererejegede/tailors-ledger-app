@@ -42,6 +42,11 @@ async function sharePdf(render: (opts: PaperOptions) => string, name: string, lo
   });
 }
 
+/** Only the web draws ahead of the tap (sharePaper.web.ts); here the PDF is made on Share. */
+export function prepareReceipt(_view: ReceiptView, _logoUri?: string): void {}
+
+export function prepareInvoice(_view: InvoiceView, _logoUri?: string): void {}
+
 export function shareReceipt(view: ReceiptView, logoUri?: string): Promise<void> {
   return sharePdf((opts) => receiptHtml(view, opts), `Receipt ${view.number}`, logoUri);
 }

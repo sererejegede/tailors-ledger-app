@@ -5,7 +5,7 @@ import { database } from '@/db';
 import type Payment from '@/db/models/Payment';
 import { Alert } from '@/lib/alert';
 import { receiptView } from '@/lib/receipt';
-import { shareReceipt } from '@/lib/sharePdf';
+import { prepareReceipt, shareReceipt } from '@/lib/sharePaper';
 import { getPayment, voidPayment } from '@/repositories/jobs';
 import { getSettings } from '@/repositories/settings';
 import { colors, radius, space } from '@/theme/tokens';
@@ -52,6 +52,10 @@ export default function ReceiptScreen({ route }: Props) {
       }),
     [payment, voidedAt],
   );
+
+  useEffect(() => {
+    if (view) prepareReceipt(view, logoUri);
+  }, [view, logoUri]);
 
   const share = useCallback(async () => {
     if (!view || sharing) return;

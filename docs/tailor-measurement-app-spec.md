@@ -132,10 +132,10 @@ A **job** is one piece of work for one client: the clothes being made and the mo
 - **A job's title and collection date are optional.** The date is set with quick picks (1, 2, 3 weeks, 1 month) and a day-by-day ±, so there's no calendar to fish through.
 - **No payment method is recorded.**
 - **Paying more than the balance asks first** ("Record it anyway?"), so a mistyped amount is caught. It is never blocked.
-- **The receipt** is A5, carries the shop's logo and details, and lists every item on the job. One *Share* button makes a PDF and opens the phone's share sheet. It all works offline.
+- **The receipt** is A5, carries the shop's logo and details, and lists every item on the job. One *Share* button makes a PDF and opens the phone's share sheet (in the web app it's a PNG image instead, which keeps the download small). It all works offline.
 - **Mistakes are voided**, never edited or deleted. Each receipt keeps exactly what it printed.
 - **The shop profile** (logo, name, phone, address, footer, next receipt number, currency, and payment details: bank, account name, account number) lives in Settings, on the phone only.
-- **Invoices** are the job's bill, shared from *Send invoice* on Job detail. One *Share* button makes the PDF, like the receipt. An invoice is never saved and has no number: it's drawn from the job each time, so it always shows the job as it is now. It carries the client's phone and the shop's payment details when they're set. If the job has no collection date, *Add collection date* sets one (saved to the job); once set, *Change* picks another or clears it.
+- **Invoices** are the job's bill, shared from *Send invoice* on Job detail. One *Share* button makes the PDF (a PNG on the web), like the receipt. An invoice is never saved and has no number: it's drawn from the job each time, so it always shows the job as it is now. It carries the client's phone and the shop's payment details when they're set. If the job has no collection date, *Add collection date* sets one (saved to the job); once set, *Change* picks another or clears it.
 
 Rules and fields are in the data-model doc, §3.
 
