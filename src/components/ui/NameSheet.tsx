@@ -12,6 +12,10 @@ type Props = {
   submitLabel: string;
   /** Shown under the field, e.g. a duplicate name. */
   error?: string;
+  /** A note: several lines, sentence case. */
+  multiline?: boolean;
+  /** Save may be tapped with the field empty (clearing a note). */
+  optional?: boolean;
   onClose: () => void;
   onSubmit: (value: string) => void;
 };
@@ -20,9 +24,19 @@ type Props = {
  * A one-field sheet from the bottom (rule 5: small edits open near the thumb). Mount it
  * to open it. The button stays off until something is typed.
  */
-export function NameSheet({ title, placeholder, initialValue = '', submitLabel, error, onClose, onSubmit }: Props) {
+export function NameSheet({
+  title,
+  placeholder,
+  initialValue = '',
+  submitLabel,
+  error,
+  multiline,
+  optional,
+  onClose,
+  onSubmit,
+}: Props) {
   const [value, setValue] = useState(initialValue);
-  const ready = value.trim().length > 0;
+  const ready = optional || value.trim().length > 0;
   const submit = () => {
     if (ready) onSubmit(value.trim());
   };
@@ -31,16 +45,17 @@ export function NameSheet({ title, placeholder, initialValue = '', submitLabel, 
     <BottomSheet onClose={onClose}>
       <Text style={styles.title}>{title}</Text>
       <TextInput
-        style={[styles.input, error ? styles.inputError : null]}
+        style={[styles.input, multiline ? styles.area : null, error ? styles.inputError : null]}
         value={value}
         onChangeText={setValue}
         placeholder={placeholder}
         placeholderTextColor={colors.faint}
         autoFocus
-        autoCapitalize="words"
-        autoCorrect={false}
-        returnKeyType="done"
-        onSubmitEditing={submit}
+        multiline={multiline}
+        autoCapitalize={multiline ? 'sentences' : 'words'}
+        autoCorrect={!!multiline}
+        returnKeyType={multiline ? 'default' : 'done'}
+        onSubmitEditing={multiline ? undefined : submit}
         accessibilityLabel={title}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -63,6 +78,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: fontSizes.base,
     color: colors.text,
+  },
+  area: {
+    minHeight: 112,
+    paddingVertical: space.md,
+    borderRadius: radius.card,
+    textAlignVertical: 'top',
+    lineHeight: 22,
   },
   inputError: { borderColor: colors.danger },
   error: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.danger, marginTop: -space.xs },

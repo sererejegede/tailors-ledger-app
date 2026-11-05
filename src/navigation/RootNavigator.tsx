@@ -42,7 +42,7 @@ export default function RootNavigator() {
       />
       <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="ClientJobs" component={ClientJobsScreen} options={{ animation: 'slide_from_right' }} />
-      <Stack.Screen name="SetDetail" component={SetDetailScreen} options={detailHeader} />
+      <Stack.Screen name="SetDetail" component={SetDetailScreen} options={{ animation: 'slide_from_right' }} />
       {/* Draws its own ScreenHeader (Back + title), so the native header stays hidden. */}
       <Stack.Screen name="Templates" component={TemplatesScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="TemplateEditor" component={TemplateEditorScreen} options={detailHeader} />
