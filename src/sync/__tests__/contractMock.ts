@@ -50,7 +50,15 @@ const encodeCursor = (seq: number): string => `seq:${seq}`;
 
 export class MockContractServer implements SyncTransport {
   private store = new Map<string, StoredRow>(); // key: `${table}:${id}`
-  private seq = 0;
+  /** The real backend stamps every user's writes from one global sequence; pass the same
+   * counter to several servers (one per account) to model that. */
+  private counter: { n: number };
+  private get seq() {
+    return this.counter.n;
+  }
+  private set seq(n: number) {
+    this.counter.n = n;
+  }
   private now = 1_000_000;
   /** Records each push payload for assertions (e.g. idempotency). */
   public pushLog: PushRequest[] = [];
@@ -59,6 +67,10 @@ export class MockContractServer implements SyncTransport {
   /** Ids owned by another user. Ids are global on the server, so pushing one is rejected
    * with `id_conflict` (what the real backend did with the fixed seed ids). */
   public foreignIds = new Set<string>();
+
+  constructor(sequence: { n: number } = { n: 0 }) {
+    this.counter = sequence;
+  }
 
   private key(table: SyncTable, id: string) {
     return `${table}:${id}`;

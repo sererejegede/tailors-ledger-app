@@ -122,4 +122,6 @@ export type SyncTransport = {
 export type SyncResult =
   | { ok: true; pushed: number; pulled: number; rejected: RejectedRow[]; syncedAt: number }
   | { ok: false; skipped: 'not-configured' | 'signed-out' | 'already-running' }
+  /** The device holds another account's data with changes not yet backed up; nothing ran. */
+  | { ok: false; skipped: 'other-account'; otherAccount: string | null; unsynced: number }
   | { ok: false; error: string };

@@ -6,7 +6,10 @@ jest.mock('@/lib/config', () => ({
   isBackendConfigured: true,
   isSupabaseConfigured: false,
 }));
-jest.mock('@/auth/supabase', () => ({ getAccessToken: jest.fn(async () => 'mock-token') }));
+jest.mock('@/auth/supabase', () => ({
+  getAccessToken: jest.fn(async () => 'mock-token'),
+  getSignedInAccount: jest.fn(async () => ({ id: 'user-1', email: 'one@example.com' })),
+}));
 
 import { Database } from '@nozbe/watermelondb';
 import { makeTestDatabase } from '@/db/testDatabase';
@@ -32,6 +35,7 @@ const NOW = 1_725_000_000_000;
 const deps = (server: MockContractServer) => ({
   transport: server,
   getToken: async () => 'mock-token' as string | null,
+  getAccount: async () => ({ id: 'user-1', email: 'one@example.com' }),
   now: () => NOW,
   sleep: async () => {},
   imageDeps: null, // Stage C is exercised in images.test.ts; skip the upload pass here.

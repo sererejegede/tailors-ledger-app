@@ -1,6 +1,7 @@
 import { Database } from '@nozbe/watermelondb';
 import { isBackendConfigured } from '@/lib/config';
-import { getAccessToken } from '@/auth/supabase';
+import { getAccessToken, getSignedInAccount } from '@/auth/supabase';
+import { ensureSeeded } from '@/db/seed';
 import { nowMs } from '@/lib/time';
 import {
   SYNC_TABLES,
@@ -30,6 +31,15 @@ import {
 import { runImageUploads, defaultImageUploadDeps, type ImageUploadDeps } from './images';
 import { reconcileDefaultTemplate, reconcileStarterTemplates } from './seedReconcile';
 import { syncError } from './logger';
+import {
+  countUnsynced,
+  getSyncAccount,
+  pruneRowsNotInAccount,
+  recordSeen,
+  setSyncAccount,
+  type SeenIds,
+  type SyncAccount,
+} from './account';
 
 /**
  * The hand-rolled sync loop (sync-contract §12). Deliberately NOT WatermelonDB's
@@ -49,6 +59,8 @@ const BASE_BACKOFF_MS = 500;
 export type SyncDeps = {
   transport?: SyncTransport;
   getToken?: () => Promise<string | null>;
+  /** Who is signed in; the device's data is scoped to this account. */
+  getAccount?: () => Promise<SyncAccount | null>;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
   /** Image upload boundary (Stage C); when omitted the native deps are used. Pass `null`
@@ -99,6 +111,7 @@ async function withRetry<T>(
 export async function runSync(database: Database, deps: SyncDeps = {}): Promise<SyncResult> {
   const transport = deps.transport ?? httpTransport;
   const getToken = deps.getToken ?? getAccessToken;
+  const getAccount = deps.getAccount ?? getSignedInAccount;
   const now = deps.now ?? nowMs;
   const sleep = deps.sleep ?? defaultSleep;
 
@@ -106,17 +119,37 @@ export async function runSync(database: Database, deps: SyncDeps = {}): Promise<
   if (running) return { ok: false, skipped: 'already-running' };
 
   const token = await getToken();
-  if (!token) return { ok: false, skipped: 'signed-out' };
+  const account = await getAccount();
+  if (!token || !account) return { ok: false, skipped: 'signed-out' };
 
   running = true;
   try {
-    let cursor = await getCursor(database);
+    // ── Whose data is on this device? (data model §1c) ──────────────────────────────
+    // One store holds one account. A different account signing in gets a full pull, then
+    // the rows it doesn't have are removed. Its cursor is never reused: server_seq is one
+    // counter across all users, so another account's cursor skips this account's rows.
+    const owner = await getSyncAccount(database);
+    const hasSynced = (await getLastSyncedAt(database)) != null;
+    const switched = owner != null && owner.id !== account.id;
+    if (switched) {
+      // Nothing that exists only on this device may leave with the other account's data,
+      // or be pushed into this one. Wait until it's backed up under its own account.
+      const unsynced = await countUnsynced(database);
+      if (unsynced > 0) {
+        return { ok: false, skipped: 'other-account', otherAccount: owner.email, unsynced };
+      }
+    }
+    // A build from before accounts were recorded can't tell whose synced rows it holds, so
+    // it re-scopes once too. Un-pushed rows there go to the signed-in account, as before.
+    const rescope = switched || (owner == null && hasSynced);
+
+    let cursor = rescope ? null : await getCursor(database);
     let pushed = 0;
     let pulled = 0;
     const rejected: RejectedRow[] = [];
 
     // ── Pull (paged on has_more, §5) ────────────────────────────────────────────────
-    const pullAll = async () => {
+    const pullAll = async (seen?: SeenIds) => {
       for (let page = 0; page < MAX_PULL_PAGES; page++) {
         let resp: PullResponse;
         try {
@@ -137,6 +170,7 @@ export async function runSync(database: Database, deps: SyncDeps = {}): Promise<
         }
 
         const changes = normalizeEnvelope(resp.changes);
+        if (seen) recordSeen(seen, changes);
         const appliedResult = await applyServerChanges(database, changes, now());
         pulled += appliedResult.upserted + appliedResult.deleted;
         cursor = resp.cursor;
@@ -154,7 +188,7 @@ export async function runSync(database: Database, deps: SyncDeps = {}): Promise<
 
     // ── First sync on this device: pull before pushing (§12, data model §1b) ──────────
     // So we know whether the account already has templates before sending our seed.
-    const firstSync = (await getLastSyncedAt(database)) == null;
+    const firstSync = !hasSynced;
     // After an upgrade that adds a table, pull everything once: the old build skipped that
     // table's rows while its cursor moved past them (§4). A first sync already does.
     const fullPullDue = !firstSync && (await syncedTablesChanged(database, SYNC_TABLES));
@@ -185,9 +219,17 @@ export async function runSync(database: Database, deps: SyncDeps = {}): Promise<
 
     // The upgrade's full pull runs after the push, not before, so un-pushed local edits
     // are never overwritten.
-    if (fullPullDue) cursor = null;
-    await pullAll();
+    if (fullPullDue || rescope) cursor = null;
+    const seen: SeenIds | undefined = rescope ? new Map() : undefined;
+    await pullAll(seen);
     await rememberSyncedTables(database, SYNC_TABLES);
+
+    if (seen) {
+      await pruneRowsNotInAccount(database, seen);
+      // An account with no templates would leave none: re-seed the starters (pushed next sync).
+      await ensureSeeded(database);
+    }
+    await setSyncAccount(database, account);
 
     // Exactly one default per account once everything has landed (data model §1b).
     await reconcileDefaultTemplate(database);

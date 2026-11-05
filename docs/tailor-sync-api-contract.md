@@ -277,6 +277,8 @@ Push-before-pull keeps the client from overwriting its own un-pushed edits with 
 
 **A device's first sync** (it has never completed one) runs an extra pull before step 3, so the client can see whether the account already has templates and drop its unused starter templates instead of pushing duplicates (data model §1b). A brand-new device has no un-pushed edits that a pull could overwrite, so the reason for push-first doesn't apply. No wire change.
 
+**A different account on the same device** never reuses the cursor: `server_seq` is one sequence for all users, so another account's cursor skips this account's older rows. The client pulls in full (`cursor: null`) and drops the previous account's synced rows; if the previous account still has unpushed changes, it doesn't sync at all until they're pushed under that account (data model §1c). No wire change.
+
 ---
 
 ## 13. Knobs to confirm

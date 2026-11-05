@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -10,6 +10,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useAuth } from '@/auth/AuthProvider';
 import { useSync } from '@/sync';
+import { Alert } from '@/lib/alert';
+import { cleanupMessage, type CleanupPlan } from '@/sync/cleanup';
 import { getRelativeTime } from '@/lib/time';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { buttonLabel, fonts } from '@/theme/typography';
@@ -25,7 +27,18 @@ import LogOutIcon from '@/assets/icons/log-out-01.svg';
  */
 export function AccountSection() {
   const { session, configured, signInWithGoogle, signInWithMagicLink, signOut } = useAuth();
-  const { syncing, lastSyncedAt, lastError, rejected, syncNow } = useSync();
+  const {
+    syncing,
+    lastSyncedAt,
+    lastError,
+    rejected,
+    blockedBy,
+    syncNow,
+    backUpBeforeSignOut,
+    cleanup,
+    removeCleanup,
+  } = useSync();
+  const [signingOut, setSigningOut] = useState(false);
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | undefined>();
@@ -47,6 +60,67 @@ export function AccountSection() {
   const spinStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${spin.value * 360}deg` }],
   }));
+
+  // Rows that can never sync to this account (data model §1d): confirm, then remove them
+  // from this phone. Shown here in Settings only, never over a measuring session.
+  const confirmCleanup = (plan: CleanupPlan, after?: { removed?: () => void; kept?: () => void }) => {
+    Alert.alert('Remove data from this phone', cleanupMessage(plan), [
+      { text: 'Keep it', style: 'cancel', onPress: after?.kept },
+      {
+        text: 'Remove from this phone',
+        style: 'destructive',
+        onPress: async () => {
+          const { stale } = await removeCleanup(plan);
+          if (stale) {
+            Alert.alert('Nothing removed', 'This data changed since it was shown. Sync again to review it.');
+          } else {
+            after?.removed?.();
+          }
+        },
+      },
+    ]);
+  };
+
+  // Offer it once per set of rows when a sync finds them; "Review" reopens it.
+  const offeredRef = useRef(new Set<string>());
+  useEffect(() => {
+    if (!cleanup || offeredRef.current.has(cleanup.signature)) return;
+    offeredRef.current.add(cleanup.signature);
+    confirmCleanup(cleanup);
+  }, [cleanup?.signature]);
+
+  // Back up this account's changes before signing out, so the next account to sign in
+  // starts clean. Only if something still can't be backed up do we ask.
+  const confirmSignOut = async () => {
+    setSigningOut(true);
+    const { unsynced, error: backUpError, cleanup: plan } = await backUpBeforeSignOut();
+    setSigningOut(false);
+    if (unsynced === 0) {
+      await signOut();
+      return;
+    }
+    const askSignOutAnyway = () => signOutAnyway(unsynced, backUpError);
+    if (plan) {
+      offeredRef.current.add(plan.signature);
+      confirmCleanup(plan, { removed: () => void confirmSignOut(), kept: askSignOutAnyway });
+      return;
+    }
+    askSignOutAnyway();
+  };
+
+  const signOutAnyway = (unsynced: number, backUpError: string | null) => {
+    const changes = `${unsynced} change${unsynced === 1 ? '' : 's'}`;
+    Alert.alert(
+      'Sign out',
+      `${changes} on this phone couldn’t be backed up${backUpError ? ` (${backUpError})` : ''}. ` +
+        'Stay signed in and try again when you’re online. If you sign out anyway, they stay on ' +
+        'this phone, and another account can’t sync here until they’re backed up.',
+      [
+        { text: 'Stay signed in', style: 'cancel' },
+        { text: 'Sign out anyway', style: 'destructive', onPress: () => void signOut() },
+      ],
+    );
+  };
 
   const google = async () => {
     setBusy(true);
@@ -92,9 +166,22 @@ export function AccountSection() {
           {rejected.length > 0 ? (
             <Text style={styles.warn}>
               {rejected.length} change{rejected.length === 1 ? '' : 's'} couldn’t sync.
+              {cleanup ? (
+                <Text style={styles.link} onPress={() => confirmCleanup(cleanup)}>
+                  {' '}Review
+                </Text>
+              ) : null}
             </Text>
           ) : null}
           {lastError ? <Text style={styles.error}>Sync failed: {lastError}</Text> : null}
+          {blockedBy ? (
+            <Text style={styles.warn}>
+              Sync is paused. This phone has {blockedBy.unsynced} change
+              {blockedBy.unsynced === 1 ? '' : 's'} from{' '}
+              {blockedBy.otherAccount ?? 'another account'} that aren’t backed up yet. Sign in as
+              that account and sync first, then switch back.
+            </Text>
+          ) : null}
 
           <View style={styles.row}>
             <Pressable
@@ -107,8 +194,12 @@ export function AccountSection() {
                 <RefreshIcon color={colors.accent} />
               </Animated.View>
             </Pressable>
-            <Pressable style={styles.secondaryBtn} onPress={signOut}>
-              <Text style={styles.secondaryText}>Sign out</Text>
+            <Pressable
+              style={[styles.secondaryBtn, (syncing || signingOut) && styles.btnDisabled]}
+              disabled={syncing || signingOut}
+              onPress={confirmSignOut}
+            >
+              <Text style={styles.secondaryText}>{signingOut ? 'Backing up…' : 'Sign out'}</Text>
               <LogOutIcon color={colors.accent} />
             </Pressable>
           </View>
