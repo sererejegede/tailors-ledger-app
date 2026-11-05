@@ -308,7 +308,7 @@ export async function jobSummary(database: Database, jobId: string): Promise<Job
 }
 
 /** What a job is called: its title, or its first item. */
-function jobLabel(job: Job, items: JobItem[]): string {
+export function jobLabel(job: Job, items: JobItem[]): string {
   if (job.title) return job.title;
   const [first, ...rest] = items;
   if (!first) return 'Job';

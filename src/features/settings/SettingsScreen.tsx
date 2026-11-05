@@ -1,7 +1,9 @@
 import { Fragment, useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '@/navigation/types';
 import { database } from '@/db';
 import type AppSettings from '@/db/models/AppSettings';
 import type Template from '@/db/models/Template';
@@ -28,6 +30,7 @@ const FIRST_APP_ROW = 3;
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { setLarge } = useFontScale();
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -151,6 +154,9 @@ export default function SettingsScreen() {
       <ShopProfileSection settings={settings} nextReceiptNumber={nextReceipt} onPatch={patch} />
 
       <SettingsHeading title="Measurement" />
+
+      {/* Templates left the tab bar (S12); the full Settings redesign is a later step. */}
+      <SettingsRow title="Templates" value={`${templates.length}`} onPress={() => navigation.navigate('Templates')} />
 
       {
         allSettings.map((s, index) => {

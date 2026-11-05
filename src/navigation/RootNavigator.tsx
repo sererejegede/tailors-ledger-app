@@ -5,6 +5,7 @@ import Tabs from './Tabs';
 import MeasurementEntryScreen from '@/features/measurement-entry/MeasurementEntryScreen';
 import ClientDetailScreen from '@/features/client-detail/ClientDetailScreen';
 import SetDetailScreen from '@/features/set-detail/SetDetailScreen';
+import TemplatesScreen from '@/features/templates/TemplatesScreen';
 import TemplateEditorScreen from '@/features/templates/TemplateEditorScreen';
 import RecordPaymentScreen from '@/features/jobs/RecordPaymentScreen';
 import JobDetailScreen from '@/features/jobs/JobDetailScreen';
@@ -40,6 +41,8 @@ export default function RootNavigator() {
       />
       <Stack.Screen name="ClientDetail" component={ClientDetailScreen} options={detailHeader} />
       <Stack.Screen name="SetDetail" component={SetDetailScreen} options={detailHeader} />
+      {/* Draws its own ScreenHeader (Back + title), so the native header stays hidden. */}
+      <Stack.Screen name="Templates" component={TemplatesScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="TemplateEditor" component={TemplateEditorScreen} options={detailHeader} />
       <Stack.Screen
         name="RecordPayment"

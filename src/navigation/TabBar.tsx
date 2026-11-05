@@ -14,7 +14,7 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { colors, radius, space, fontSizes } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
 import UsersIcon from '@/assets/icons/users-01.svg';
-import CompassIcon from '@/assets/icons/compass.svg';
+import BriefcaseIcon from '@/assets/icons/briefcase-01.svg';
 import SettingsIcon from '@/assets/icons/settings-01.svg';
 
 /**
@@ -24,7 +24,7 @@ import SettingsIcon from '@/assets/icons/settings-01.svg';
  */
 const ICONS: Record<string, ComponentType<SvgProps>> = {
   Clients: UsersIcon,
-  Templates: CompassIcon,
+  Jobs: BriefcaseIcon,
   Settings: SettingsIcon,
 };
 

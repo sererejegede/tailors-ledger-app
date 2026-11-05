@@ -1,43 +1,49 @@
 import { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, space, fontSizes } from '@/theme/tokens';
-import { fonts } from '@/theme/typography';
-import ClockIcon from '@/assets/icons/clock-rewind.svg';
-import ChevronIcon from '@/assets/icons/chevron-right.svg';
+import { colors, radius, space, fontSizes } from '@/theme/tokens';
+import { fonts, valueText } from '@/theme/typography';
 import type Client from '@/db/models/Client';
+import { initials } from '@/lib/jobBoard';
 import { getRelativeTime } from '@/lib/time';
 
 /**
- * A client list row (Clients home / search results): the client's name, a clock-rewind
- * icon + a "last updated" line beneath it, and a chevron affordance. Presentational —
- * the caller passes the already-formatted `subtitle` (e.g. "Updated 2h ago").
+ * A row on the Clients home (S1): initials, the name, the phone and when the client was
+ * last updated, and what they still owe when it's above 0. `owed` comes already formatted.
  */
 type Props = {
   client: Client;
+  owed?: string;
+  last?: boolean;
   onPress: () => void;
 };
 
-function ClientRowBase({ client, onPress }: Props) {
-  const relativeTime = getRelativeTime(client.updatedAt);
+function ClientRowBase({ client, owed, last, onPress }: Props) {
+  const name = client.name || 'Unnamed';
+  const meta = `${client.phone?.trim() || 'No phone'} · ${getRelativeTime(client.updatedAt)}`;
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.row, last && styles.last, pressed && styles.pressed]}
       accessibilityRole="button"
-      accessibilityLabel={client.name}
+      accessibilityLabel={owed ? `${name}, ${owed} owed` : name}
     >
+      <View style={styles.avatar}>
+        <Text style={styles.initials}>{initials(name)}</Text>
+      </View>
       <View style={styles.main}>
         <Text style={styles.name} numberOfLines={1}>
-          {client.name || 'Unnamed'}
+          {name}
         </Text>
-        {relativeTime ? (
-          <View style={styles.meta}>
-            <ClockIcon width={14} height={14} color={colors.muted} />
-            <Text style={styles.metaText} numberOfLines={1}>{relativeTime}</Text>
-          </View>
-        ) : null}
+        <Text style={styles.meta} numberOfLines={1}>
+          {meta}
+        </Text>
       </View>
-      <ChevronIcon width={20} height={20} color={colors.faint} />
+      {owed ? (
+        <View style={styles.owe}>
+          <Text style={styles.oweAmount}>{owed}</Text>
+          <Text style={styles.oweLabel}>owed</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -46,19 +52,29 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: space.md,
-    paddingVertical: 14,
-    paddingHorizontal: space.lg,
+    minHeight: 64,
+    paddingVertical: space.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.line,
-    backgroundColor: colors.bg,
   },
-  pressed: { backgroundColor: colors.accentTint },
-  main: { flex: 1, gap: 4 },
-  name: { fontFamily: fonts.semibold, fontSize: fontSizes.lg, color: colors.text },
-  meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaText: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted },
+  last: { borderBottomWidth: 0 },
+  pressed: { opacity: 0.6 },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.round,
+    backgroundColor: '#EFEBE3',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  initials: { fontFamily: fonts.bold, fontSize: fontSizes.sm, color: colors.text },
+  main: { flex: 1, minWidth: 0 },
+  name: { fontFamily: fonts.semibold, fontSize: fontSizes.base, color: colors.text },
+  meta: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.muted, marginTop: 2 },
+  owe: { alignItems: 'flex-end' },
+  oweAmount: { ...valueText, fontSize: fontSizes.sm, fontWeight: '600', color: colors.text },
+  oweLabel: { fontFamily: fonts.body, fontSize: fontSizes.xs, color: colors.muted },
 });
 
 export const ClientRow = memo(ClientRowBase);

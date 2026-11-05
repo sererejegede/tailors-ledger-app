@@ -1,9 +1,11 @@
 import type { NavigatorScreenParams } from '@react-navigation/native';
+import type { JobFilter } from '@/lib/jobBoard';
 
 /** Bottom tabs — top-level screens only (the tab bar never shows while measuring). */
 export type TabsParamList = {
   Clients: undefined;
-  Templates: undefined;
+  // The home tiles open it already filtered.
+  Jobs: { filter?: JobFilter } | undefined;
   Settings: undefined;
 };
 
@@ -18,6 +20,8 @@ export type RootStackParamList = {
   MeasurementEntry: { setId: string } | { templateId: string; clientId?: string; label?: string };
   ClientDetail: { clientId: string };
   SetDetail: { setId: string };
+  // Opens from Settings; no longer a tab.
+  Templates: undefined;
   TemplateEditor: { templateId?: string };
   // Starts a job; the next payment on a job is a sheet on JobDetail.
   RecordPayment: { clientId: string };
