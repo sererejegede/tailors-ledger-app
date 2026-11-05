@@ -31,9 +31,10 @@ to the sync contract — do not invent fields or endpoints; change the docs firs
 - Offline-first: the app is fully usable with no connection. **Never block a
   measurement session on the network.**
 - IDs: UUID v7, generated on the device.
-- Soft deletes: `deleted_at` tombstones; never hard-delete on device. Sole exception:
+- Soft deletes: `deleted_at` tombstones; never hard-delete on device. Two exceptions:
   unused, never-synced starter templates are discarded when joining an account that
-  already has templates (data model §1b).
+  already has templates (data model §1b); and when a different account signs in, the
+  previous account's already-synced rows are removed after a full pull (data model §1c).
 - History: `measurement_values` is append-only; current value cached on
   `measurement_items`. Re-measuring writes a value row **only for items whose value
   changed** — untouched items get no write.

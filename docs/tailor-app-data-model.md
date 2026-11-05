@@ -9,7 +9,7 @@
 The app must be fully usable with no connection and reconcile later, so the model follows five rules everywhere:
 
 1. **IDs are generated on the device**, not by the server. Use **UUID v7** (time-ordered, so rows also sort naturally by creation). Auto-increment integer keys are unusable offline because two devices would mint the same id.
-2. **Every syncable row carries bookkeeping**: `created_at`, `updated_at`, `deleted_at` (soft delete / tombstone), and a push/pull status. (On the actual WatermelonDB store this status is the engine's built-in `_status`/`_changed`, **not** a `sync_status` column — see §6.) Nothing is ever hard-deleted on the device — deletes are tombstones that propagate, then get purged after they've synced. The one exception is an unused starter template that never left the device (§1b).
+2. **Every syncable row carries bookkeeping**: `created_at`, `updated_at`, `deleted_at` (soft delete / tombstone), and a push/pull status. (On the actual WatermelonDB store this status is the engine's built-in `_status`/`_changed`, **not** a `sync_status` column — see §6.) Nothing is ever hard-deleted on the device — deletes are tombstones that propagate, then get purged after they've synced. The exceptions are an unused starter template that never left the device (§1b), and another account's already-synced rows when the device switches account (§1c).
 3. **History is append-only.** Measurement values are never updated in place; a change writes a new immutable row. Append-only data effectively cannot conflict, which is exactly what you want over a flaky connection — and it's also the table that satisfies the "keep the previous sleeve length" requirement for free.
 4. **Binaries never live in a row.** Photos sit on the device filesystem; the database stores a local URI, an (eventual) remote URL, and an upload status. The image bytes sync through their own background queue, not through the row.
 5. **Conflict resolution is last-write-wins per row**, keyed on `updated_at`, with the server stamping the authoritative time at sync to absorb device-clock skew. Because the high-churn data (values) is append-only, true conflicts are rare and land only on small edits like renaming a client.
@@ -72,6 +72,37 @@ not leak into an account that already has templates.
 - **One default per account.** After each pull, if several non-deleted templates have
   `is_default = true`, the most recently updated one wins and the rest are set to false
   (a normal synced edit). `app_settings.default_template_id` follows the winner.
+
+---
+
+## 1c. One account per device store
+
+The device store holds one account's data at a time. It records which account that is
+(the signed-in user's id, in WatermelonDB's local key-value store, so no schema change).
+The pull cursor belongs to that account too: the server's sequence is shared by all users,
+so another account's cursor would skip this account's older rows.
+
+- **Same account:** normal delta sync.
+- **First sync on a device:** whatever is on it (offline work, starters) goes to the
+  account that signs in, as before; the device then belongs to that account.
+- **Signing out** (where a switch starts): while the account is still signed in, the app
+  first syncs anything not yet backed up (unpushed rows, or photos not uploaded). If that
+  leaves nothing behind, it signs out. If something still can't be backed up (offline, a
+  server error, a rejected row), it says so and asks before signing out.
+- **A different account signs in:**
+  - If the device still has anything not yet backed up (the tailor signed out anyway, or
+    worked signed out), sync pauses and Settings asks the tailor to sign back in to the
+    other account and sync first. Nothing is pushed into the new account and nothing is
+    removed.
+  - Otherwise the device pulls the new account in full (cursor `null`), then removes the
+    synced rows that pull didn't mention. Every one of them is already on the server under
+    its own account, so nothing is lost; signing back in to it brings them back. Unsynced
+    rows and the parents they hang off are never removed. Local `app_settings` (shop
+    profile, units, text size, app lock) stay; the cursor and default template follow the
+    new account. If the account has no templates, the starters are seeded again.
+- **Installs from before this was recorded** (synced, but no account stored) do the same
+  full pull and removal once, on their next sync. Their unpushed rows go to the signed-in
+  account, as they did before.
 
 ---
 

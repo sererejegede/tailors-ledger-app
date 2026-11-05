@@ -38,3 +38,11 @@ export async function getAccessToken(): Promise<string | null> {
   const { data } = await supabase.auth.getSession();
   return data.session?.access_token ?? null;
 }
+
+/** Who is signed in, or null. Sync uses the id to tell whose data the device holds. */
+export async function getSignedInAccount(): Promise<{ id: string; email: string | null } | null> {
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  const user = data.session?.user;
+  return user ? { id: user.id, email: user.email ?? null } : null;
+}
