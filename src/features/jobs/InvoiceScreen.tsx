@@ -1,11 +1,11 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { database } from '@/db';
 import { Alert } from '@/lib/alert';
 import { invoiceView, type InvoiceSource } from '@/lib/invoice';
-import { shareInvoice } from '@/lib/sharePdf';
+import { prepareInvoice, shareInvoice } from '@/lib/sharePaper';
 import { invoiceSource, updateJob } from '@/repositories/jobs';
 import { colors, fontSizes, radius, space } from '@/theme/tokens';
 import { fonts } from '@/theme/typography';
@@ -43,6 +43,10 @@ export default function InvoiceScreen({ route }: Props) {
   );
 
   const view = useMemo(() => source && invoiceView(source), [source]);
+
+  useEffect(() => {
+    if (view) prepareInvoice(view, logoUri);
+  }, [view, logoUri]);
 
   const share = useCallback(async () => {
     if (!view || sharing) return;
