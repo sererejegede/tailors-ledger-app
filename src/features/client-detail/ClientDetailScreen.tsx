@@ -83,8 +83,7 @@ export default function ClientDetailScreen({ route, navigation }: Props) {
     navigation.navigate('MeasurementEntry', { templateId, clientId });
   }, [clientId, navigation]);
 
-  // Until the New job screen arrives (plan commit 6), a job starts on Record payment.
-  const addJob = () => navigation.navigate('RecordPayment', { clientId });
+  const addJob = () => navigation.navigate('NewJob', { clientId });
 
   if (!client) return <View style={styles.screen} />;
 

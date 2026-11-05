@@ -26,7 +26,7 @@ export type RootStackParamList = {
   Templates: undefined;
   TemplateEditor: { templateId?: string };
   // Starts a job; the next payment on a job is a sheet on JobDetail.
-  RecordPayment: { clientId: string };
+  NewJob: { clientId: string };
   JobDetail: { jobId: string };
   Receipt: { paymentId: string };
   // Drawn from the job each time; nothing about an invoice is saved.

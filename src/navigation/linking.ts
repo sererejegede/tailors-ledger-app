@@ -29,7 +29,7 @@ export const linking: LinkingOptions<RootStackParamList> = {
       SetDetail: 'set/:setId',
       Templates: 'templates',
       TemplateEditor: 'template',
-      RecordPayment: 'record-payment/:clientId',
+      NewJob: 'client/:clientId/new-job',
       JobDetail: 'job/:jobId',
       Receipt: 'receipt/:paymentId',
       Invoice: 'invoice/:jobId',

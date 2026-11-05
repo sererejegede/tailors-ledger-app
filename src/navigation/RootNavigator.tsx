@@ -8,7 +8,7 @@ import ClientJobsScreen from '@/features/client-detail/ClientJobsScreen';
 import SetDetailScreen from '@/features/set-detail/SetDetailScreen';
 import TemplatesScreen from '@/features/templates/TemplatesScreen';
 import TemplateEditorScreen from '@/features/templates/TemplateEditorScreen';
-import RecordPaymentScreen from '@/features/jobs/RecordPaymentScreen';
+import NewJobScreen from '@/features/jobs/NewJobScreen';
 import JobDetailScreen from '@/features/jobs/JobDetailScreen';
 import ReceiptScreen from '@/features/jobs/ReceiptScreen';
 import InvoiceScreen from '@/features/jobs/InvoiceScreen';
@@ -47,8 +47,8 @@ export default function RootNavigator() {
       <Stack.Screen name="Templates" component={TemplatesScreen} options={{ animation: 'slide_from_right' }} />
       <Stack.Screen name="TemplateEditor" component={TemplateEditorScreen} options={detailHeader} />
       <Stack.Screen
-        name="RecordPayment"
-        component={RecordPaymentScreen}
+        name="NewJob"
+        component={NewJobScreen}
         options={{ animation: 'slide_from_right' }}
       />
       <Stack.Screen name="JobDetail" component={JobDetailScreen} options={detailHeader} />

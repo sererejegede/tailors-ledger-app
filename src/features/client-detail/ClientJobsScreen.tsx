@@ -74,8 +74,7 @@ export default function ClientJobsScreen({ route, navigation }: Props) {
         />
       )}
       <BottomBar>
-        {/* Until the New job screen arrives (plan commit 6), a job starts on Record payment. */}
-        <Button kind="primary" label="Add job" onPress={() => navigation.navigate('RecordPayment', { clientId })} />
+        <Button kind="primary" label="Add job" onPress={() => navigation.navigate('NewJob', { clientId })} />
       </BottomBar>
     </View>
   );

@@ -15,7 +15,7 @@ import { notDeleted, softDeleteById } from './softDelete';
  * towards them. Every payment is one receipt (data-model §3).
  *
  * Totals and balances are always calculated here, never stored. A job is written whole on
- * save, like a set (lazy create, §1a), so backing out of Record payment leaves nothing.
+ * save, like a set (lazy create, §1a), so backing out of New job leaves nothing.
  */
 
 export class InvalidJobError extends Error {

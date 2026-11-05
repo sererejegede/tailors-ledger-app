@@ -111,6 +111,11 @@ _About 1,500 lines._
 
 - Pop-ups slide up and lists fade in, both briefly.
 - The "filled" count ticks up as you measure.
+- A blinking cursor shows where the number pad is typing, everywhere the pad is used:
+  - the active row on the measuring screen;
+  - the one-item pop-up;
+  - a price on New job and Job detail;
+  - the payment amount.
 - Saving shows a short "Saved".
 - Unused code is removed: the tip pop-ups, the old floating + buttons and the old job pop-ups.
 - `PROGRESS.md` is updated.
