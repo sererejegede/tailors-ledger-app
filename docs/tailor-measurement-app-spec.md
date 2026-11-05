@@ -86,15 +86,19 @@ Before saving, items edited this session carry a subtle "changed" marker so the 
 
 | Screen | Purpose |
 |---|---|
-| **Clients** (home) | Search-first list of clients (by name/phone). Primary actions: *New measurement*, *Add client*. |
-| **Client detail** | Client info, the client-level **comment**, + list of their measurement sets (shown by label, or by date if unlabelled — e.g. "Wedding outfit — 2 wks ago", "12 May"), + their jobs and what each still owes. Actions: *New measurement set*, *Record payment*. |
+| **Clients** (home tab) | Search-first list of clients (by name/phone), with "This week" tiles: jobs due and money still owed. One **+** button opens *New measurement* and *Add client*. |
+| **Jobs** (tab) | Every job, filtered All / Still owed / Paid and grouped into Due this week, Later and No date yet. |
+| **Client detail** | Client info with *Call* and *WhatsApp*, the client-level **comment**, + list of their measurement sets (shown by label, or by date if unlabelled — e.g. "Wedding outfit — 2 wks ago", "12 May"), + their latest 3 jobs and what each still owes, with *View all*. Actions: *Add job*, *New measurement*. |
+| **Client's jobs** | All of one client's jobs, grouped Still owed and Paid. |
 | **Measurement entry** | The hero screen in §4. Used for new sets and re-measures. |
 | **Set detail (view)** | All items with current values, the set note, images, and a *Re-measure* button. Tap any item to see its history or quick-edit. |
 | **Item history** | Timeline of an item's previous values with dates. |
-| **Templates** | List, create, and edit templates (ordered items, default unit, optional ranges). |
+| **Templates** | Opens from Settings. List, create, and edit templates (ordered items, default unit, optional ranges). |
 | **New client** | Name only to create; phone, photo, comment all optional and deferrable. Instant. |
-| **Record payment** | §9a. Starts a job from Client detail, or takes the next payment from Job detail. |
-| **Job detail** | The job's balance, items and payments. Actions: *Send invoice*, *Record payment*. |
+| **New job** | §9a. Its own screen, opened by *Add job* on Client detail. Title, items (name and price), due date; *Create job* at the bottom. |
+| **Job detail** | The job's balance, items and payments. Items are added or repriced in the list. Actions: *Send invoice*, *Record payment* (a sheet with the amount pad). |
+| **Shop profile** | Opens from Settings: logo, name, phone, address, receipt footer, next receipt number, currency. |
+| **Payment details** | Opens from Settings: bank, account name, account number, as printed on invoices. |
 | **Receipt preview** | The receipt as it will print. Actions: *Share*, *Void receipt*. |
 | **Invoice preview** | The job's invoice as it will print. Actions: *Share*, *Add collection date* when none is set, otherwise *Change* (which can also clear it). |
 
@@ -119,10 +123,12 @@ Before saving, items edited this session carry a subtle "changed" marker so the 
 
 ## 9a. Jobs and receipts
 
-A **job** is one piece of work for one client: the clothes being made and the money paid towards them. Every payment gives one **receipt**. The measurement screen, Set detail and the bottom tabs don't change.
+A **job** is one piece of work for one client: the clothes being made and the money paid towards them. Every payment gives one **receipt**.
 
-- **Record payment** starts from Client detail only. It works like measuring: item rows on top, a pad in the thumb zone, *+ Add item* last, and nothing written until Save.
-- **An item's price is optional**, and an item can be linked to one of the client's measurement sets.
+- **A job starts from *Add job* on Client detail**, on its own New job screen. Items sit in a list with *+ Add item* last; each takes a name and a price. The number pad opens only when a price is tapped, with *Save* in its corner. *Create job* is at the bottom, and nothing is written until it's tapped.
+- **Payments are recorded from Job detail.** *Record payment* opens a sheet with the amount pad; Save opens the new receipt.
+- **An item's price is optional.** The data can link an item to one of the client's measurement sets, but the screens don't show that link.
+- **A job is Still owed** while its balance is above 0, **otherwise Paid**. Its collection date is shown as "Due …" on the tailor's screens; the receipt says "Collect by".
 - **A job's title and collection date are optional.** The date is set with quick picks (1, 2, 3 weeks, 1 month) and a day-by-day ±, so there's no calendar to fish through.
 - **No payment method is recorded.**
 - **Paying more than the balance asks first** ("Record it anyway?"), so a mistyped amount is caught. It is never blocked.

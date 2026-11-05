@@ -54,11 +54,23 @@ The measurement-entry screen IS the product. Mirror the paper card:
 - a scrollable list of items in template order; tap any row to make it active;
 - a docked input fixed in the thumb zone = whole-number pad + ¼ ½ ¾ chips + a **Next**
   button living in the pad's bottom-right cell; entering a value auto-advances to the
-  next empty item; an "X of Y filled" indicator; "**+ Add item**" as the last row;
+  next empty item; an "X of Y filled" indicator and a solid **Save set** on the dock's
+  top line; "**+ Add item**" as the last row;
 - no note/photo controls on this screen;
-- the bottom tabs (Clients · Templates · Settings) never appear while measuring.
+- the bottom tabs (Clients · Jobs · Settings) never appear while measuring.
 Keep values in a tabular/monospaced treatment; one tailor's-tape accent for focus and
-primary actions. Stay faithful to the wireframe.
+primary actions. Stay faithful to the redesign canvas (`docs/ux-redesign-plan.md` links
+it); the wireframe is the older reference.
+
+## Screen rules (redesign, 2026-11-05)
+- Headers hold only Back and the title; tab screens use a big title instead.
+- The main action is a full-width button at the bottom. On a tab screen, one **+**
+  button opens a labelled menu.
+- Four button kinds: solid maroon (the main action), a 1px maroon border (focus: Next
+  and the chosen chip), plain (everything else), and grey underlined text (small
+  actions; red for void and delete).
+- Three corner sizes: fully round for anything tapped on one line, 16 for cards, 24
+  (top only) for sheets.
 
 ## Current focus (recommended build order)
 1. Scaffold + the on-device SQLite store + migrations matching the data-model doc.
