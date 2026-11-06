@@ -1,5 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { persistImage } from './imagePersist';
+import { fileSize } from './imageUploadIo';
 
 /**
  * Camera/gallery capture for set images (spec §8). The picker returns a temp uri; we
@@ -41,6 +42,28 @@ export async function pickManyFromGallery(limit?: number): Promise<PickedImage[]
       height: a.height,
     })),
   );
+}
+
+/**
+ * Pick a single photo from the library (the shop logo). A photo over `maxBytes` is turned
+ * away before it's stored: 'too-large'. Returns null if denied or cancelled. The photo is
+ * kept as picked (no re-compression), so the size checked is the size stored.
+ */
+export async function pickOneFromGallery(maxBytes?: number): Promise<PickedImage | 'too-large' | null> {
+  const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (!perm.granted) return null;
+  const res = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    quality: 1,
+    allowsMultipleSelection: false,
+  });
+  const a = res.canceled ? undefined : res.assets?.[0];
+  if (!a) return null;
+  if (maxBytes != null) {
+    const size = a.fileSize ?? a.file?.size ?? (await fileSize(a.uri));
+    if (size > maxBytes) return 'too-large';
+  }
+  return { localUri: await persistImage(a.uri), width: a.width, height: a.height };
 }
 
 /** Capture with the camera. Returns null if denied or cancelled. */

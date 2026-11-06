@@ -101,7 +101,7 @@ export default function TemplateEditorScreen({ route, navigation }: Props) {
             {count === 0
               ? 'Add the measurements a new set starts with, in the order you take them.'
               : `Every item is shown, so you can drag any of them to a new place.${
-                  s.isNew ? '' : ' Changes save as you go.'
+                  s.isNew ? '' : ' Changes are saved automatically.'
                 } Tap an item to rename it, set its range or delete it.`}
           </Text>
 

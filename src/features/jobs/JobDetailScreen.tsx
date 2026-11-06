@@ -292,7 +292,7 @@ export default function JobDetailScreen({ route, navigation }: Props) {
           <Text style={styles.addText}>Add item</Text>
         </Pressable>
 
-        <SectionLabel title="Payments" aside={payments.length ? 'Tap one to see its receipt' : undefined} />
+        <SectionLabel title="Payments" />
         {payments.length === 0 ? <Text style={styles.empty}>No payments yet.</Text> : null}
         {payments.map((payment, i) => {
           const voided = payment.voidedAt != null;
