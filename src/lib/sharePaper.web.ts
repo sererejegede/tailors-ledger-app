@@ -12,11 +12,11 @@ import { receiptHtml } from './receiptHtml';
  * phone app still shares a PDF (sharePaper.ts).
  */
 
-// The page drawn at the browser's 96 PPI (A5's width), then doubled so the text stays
-// sharp when the client zooms in. Fixed, not the screen's pixel ratio, so a 3x phone
-// doesn't make a file twice the size.
+// The page drawn at the browser's 96 PPI (A5's width), then tripled so the text stays
+// sharp when the client zooms in. Fixed, not the screen's pixel ratio, so every phone
+// makes the same image.
 const PAGE_WIDTH = 559;
-const SCALE = 2;
+const SCALE = 3;
 
 function readAsDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
