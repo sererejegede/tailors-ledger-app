@@ -99,7 +99,7 @@ function PaymentDetailsForm({ queue, ...initial }: FormProps) {
             <Text style={styles.lineLabel}>Left off the invoice until something is filled in.</Text>
           )}
         </View>
-        <Text style={styles.note}>Changes save as you go.</Text>
+        <Text style={styles.note}>Changes are saved automatically.</Text>
       </ScrollView>
     </View>
   );

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { database } from '@/db';
 import { peekNextReceiptNumber } from '@/repositories/jobs';
-import { pickManyFromGallery } from '@/lib/images';
+import { Alert } from '@/lib/alert';
+import { pickOneFromGallery } from '@/lib/images';
 import { useImageSrc } from '@/lib/imageSrc';
 import { CURRENCIES, DEFAULT_CURRENCY } from '@/lib/money';
 import { parseNextReceiptNumber } from '@/lib/settingsSummary';
@@ -21,7 +22,10 @@ import {
 import ChevronIcon from '@/assets/icons/chevron-right.svg';
 import { useSettingsForm } from './useSettingsForm';
 
-const currencyOptions = CURRENCIES.map((c) => ({ id: c.code as string, name: `${c.code} ${c.symbol}  ${c.name}` }));
+/** It goes into every receipt and invoice, so it's kept small. */
+const LOGO_MAX_BYTES = 1024 * 1024;
+
+const currencyOptions =CURRENCIES.map((c) => ({ id: c.code as string, name: `${c.code} ${c.symbol}  ${c.name}` }));
 
 /**
  * S11a. What every receipt and invoice prints: the logo, name, phone, address, the receipt
@@ -52,7 +56,11 @@ export default function ShopProfileScreen() {
   }
 
   const pickLogo = async () => {
-    const [picked] = await pickManyFromGallery(1);
+    const picked = await pickOneFromGallery(LOGO_MAX_BYTES);
+    if (picked === 'too-large') {
+      Alert.alert('Logo too large', 'Pick an image of 1 MB or less.');
+      return;
+    }
     if (picked) save({ logoUri: picked.localUri });
   };
 
@@ -80,7 +88,14 @@ export default function ShopProfileScreen() {
       <ScreenHeader title="Shop profile" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.logoRow}>
-          <Logo uri={settings.logoUri} />
+          <Pressable
+            onPress={pickLogo}
+            style={({ pressed }) => pressed && styles.pressed}
+            accessibilityRole="button"
+            accessibilityLabel={settings.logoUri ? 'Change logo' : 'Add logo'}
+          >
+            <Logo uri={settings.logoUri} />
+          </Pressable>
           <View style={styles.logoText}>
             <Text style={styles.logoTitle}>Logo</Text>
             <Text style={styles.logoHint}>On receipts and invoices</Text>
@@ -155,7 +170,7 @@ export default function ShopProfileScreen() {
         {nextError ? <Text style={styles.error}>{nextError}</Text> : null}
 
         <Text style={styles.note}>
-          Changes save as you go. The next number can be raised to carry on from a paper receipt book, never
+          Changes are saved automatically. The next number can be raised to carry on from a paper receipt book, never
           lowered.
         </Text>
       </ScrollView>
