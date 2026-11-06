@@ -22,7 +22,9 @@ export const fonts = {
   bold: 'PlusJakartaSans_700Bold',
   title: 'Vollkorn_700Bold',
   titleSemi: 'Vollkorn_600SemiBold',
-  mono: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'monospace' })!,
+  // On the web, Android's monospace fonts have no ₦, so the browser is pointed at a
+  // sans-serif for it. Native text finds a fallback for the ₦ on its own.
+  mono: Platform.select({ ios: 'Menlo', android: 'monospace', default: 'Menlo, Consolas, monospace, sans-serif' })!,
 } as const;
 
 /** Tabular-mono style for measurement values (digits align column-wise). */

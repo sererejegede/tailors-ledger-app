@@ -13,11 +13,15 @@ const SAVE_AFTER_MS = 400;
  */
 export function useSettingsForm() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
+  // The database hands back the same record, changed in place, so React wouldn't see a new
+  // logo or currency without this.
+  const [, setVersion] = useState(0);
   const pending = useRef<SettingsPatch>({});
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const reload = useCallback(async () => {
     setSettings(await getSettings(database));
+    setVersion((v) => v + 1);
   }, []);
 
   useEffect(() => {

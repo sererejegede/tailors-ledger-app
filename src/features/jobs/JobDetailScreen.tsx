@@ -11,6 +11,7 @@ import { itemEdit, itemPrice, paidShare } from '@/lib/jobDetail';
 import { formatMoney, formatReceiptNumber } from '@/lib/money';
 import { formatDayMonth, formatWeekday } from '@/lib/time';
 import { getClient } from '@/repositories/clients';
+import { getSettings } from '@/repositories/settings';
 import {
   addJobItem,
   jobItems,
@@ -32,7 +33,14 @@ import type { RootStackParamList } from '@/navigation/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'JobDetail'>;
 
-type Loaded = { summary: JobSummary; clientName: string; items: JobItem[]; payments: Payment[] };
+type Loaded = {
+  summary: JobSummary;
+  clientName: string;
+  items: JobItem[];
+  payments: Payment[];
+  /** A receipt keeps the shop details it's saved with, so a missing name is worth a word first. */
+  shopNamed: boolean;
+};
 
 /** The item being typed in the list: an existing one (its id) or a new one. */
 /** The item being typed. `pricing`: the pad is open on its price (only once the price is tapped). */
@@ -54,12 +62,13 @@ export default function JobDetailScreen({ route, navigation }: Props) {
 
   const load = useCallback(async () => {
     const summary = await jobSummary(database, jobId);
-    const [client, items, payments] = await Promise.all([
+    const [client, items, payments, settings] = await Promise.all([
       getClient(database, summary.job.client.id),
       jobItems(database, jobId),
       jobPayments(database, jobId),
+      getSettings(database),
     ]);
-    setData({ summary, clientName: client?.name ?? '', items, payments });
+    setData({ summary, clientName: client?.name ?? '', items, payments, shopNamed: !!settings?.shopName?.trim() });
   }, [jobId]);
 
   useFocusEffect(
@@ -145,7 +154,7 @@ export default function JobDetailScreen({ route, navigation }: Props) {
 
   if (!data) return <View style={styles.screen} />;
 
-  const { summary, clientName, items, payments } = data;
+  const { summary, clientName, items, payments, shopNamed } = data;
   const { job, label, totalMinor, paidMinor, balanceMinor } = summary;
   const money = (minor: number) => formatMoney(minor, job.currency);
   const newRow = editing && editing.id == null;
@@ -346,6 +355,14 @@ export default function JobDetailScreen({ route, navigation }: Props) {
           balanceMinor={balanceMinor}
           currency={job.currency}
           onSave={savePayment}
+          onSetUpShop={
+            shopNamed
+              ? undefined
+              : () => {
+                  closeSheet();
+                  navigation.navigate('ShopProfile');
+                }
+          }
           onClose={closeSheet}
         />
       ) : null}

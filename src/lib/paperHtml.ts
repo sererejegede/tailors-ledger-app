@@ -17,7 +17,8 @@ const A5_RATIO = 210 / 148;
 
 const SANS = 'Helvetica, Arial, sans-serif';
 const SERIF = "Georgia, 'Times New Roman', serif";
-const MONO = 'Menlo, Consolas, monospace';
+// Android's monospace fonts have no ₦; the sans-serif after them draws it.
+const MONO = 'Menlo, Consolas, monospace, sans-serif';
 
 export type PaperOptions = { logoSrc: string | null; pageWidth: number };
 
@@ -113,7 +114,7 @@ export function paperHtml(
 }
 
 /**
- * "Received from" / "Bill to" on the left, with the client's phone when there is one, and the
+ * "Issued to" / "Bill to" on the left, with the client's phone when there is one, and the
  * job on the right when it has a title.
  */
 export function partiesHtml(label: string, client: string, job: string | null, phone: string | null = null): string {
