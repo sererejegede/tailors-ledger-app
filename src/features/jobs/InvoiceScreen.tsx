@@ -82,7 +82,6 @@ export default function InvoiceScreen({ route }: Props) {
         <View style={styles.paper} onLayout={(e) => setWidth(e.nativeEvent.layout.width - PAPER_BORDER * 2)}>
           {width > 0 ? <InvoiceCard view={view} logoUri={logoUri} width={width} /> : null}
         </View>
-        <Text style={styles.caption}>A5, as it will print</Text>
 
         {/* A due date only matters while something's owed. */}
         {view.paidInFull ? null : view.collection ? (
@@ -118,9 +117,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: colors.surface,
   },
-  caption: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, textAlign: 'center', marginTop: 14 },
-  due: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.md, marginTop: space.sm },
+  due: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.md, marginTop: space.md },
   dueText: { fontFamily: fonts.body, fontSize: fontSizes.sm, color: colors.text },
   dueDate: { fontFamily: fonts.bold },
-  add: { alignSelf: 'center', marginTop: space.sm },
+  add: { alignSelf: 'center', marginTop: space.md },
 });

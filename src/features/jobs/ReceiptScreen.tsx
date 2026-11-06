@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { database } from '@/db';
 import type Payment from '@/db/models/Payment';
@@ -98,7 +98,6 @@ export default function ReceiptScreen({ route }: Props) {
         <View style={styles.paper} onLayout={(e) => setWidth(e.nativeEvent.layout.width - PAPER_BORDER * 2)}>
           {width > 0 ? <ReceiptCard view={view} logoUri={logoUri} width={width} /> : null}
         </View>
-        <Text style={styles.caption}>A5, as it will print</Text>
         {view.voided ? null : (
           <TextAction label="Void this receipt…" danger onPress={confirmVoid} style={styles.void} />
         )}
@@ -121,6 +120,5 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: colors.surface,
   },
-  caption: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, textAlign: 'center', marginTop: 14 },
   void: { alignSelf: 'center', marginTop: space.md },
 });

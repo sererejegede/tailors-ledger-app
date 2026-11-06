@@ -56,7 +56,7 @@ export function PaperPage({ s, width, shopName, shopContact, footer, logoUri, ch
 }
 
 /**
- * "Received from" / "Bill to" on the left, with the client's phone when there is one, and the
+ * "Issued to" / "Bill to" on the left, with the client's phone when there is one, and the
  * job on the right when it has a title.
  */
 export function PaperParties({

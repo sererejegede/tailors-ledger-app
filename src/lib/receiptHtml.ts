@@ -43,7 +43,7 @@ export function receiptHtml(view: ReceiptView, opts: PaperOptions): string {
   </div>
   <div style="font-size:${em(12)};color:${SOFT};text-align:right">${esc(view.date)}</div>
 
-  ${partiesHtml('Received from', view.client, view.job)}
+  ${partiesHtml('Issued to', view.client, view.job)}
   ${itemsHtml(view.items, view.total)}
 
   ${received}

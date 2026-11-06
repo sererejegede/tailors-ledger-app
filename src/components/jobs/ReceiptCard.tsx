@@ -25,7 +25,7 @@ function ReceiptCardBase({ view, logoUri, width }: Props) {
       </View>
       <Text style={[s.small, s.right]}>{view.date}</Text>
 
-      <PaperParties s={s} label="Received from" client={view.client} job={view.job} />
+      <PaperParties s={s} label="Issued to" client={view.client} job={view.job} />
       <PaperItems s={s} items={view.items} total={view.total} />
 
       {view.voided ? (

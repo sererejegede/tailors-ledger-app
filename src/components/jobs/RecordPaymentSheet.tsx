@@ -14,23 +14,28 @@ import { colors, fontSizes, radius, space } from '@/theme/tokens';
 import { fonts, valueText } from '@/theme/typography';
 import XCloseIcon from '@/assets/icons/x-close.svg';
 import { Cursor } from '@/components/ui/Cursor';
+import { TextAction } from '@/components/ui/TextAction';
 import { AmountDock } from './AmountDock';
 import { BottomSheet } from './BottomSheet';
 
 /**
  * S9b. The next payment on a job, from Job detail: what's left, the amount being paid, then
  * `,000` / Half / All and the pad with Save in the corner. Save opens the receipt. Paying
- * more than what's left asks first; it's never blocked (spec §9a). Mount it to open it.
+ * more than what's left asks first; it's never blocked (spec §9a). With no shop name set, a
+ * note says the receipt will go out without it, with a link to the shop profile; it never
+ * stops the payment. Mount it to open it.
  */
 type Props = {
   jobLabel: string;
   balanceMinor: number;
   currency: string;
   onSave: (amountMinor: number) => void;
+  /** Given only while the shop has no name: opens the shop profile. */
+  onSetUpShop?: () => void;
   onClose: () => void;
 };
 
-export function RecordPaymentSheet({ jobLabel, balanceMinor, currency, onSave, onClose }: Props) {
+export function RecordPaymentSheet({ jobLabel, balanceMinor, currency, onSave, onSetUpShop, onClose }: Props) {
   const [paying, setPaying] = useState('');
   const [error, setError] = useState<string>();
   const amountMinor = bufferToMinor(paying);
@@ -68,6 +73,14 @@ export function RecordPaymentSheet({ jobLabel, balanceMinor, currency, onSave, o
           )}
         </Text>
       </View>
+
+      {onSetUpShop ? (
+        <View style={styles.shop}>
+          <View style={styles.dot} />
+          <Text style={styles.shopText}>No shop name yet, so this receipt won’t show it.</Text>
+          <TextAction label="Set up shop" onPress={onSetUpShop} />
+        </View>
+      ) : null}
 
       <View style={styles.paying}>
         <Text style={styles.payingLabel}>Paying now</Text>
@@ -115,5 +128,8 @@ const styles = StyleSheet.create({
   payingLabel: { fontFamily: fonts.semibold, fontSize: fontSizes.sm, color: colors.accentInk },
   payingRow: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   payingValue: { ...valueText, flexShrink: 1, fontSize: 32, color: colors.accentInk },
+  shop: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginTop: -space.sm },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.warn },
+  shopText: { flex: 1, fontFamily: fonts.medium, fontSize: 13, lineHeight: 18, color: colors.text },
   note: { fontFamily: fonts.body, fontSize: 13, lineHeight: 19, color: colors.muted, textAlign: 'center' },
 });
