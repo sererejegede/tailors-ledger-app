@@ -46,7 +46,7 @@ export function Button({
       accessibilityState={{ disabled: !!disabled }}
       style={({ pressed }) => [
         styles.button,
-        small ? styles.small : null,
+        small ? styles.small : styles.fill,
         { backgroundColor: tone.background, borderColor: tone.border },
         pressed && !disabled ? styles.pressed : null,
         style,
@@ -63,7 +63,6 @@ export function Button({
 
 const styles = StyleSheet.create({
   button: {
-    flex: 1,
     minHeight: 52,
     paddingHorizontal: space.lg,
     borderRadius: radius.round,
@@ -73,7 +72,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: space.sm,
   },
-  small: { flex: 0, minHeight: 40, gap: 6 },
+  fill: { flex: 1 },
+  // No `flex` here: on the web `flex: 0` becomes CSS `0 1 0%`, which squeezes the button
+  // down to its padding. Left unset, it's sized to its content on the web and on phones.
+  small: { minHeight: 40, gap: 6 },
   pressed: { opacity: 0.85 },
   label: { fontFamily: fonts.bold, ...buttonLabel(fontSizes.base) },
   smallLabel: { fontFamily: fonts.semibold, ...buttonLabel(fontSizes.sm) },
